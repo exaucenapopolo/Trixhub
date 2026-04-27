@@ -1,12 +1,11 @@
 import { Router, type IRouter } from "express";
 import { eq, or } from "drizzle-orm";
-import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
+import { db, usersTable } from "@workspace/db";
 import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth";
 import { authenticate } from "../middlewares/authenticate";
 import {
   RegisterBody,
   LoginBody,
-  ActivateAccountBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -194,91 +193,5 @@ router.get("/auth/me", authenticate, async (req, res): Promise<void> => {
   }
   res.json(formatUser(user));
 });
-
-router.post("/auth/activate", authenticate, async (req, res): Promise<void> => {
-  const parsed = ActivateAccountBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Données invalides" });
-    return;
-  }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
-  if (!user) {
-    res.status(401).json({ error: "Utilisateur introuvable" });
-    return;
-  }
-
-  if (user.isActivated) {
-    res.status(400).json({ error: "Compte déjà activé" });
-    return;
-  }
-
-  await db.update(usersTable).set({ isActivated: true }).where(eq(usersTable.id, user.id));
-
-  const [balance] = await db.select().from(balancesTable).where(eq(balancesTable.userId, user.id));
-  if (balance) {
-    const spent = parseFloat(balance.spentAmount ?? "0") + 3600;
-    await db.update(balancesTable)
-      .set({ spentAmount: spent.toFixed(2) })
-      .where(eq(balancesTable.userId, user.id));
-  }
-
-  await db.insert(transactionsTable).values({
-    userId: user.id,
-    type: "activation",
-    amount: "-3600",
-    description: "Activation du compte TRIXHUB",
-    status: "completed",
-  });
-
-  if (user.referredByCode) {
-    await activateReferrerCommission(user, 1700, 1, user.referredByCode, user.displayName || deriveDisplayName(user.email));
-
-    const [ref1] = await db.select().from(usersTable).where(eq(usersTable.referralCode, user.referredByCode));
-    if (ref1?.referredByCode) {
-      await activateReferrerCommission(user, 700, 2, ref1.referredByCode, user.displayName || deriveDisplayName(user.email));
-      const [ref2] = await db.select().from(usersTable).where(eq(usersTable.referralCode, ref1.referredByCode));
-      if (ref2?.referredByCode) {
-        await activateReferrerCommission(user, 300, 3, ref2.referredByCode, user.displayName || deriveDisplayName(user.email));
-      }
-    }
-  }
-
-  const updatedUser = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
-  const token = generateToken(user.id);
-  req.log.info({ userId: user.id }, "Account activated");
-  res.json({ user: formatUser(updatedUser[0]), token });
-});
-
-async function activateReferrerCommission(
-  activatedUser: typeof usersTable.$inferSelect,
-  commission: number,
-  level: number,
-  referrerCode: string,
-  activatedName: string
-) {
-  const [ref] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referrerCode));
-  if (!ref) return;
-
-  const [bal] = await db.select().from(balancesTable).where(eq(balancesTable.userId, ref.id));
-  if (!bal) return;
-
-  const inactive = Math.max(0, parseFloat(bal.inactiveBalance ?? "0") - commission);
-  const referral = parseFloat(bal.referralBalance ?? "0") + commission;
-
-  await db.update(balancesTable)
-    .set({ inactiveBalance: inactive.toFixed(2), referralBalance: referral.toFixed(2) })
-    .where(eq(balancesTable.userId, ref.id));
-
-  await db.insert(transactionsTable).values({
-    userId: ref.id,
-    type: `referral_l${level}`,
-    amount: commission.toFixed(2),
-    description: `Commission N${level}: ${activatedName} a activé son compte (+${commission.toLocaleString("fr-FR")} FCFA)`,
-    relatedUserId: activatedUser.id,
-    level,
-    status: "completed",
-  });
-}
 
 export default router;

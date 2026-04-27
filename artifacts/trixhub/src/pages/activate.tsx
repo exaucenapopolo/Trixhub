@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import {
-  CheckCircle2, ChevronRight, Smartphone, Zap, TrendingUp,
-  Globe, X, Star, Loader2, AlertCircle, RefreshCw, Clock
+  CheckCircle2, ChevronRight, Zap, TrendingUp,
+  Globe, X, Star, Loader2, Clock, ExternalLink, RefreshCw
 } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const TOKEN_KEY = "trixhub_token";
+const PAYMENT_TX_KEY = "trixhub_payment_tx";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
@@ -31,15 +32,6 @@ const AFRICAN_COUNTRIES = [
   { code: "SN", name: "Sénégal", flag: "🇸🇳", method: "Orange / Wave / Free" },
   { code: "TG", name: "Togo", flag: "🇹🇬", method: "Moov / Togocel" },
   { code: "TZ", name: "Tanzanie", flag: "🇹🇿", method: "M-Pesa / Airtel" },
-];
-
-const PAYMENT_METHODS = [
-  { id: "ORANGE_MONEY", name: "Orange Money", emoji: "🟠" },
-  { id: "WAVE", name: "Wave", emoji: "🌊" },
-  { id: "MTN_MONEY", name: "MTN Money", emoji: "🟡" },
-  { id: "MOOV_MONEY", name: "Moov Money", emoji: "💚" },
-  { id: "AIRTEL_MONEY", name: "Airtel Money", emoji: "🔴" },
-  { id: "MPESA", name: "M-Pesa", emoji: "🟢" },
 ];
 
 const BENEFITS_WITH = [
@@ -74,119 +66,144 @@ export default function ActivatePage() {
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("info");
-  const [payMethod, setPayMethod] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [paymentRef, setPaymentRef] = useState<string | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [ussdCode, setUssdCode] = useState<string | null>(null);
-  const [paymentMessage, setPaymentMessage] = useState("");
-  const [pollCount, setPollCount] = useState(0);
+  const [txId, setTxId] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Redirect if already activated
   useEffect(() => {
-    if (user?.isActivated) {
-      navigate("/dashboard");
-    }
+    if (user?.isActivated) navigate("/dashboard");
   }, [user]);
 
+  // Auto-slide
   useEffect(() => {
-    const interval = setInterval(() => setCurrentSlide(s => (s + 1) % ILLUSTRATIONS.length), 3500);
-    return () => clearInterval(interval);
+    const iv = setInterval(() => setCurrentSlide(s => (s + 1) % ILLUSTRATIONS.length), 3500);
+    return () => clearInterval(iv);
   }, []);
 
+  // On mount: check URL params or localStorage for a pending payment
   useEffect(() => {
-    if (step !== "waiting") {
-      stopPolling();
-      return;
+    const params = new URLSearchParams(window.location.search);
+    const pendingTx =
+      params.get("tx_id") ||
+      params.get("transaction_id") ||
+      params.get("payment_id") ||
+      localStorage.getItem(PAYMENT_TX_KEY);
+
+    if (pendingTx) {
+      setTxId(pendingTx);
+      setStep("waiting");
     }
-    startPolling();
+  }, []);
+
+  // Start/stop polling when step changes
+  useEffect(() => {
+    if (step === "waiting" && txId) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
     return () => stopPolling();
-  }, [step, paymentRef]);
+  }, [step, txId]);
 
   function startPolling() {
     stopPolling();
     setElapsedSeconds(0);
     timerRef.current = setInterval(() => setElapsedSeconds(s => s + 1), 1000);
-    pollIntervalRef.current = setInterval(() => {
-      setPollCount(c => c + 1);
-    }, 5000);
+    pollRef.current = setInterval(doPoll, 5000);
+    // Also check immediately on start (after short delay)
+    setTimeout(doPoll, 1500);
   }
 
   function stopPolling() {
-    if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }
 
-  useEffect(() => {
-    if (step !== "waiting" || !paymentRef || pollCount === 0) return;
-    checkPaymentStatus();
-  }, [pollCount]);
-
-  async function checkPaymentStatus() {
+  const doPoll = useCallback(async () => {
+    const currentTxId = txId || localStorage.getItem(PAYMENT_TX_KEY);
     const token = localStorage.getItem(TOKEN_KEY);
-    if (!token || !paymentRef) return;
+    if (!currentTxId || !token) return;
+
     try {
-      const res = await fetch(`${BASE}/api/swychr/status/${paymentRef}`, {
+      const res = await fetch(`${BASE}/api/swychr/status/${encodeURIComponent(currentTxId)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json() as { success: boolean; status: string; activated: boolean };
-      if (data.status === "SUCCESS" || data.activated) {
+      const data = await res.json() as { success: boolean; status: string; isPaid: boolean };
+
+      if (data.isPaid || data.status === "success") {
         stopPolling();
+        localStorage.removeItem(PAYMENT_TX_KEY);
         await refreshUser();
         setStep("success");
         return;
       }
-      if (data.status === "FAILED") {
+      if (data.status === "failed") {
         stopPolling();
+        localStorage.removeItem(PAYMENT_TX_KEY);
         setStep("failed");
-        return;
-      }
-      if (elapsedSeconds > 600) {
-        stopPolling();
-        toast({ title: "Délai dépassé", description: "La vérification a pris trop de temps. Vérifiez votre paiement et revenez.", variant: "destructive" });
-        setStep("pay");
       }
     } catch {
-      // silent — will retry on next poll
+      // Silent — will retry on next interval
     }
-  }
+  }, [txId, refreshUser]);
 
-  const handleInitiatePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!payMethod) {
-      toast({ title: "Mode de paiement requis", description: "Sélectionnez votre opérateur Mobile Money.", variant: "destructive" });
-      return;
+  // Keep doPoll up-to-date when txId changes
+  useEffect(() => {
+    if (step !== "waiting") return;
+    // Restart poll interval with fresh reference
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = setInterval(doPoll, 5000);
     }
-    if (!phoneNumber.trim()) {
-      toast({ title: "Numéro requis", description: "Entrez votre numéro Mobile Money.", variant: "destructive" });
-      return;
-    }
+  }, [doPoll]);
+
+  const handlePay = async () => {
     setIsLoading(true);
+    const token = localStorage.getItem(TOKEN_KEY);
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
       const res = await fetch(`${BASE}/api/swychr/initiate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ phoneNumber: phoneNumber.trim(), paymentMethod: payMethod, purpose: "activation" }),
+        body: JSON.stringify({}),
       });
-      const data = await res.json() as { success: boolean; reference?: string; paymentUrl?: string; ussdCode?: string; message?: string; error?: string };
+      const data = await res.json() as {
+        success: boolean;
+        transactionId?: string;
+        checkoutUrl?: string;
+        error?: string;
+      };
+
       if (!res.ok || !data.success) {
-        toast({ title: "Erreur paiement", description: data.error || "Impossible d'initier le paiement.", variant: "destructive" });
+        toast({
+          title: "Erreur de paiement",
+          description: data.error || "Impossible d'initier le paiement. Réessayez.",
+          variant: "destructive",
+        });
         return;
       }
-      setPaymentRef(data.reference ?? null);
-      setPaymentUrl(data.paymentUrl ?? null);
-      setUssdCode(data.ussdCode ?? null);
-      setPaymentMessage(data.message || "");
-      setStep("waiting");
 
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank");
+      if (!data.checkoutUrl || !data.transactionId) {
+        toast({
+          title: "Erreur",
+          description: "Réponse AccountPE invalide. Contactez le support.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      // Sauvegarder l'ID transaction pour retrouver le statut au retour
+      localStorage.setItem(PAYMENT_TX_KEY, data.transactionId);
+      setTxId(data.transactionId);
+      setCheckoutUrl(data.checkoutUrl);
+
+      // Rediriger vers la page de checkout AccountPE
+      window.location.href = data.checkoutUrl;
     } catch {
       toast({ title: "Erreur réseau", description: "Réessayez dans un instant.", variant: "destructive" });
     } finally {
@@ -200,6 +217,8 @@ export default function ActivatePage() {
     return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
   };
 
+  const stepIndex = { info: 0, pay: 1, waiting: 2, success: 3, failed: 2 };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -210,14 +229,17 @@ export default function ActivatePage() {
             <span className="font-bold text-foreground">TRIXHUB</span>
           </div>
           <div className="flex items-center gap-2">
-            {(["info", "pay", "waiting", "failed"] as Step[]).map((s, i) => (
-              <div key={s} className="flex items-center gap-2">
+            {(["Infos", "Paiement", "Vérification"] as const).map((label, i) => (
+              <div key={label} className="flex items-center gap-2">
                 {i > 0 && <div className="w-6 h-px bg-border" />}
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  step === s || (s === "waiting" && step === "success") || (i < ["info","pay","waiting","success"].indexOf(step))
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
-                }`}>{i + 1}</div>
+                <div className={`flex items-center gap-1.5`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                    stepIndex[step] >= i
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}>{i + 1}</div>
+                  <span className="hidden sm:block text-xs text-muted-foreground">{label}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -226,7 +248,7 @@ export default function ActivatePage() {
 
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* STEP 1 : Info */}
+        {/* ÉTAPE 1 : Présentation */}
         {step === "info" && (
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-6">
@@ -322,95 +344,79 @@ export default function ActivatePage() {
                 <ChevronRight className="w-5 h-5" />
               </button>
               <p className="text-center text-xs text-muted-foreground">
-                Paiement sécurisé via Mobile Money · Propulsé par Swychr Connect
+                Paiement sécurisé via AccountPE · Mobile Money · Toute l'Afrique
               </p>
             </div>
           </div>
         )}
 
-        {/* STEP 2 : Formulaire de paiement */}
+        {/* ÉTAPE 2 : Payer via AccountPE */}
         {step === "pay" && (
           <div className="max-w-xl mx-auto">
             <button onClick={() => setStep("info")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
               ← Retour
             </button>
 
-            <h2 className="text-2xl font-bold text-foreground mb-1">Paiement via Mobile Money</h2>
-            <p className="text-muted-foreground text-sm mb-6">Paiement automatique sécurisé via Swychr Connect</p>
+            <h2 className="text-2xl font-bold text-foreground mb-1">Paiement sécurisé</h2>
+            <p className="text-muted-foreground text-sm mb-6">Tu vas être redirigé vers la page de paiement AccountPE</p>
 
+            {/* Résumé de la commande */}
+            <div className="bg-card border-2 border-primary/30 rounded-2xl p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Activation compte TRIXHUB</p>
+                  <p className="text-3xl font-bold text-foreground font-mono mt-1">3 600 FCFA</p>
+                </div>
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Zap className="w-7 h-7 text-primary" />
+                </div>
+              </div>
+              <div className="space-y-2 border-t border-border pt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Activation compte</span>
+                  <span className="font-medium text-foreground">3 600 FCFA</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Accès parrainage</span>
+                  <span className="text-green-500 font-medium">Inclus</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Dashboard & missions</span>
+                  <span className="text-green-500 font-medium">Inclus</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Comment ça marche */}
             <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-2 flex items-center gap-2">
-                <Smartphone className="w-4 h-4" /> Comment ça fonctionne
-              </h4>
+              <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-2">Comment ça fonctionne</h4>
               <ol className="text-xs text-blue-800 dark:text-blue-400 space-y-1.5 list-decimal list-inside">
-                <li>Sélectionnez votre opérateur Mobile Money</li>
-                <li>Entrez votre numéro de téléphone Mobile Money</li>
-                <li>Cliquez sur <strong>"Payer 3 600 FCFA"</strong></li>
-                <li>Vous recevrez une <strong>notification sur votre téléphone</strong> — confirmez le paiement</li>
-                <li>L'activation se fait <strong>automatiquement</strong> dès confirmation</li>
+                <li>Clique sur le bouton ci-dessous</li>
+                <li>Tu es redirigé vers la <strong>page de paiement sécurisée AccountPE</strong></li>
+                <li>Choisis ton opérateur (MTN, Orange, Wave, etc.) et confirme le paiement</li>
+                <li>Après paiement, reviens sur TRIXHUB — ton compte est <strong>activé automatiquement</strong></li>
               </ol>
             </div>
 
-            <form onSubmit={handleInitiatePayment} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-3">Opérateur Mobile Money</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {PAYMENT_METHODS.map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setPayMethod(m.id)}
-                      className={`flex flex-col items-center gap-2 p-3.5 rounded-xl border-2 transition-all ${payMethod === m.id ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-card hover:border-primary/40"}`}
-                    >
-                      <span className="text-2xl">{m.emoji}</span>
-                      <span className="text-xs font-medium text-foreground text-center leading-tight">{m.name}</span>
-                      {payMethod === m.id && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <button
+              onClick={handlePay}
+              disabled={isLoading}
+              className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25"
+            >
+              {isLoading ? (
+                <><Loader2 className="w-5 h-5 animate-spin" /> Connexion à AccountPE...</>
+              ) : (
+                <><ExternalLink className="w-5 h-5" /> Payer 3 600 FCFA via AccountPE</>
+              )}
+            </button>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Numéro Mobile Money
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value)}
-                  placeholder="+225 07 00 00 00 00"
-                  className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                />
-                <p className="text-xs text-muted-foreground mt-1.5">Le numéro sur lequel vous recevrez la notification de paiement</p>
-              </div>
-
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-                <p className="text-xs text-amber-800 dark:text-amber-400 font-medium">
-                  💡 Montant à payer : <strong>3 600 FCFA</strong> — Ce montant sera débité de votre compte Mobile Money
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Connexion à Swychr...</>
-                ) : (
-                  <><Zap className="w-4 h-4" /> Payer 3 600 FCFA via {payMethod ? PAYMENT_METHODS.find(m => m.id === payMethod)?.name : "Mobile Money"}</>
-                )}
-              </button>
-
-              <p className="text-center text-xs text-muted-foreground">
-                Paiement sécurisé via Swychr Connect · Aucun partage de données bancaires
-              </p>
-            </form>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              Paiement 100% sécurisé par AccountPE · Orange Money, MTN, Wave et plus
+            </p>
           </div>
         )}
 
-        {/* STEP 3 : Vérification en cours */}
+        {/* ÉTAPE 3 : Vérification en cours (retour de checkout) */}
         {step === "waiting" && (
           <div className="max-w-lg mx-auto text-center py-8">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 relative">
@@ -418,39 +424,35 @@ export default function ActivatePage() {
               <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
             </div>
 
-            <h2 className="text-2xl font-bold text-foreground mb-2">En attente de votre paiement</h2>
-            <p className="text-muted-foreground mb-6">
-              {paymentMessage || "Confirmez le paiement de 3 600 FCFA sur votre téléphone"}
+            <h2 className="text-2xl font-bold text-foreground mb-2">Vérification du paiement</h2>
+            <p className="text-muted-foreground mb-2">
+              Nous vérifions automatiquement ton paiement de <strong>3 600 FCFA</strong>
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Si tu viens de terminer ton paiement sur AccountPE, la confirmation arrive dans quelques secondes.
             </p>
 
-            {ussdCode && (
-              <div className="bg-card border border-border rounded-xl p-4 mb-6 text-left">
-                <p className="text-xs text-muted-foreground mb-1">Code USSD à composer</p>
-                <p className="text-2xl font-mono font-bold text-primary tracking-wider">{ussdCode}</p>
-              </div>
-            )}
-
-            {paymentUrl && (
+            {checkoutUrl && (
               <a
-                href={paymentUrl}
+                href={checkoutUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all mb-6"
+                className="inline-flex items-center gap-2 px-5 py-2.5 border border-primary text-primary rounded-xl text-sm font-semibold hover:bg-primary/5 transition-all mb-6"
               >
-                Ouvrir la page de paiement →
+                <ExternalLink className="w-4 h-4" /> Retourner sur la page de paiement
               </a>
             )}
 
             <div className="bg-muted/50 rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
                 <Clock className="w-4 h-4" />
-                <span>Vérification automatique en cours</span>
+                <span>Vérification automatique toutes les 5 secondes</span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mb-3">
                 Temps écoulé : <span className="font-mono font-medium text-foreground">{formatElapsed(elapsedSeconds)}</span>
               </p>
-              <div className="flex justify-center gap-1 mt-3">
-                {[0,1,2].map(i => (
+              <div className="flex justify-center gap-1">
+                {[0, 1, 2].map(i => (
                   <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                 ))}
               </div>
@@ -458,71 +460,84 @@ export default function ActivatePage() {
 
             <div className="space-y-3">
               <button
-                onClick={checkPaymentStatus}
+                onClick={doPoll}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-border rounded-xl text-sm text-foreground hover:bg-muted/50 transition-all"
               >
                 <RefreshCw className="w-4 h-4" /> Vérifier maintenant
               </button>
               <button
-                onClick={() => { stopPolling(); setStep("pay"); }}
+                onClick={() => {
+                  stopPolling();
+                  localStorage.removeItem(PAYMENT_TX_KEY);
+                  setStep("pay");
+                }}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                ← Retour (annuler ce paiement)
+                ← Je n'ai pas encore payé
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4 : Succès */}
+        {/* ÉTAPE 4 : Succès */}
         {step === "success" && (
           <div className="max-w-lg mx-auto text-center py-8">
-            <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-950/40 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-12 h-12 text-green-500" />
+            <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-14 h-14 text-green-500" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Compte activé ! 🎉</h2>
-            <p className="text-muted-foreground mb-2">
-              Bienvenue dans la famille TRIXHUB. Ton paiement de <strong>3 600 FCFA</strong> a bien été confirmé.
+            <h2 className="text-3xl font-bold text-foreground mb-2">Paiement confirmé ! 🎉</h2>
+            <p className="text-muted-foreground mb-8">
+              Ton compte TRIXHUB est maintenant <strong className="text-green-500">activé</strong>.<br />
+              Bienvenue dans la communauté !
             </p>
-            <p className="text-muted-foreground mb-8 text-sm">
-              Tu peux maintenant parrainer, faire des missions et retirer tes gains.
-            </p>
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              {[
+                { label: "Commission N1", value: "1 700 FCFA", color: "text-green-500" },
+                { label: "Commission N2", value: "700 FCFA", color: "text-blue-500" },
+                { label: "Commission N3", value: "300 FCFA", color: "text-purple-500" },
+              ].map((c, i) => (
+                <div key={i} className="bg-card border border-border rounded-xl p-3">
+                  <p className={`text-lg font-bold ${c.color} font-mono`}>{c.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{c.label}</p>
+                </div>
+              ))}
+            </div>
             <button
               onClick={() => navigate("/dashboard")}
-              className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 text-base"
+              className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
             >
-              Accéder au tableau de bord
+              Accéder à mon tableau de bord
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        {/* STEP : Paiement échoué */}
+        {/* ÉTAPE ÉCHEC */}
         {step === "failed" && (
           <div className="max-w-lg mx-auto text-center py-8">
-            <div className="w-24 h-24 rounded-full bg-red-100 dark:bg-red-950/40 flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-12 h-12 text-red-500" />
+            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
+              <X className="w-10 h-10 text-destructive" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Paiement non confirmé</h2>
-            <p className="text-muted-foreground mb-8">
-              Le paiement a été annulé ou a échoué. Aucun montant n'a été débité. Tu peux réessayer avec un autre opérateur.
+            <p className="text-muted-foreground mb-6">
+              Le paiement n'a pas pu être confirmé. Vérifie que tu as bien finalisé la transaction sur AccountPE.
             </p>
             <div className="space-y-3">
               <button
-                onClick={() => { setPaymentRef(null); setPayMethod(""); setPhoneNumber(""); setStep("pay"); }}
-                className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all"
+                onClick={() => { setStep("pay"); setTxId(null); setCheckoutUrl(null); }}
+                className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-2xl hover:opacity-90 transition-all"
               >
                 Réessayer le paiement
               </button>
               <button
-                onClick={() => setStep("info")}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => navigate("/")}
+                className="w-full py-3 border border-border rounded-2xl text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
               >
-                ← Retour à l'info
+                Retour à l'accueil
               </button>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
