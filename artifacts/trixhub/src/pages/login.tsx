@@ -9,46 +9,40 @@ const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
-// Illustrations qui défilent automatiquement au-dessus du logo (carrousel discret)
-const ILLUSTRATIONS = [
-  { emoji: "💸", title: "Gagne de l'argent réel", desc: "Jusqu'à 1 700 FCFA par filleul actif", color: "from-green-500/20 to-emerald-600/20", accent: "text-green-500" },
-  { emoji: "👥", title: "Construis ton équipe", desc: "3 niveaux de commissions automatiques", color: "from-blue-500/20 to-blue-700/20", accent: "text-blue-500" },
-  { emoji: "📱", title: "Missions sur mobile", desc: "Vidéos, partage, lecture rémunérés", color: "from-purple-500/20 to-purple-700/20", accent: "text-purple-500" },
-  { emoji: "🌍", title: "18 pays africains", desc: "Mobile Money disponible partout", color: "from-orange-500/20 to-amber-600/20", accent: "text-orange-500" },
+// 3 vraies images d'illustration affichées au-dessus du logo (carrousel automatique)
+const LOGIN_IMAGES = [
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/file_000000002ab47243b5d65bb309e5bb77.png",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/IMG-20260426-WA0001.jpg",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/Jaune%20Portraits%20Enseignant%20%C3%89ducation%20Comment%20Podcast%20Couverture_20260426_194410_0000.png",
 ];
 
 function IllustrationCarousel() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
-    const iv = setInterval(() => setCurrent(s => (s + 1) % ILLUSTRATIONS.length), 3500);
+    const iv = setInterval(() => setCurrent(s => (s + 1) % LOGIN_IMAGES.length), 4000);
     return () => clearInterval(iv);
   }, []);
 
   return (
     <div className="mb-6">
-      <div className="relative overflow-hidden rounded-2xl">
-        {ILLUSTRATIONS.map((ill, i) => (
-          <div
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/30 aspect-[4/5]">
+        {LOGIN_IMAGES.map((src, i) => (
+          <img
             key={i}
-            className={`bg-gradient-to-br ${ill.color} border border-border rounded-2xl p-5 transition-all duration-500 ${i === current ? "block" : "hidden"}`}
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-4xl flex-shrink-0">{ill.emoji}</div>
-              <div className="min-w-0">
-                <h3 className={`text-base font-bold ${ill.accent} leading-tight`}>{ill.title}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{ill.desc}</p>
-              </div>
-            </div>
-          </div>
+            src={src}
+            alt={`Illustration ${i + 1}`}
+            loading={i === 0 ? "eager" : "lazy"}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === current ? "opacity-100" : "opacity-0"}`}
+          />
         ))}
       </div>
       <div className="flex justify-center gap-1.5 mt-3">
-        {ILLUSTRATIONS.map((_, i) => (
+        {LOGIN_IMAGES.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            aria-label={`Slide ${i + 1}`}
+            aria-label={`Image ${i + 1}`}
             className={`h-1.5 rounded-full transition-all ${i === current ? "bg-primary w-6" : "bg-border w-1.5"}`}
           />
         ))}

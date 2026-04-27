@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   CheckCircle2, ChevronRight, Zap, TrendingUp,
   Globe, X, Star, Loader2, Clock, ExternalLink, RefreshCw,
-  Phone, Pencil
+  Phone, Pencil, Briefcase, Share2, GraduationCap, Gift, Sparkles, Wifi, Tv, Palette
 } from "lucide-react";
 
 const TICKER_ITEMS = [
@@ -71,28 +71,47 @@ const AFRICAN_COUNTRIES = [
   { code: "UG", name: "Ouganda", flag: "🇺🇬", method: "MTN / Airtel", dial: "+256" },
 ];
 
-const BENEFITS_WITH = [
-  { icon: "💰", title: "Commissions immédiates", desc: "1 700 FCFA par filleul direct qui active son compte" },
-  { icon: "🔗", title: "Lien de parrainage unique", desc: "Partage et génère des revenus automatiquement" },
-  { icon: "📊", title: "Tableau de bord complet", desc: "Suivi en temps réel de tes gains et ton équipe" },
-  { icon: "🌍", title: "Réseau africain", desc: "Connecte-toi à des membres dans 18 pays" },
-  { icon: "📱", title: "Missions rémunérées", desc: "Gagne en regardant des vidéos, lisant du contenu..." },
-  { icon: "💳", title: "Retrait flexible", desc: "Via Orange Money, Wave, MTN et plus encore" },
+// 5 vraies images d'illustration affichées en carrousel sur la page d'activation.
+// Pas de texte par-dessus : les images sont auto-explicatives.
+const IMAGE_SLIDES = [
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/file_000000002ab47243b5d65bb309e5bb77.png",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/file_00000000e388720aa27cbd8c1db9b434.png",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/Noir%20et%20Jaune%20Dessin%C3%A9%20%C3%A0%20la%20main%20Voyage%20Tutoriel%20%20Comment%20faire%20Instagram%20St_20260426_195825_0000.png",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/IMG-20260426-WA0001.jpg",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/Jaune%20Portraits%20Enseignant%20%C3%89ducation%20Comment%20Podcast%20Couverture_20260426_194410_0000.png",
 ];
 
-const BENEFITS_WITHOUT = [
-  "Pas de commissions de parrainage",
-  "Impossible d'accéder au tableau de bord",
-  "Pas de missions disponibles",
-  "Pas de retrait d'argent",
-  "Lien de parrainage inactif",
+// Liste des formations accessibles après activation (extrait — il y en a beaucoup d'autres)
+const FORMATIONS_PREVIEW = [
+  "Comment avoir tout Canal+ gratuitement",
+  "Comment utiliser son téléphone sans gâcher sa vie",
+  "Comment gagner ses premiers revenus sans abandonner ses études",
+  "Comment créer une deuxième source de revenus sans stress",
 ];
 
-const ILLUSTRATIONS = [
-  { emoji: "💸", title: "Gagne de l'argent réel", desc: "Chaque filleul actif te rapporte jusqu'à 1 700 FCFA directement sur ton solde", color: "from-green-500/20 to-emerald-600/20", accent: "text-green-500" },
-  { emoji: "👥", title: "Construis ton équipe", desc: "3 niveaux de commissions : tes filleuls, leurs filleuls, et encore leurs filleuls", color: "from-blue-500/20 to-blue-700/20", accent: "text-blue-500" },
-  { emoji: "📱", title: "Missions sur mobile", desc: "Visionne des vidéos, partage du contenu et gagne des bonus supplémentaires", color: "from-purple-500/20 to-purple-700/20", accent: "text-purple-500" },
-  { emoji: "🌍", title: "18 pays africains", desc: "Orange Money, Wave, M-Pesa, MTN... Paiement partout en Afrique", color: "from-orange-500/20 to-amber-600/20", accent: "text-orange-500" },
+// Bonus exclusifs débloqués après activation
+const BONUS_LIST = [
+  {
+    icon: Tv,
+    title: "Compte Canal+ gratuit",
+    desc: "Profite d'un compte Canal+ que tu peux utiliser toi-même OU revendre à tes propres clients au prix que tu fixes.",
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+  },
+  {
+    icon: Palette,
+    title: "Compte Canva Pro à vie",
+    desc: "Crée tes designs, visuels marketing et contenus professionnels avec Canva Pro débloqué à vie.",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+  },
+  {
+    icon: Wifi,
+    title: "Connexion VPN gratuite",
+    desc: "Notre équipe t'offre chaque jour une connexion VPN gratuite pour effectuer tes tâches sans utiliser tes propres données mobiles.",
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+  },
 ];
 
 type Step = "info" | "pay" | "waiting" | "success" | "failed";
@@ -124,9 +143,9 @@ export default function ActivatePage() {
     if (user?.phone && !payPhone) setPayPhone(user.phone);
   }, [user?.phone]);
 
-  // Auto-slide
+  // Auto-slide du carrousel d'images (5 vraies images, défilement toutes les 4s)
   useEffect(() => {
-    const iv = setInterval(() => setCurrentSlide(s => (s + 1) % ILLUSTRATIONS.length), 3500);
+    const iv = setInterval(() => setCurrentSlide(s => (s + 1) % IMAGE_SLIDES.length), 4000);
     return () => clearInterval(iv);
   }, []);
 
@@ -239,7 +258,7 @@ export default function ActivatePage() {
       if (!data.checkoutUrl || !data.transactionId) {
         toast({
           title: "Erreur",
-          description: "Réponse AccountPE invalide. Contactez le support.",
+          description: "Réponse du partenaire de paiement invalide. Contactez le support.",
           variant: "destructive",
         });
         return;
@@ -250,7 +269,7 @@ export default function ActivatePage() {
       setTxId(data.transactionId);
       setCheckoutUrl(data.checkoutUrl);
 
-      // Rediriger vers la page de checkout AccountPE
+      // Rediriger vers la page de checkout du partenaire de paiement
       window.location.href = data.checkoutUrl;
     } catch {
       toast({ title: "Erreur réseau", description: "Réessayez dans un instant.", variant: "destructive" });
@@ -302,56 +321,178 @@ export default function ActivatePage() {
         {/* ÉTAPE 1 : Présentation */}
         {step === "info" && (
           <div className="grid lg:grid-cols-2 gap-8">
+            {/* ── COLONNE GAUCHE : Présentation, carrousel, avantages détaillés ── */}
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">Active ton compte TRIXHUB</h1>
                 <p className="text-muted-foreground mt-2">Une seule activation pour débloquer tout le potentiel de la plateforme</p>
               </div>
-              <div className="relative overflow-hidden rounded-2xl">
-                {ILLUSTRATIONS.map((ill, i) => (
-                  <div key={i} className={`bg-gradient-to-br ${ill.color} border border-border rounded-2xl p-8 transition-all duration-500 ${i === currentSlide ? "block" : "hidden"}`}>
-                    <div className="text-5xl mb-4">{ill.emoji}</div>
-                    <h3 className={`text-xl font-bold ${ill.accent} mb-2`}>{ill.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{ill.desc}</p>
-                  </div>
-                ))}
+
+              {/* Carrousel d'images réelles (pas d'overlay texte — les images parlent d'elles-mêmes) */}
+              <div className="relative">
+                <div className="relative overflow-hidden rounded-2xl bg-muted/30 border border-border aspect-[4/5] sm:aspect-[3/4]">
+                  {IMAGE_SLIDES.map((src, i) => (
+                    <img
+                      key={i}
+                      src={src}
+                      alt={`Illustration TRIXHUB ${i + 1}`}
+                      loading={i === 0 ? "eager" : "lazy"}
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === currentSlide ? "opacity-100" : "opacity-0"}`}
+                    />
+                  ))}
+                </div>
                 <div className="flex justify-center gap-2 mt-3">
-                  {ILLUSTRATIONS.map((_, i) => (
-                    <button key={i} onClick={() => setCurrentSlide(i)}
-                      className={`w-2 h-2 rounded-full transition-all ${i === currentSlide ? "bg-primary w-6" : "bg-border"}`} />
+                  {IMAGE_SLIDES.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentSlide(i)}
+                      aria-label={`Image ${i + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${i === currentSlide ? "bg-primary w-7" : "bg-border w-1.5 hover:bg-muted-foreground/40"}`}
+                    />
                   ))}
                 </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                  <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-primary" /> Avec activation
-                  </h4>
-                  <ul className="space-y-2">
-                    {BENEFITS_WITH.map((b, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <span className="text-base leading-none">{b.icon}</span>
-                        <span><strong className="text-foreground">{b.title}</strong><br />{b.desc}</span>
+
+              {/* ── POURQUOI ACTIVER MON COMPTE ── */}
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <h2 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" /> Pourquoi activer mon compte ?
+                </h2>
+                <p className="text-xs text-muted-foreground mb-5">Voici tout ce que tu débloques avec ton activation à 3 600 FCFA :</p>
+
+                {/* 1. Missions rémunérées */}
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm">Missions rémunérées</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Réalise des tâches simples (vidéos à regarder, contenus à partager, lectures) et gagne directement de l'argent dans ton solde.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 2. Accès au parrainage */}
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                      <Share2 className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm">Accès au parrainage</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Lien de parrainage unique, commissions automatiques sur 3 niveaux : <strong className="text-foreground">1 700 / 700 / 300 FCFA</strong> par filleul activé.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3. Accès aux formations */}
+                  <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-5 h-5 text-purple-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground text-sm">Accès à plusieurs formations</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Voici un aperçu (et bien d'autres après activation) :</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-1.5 ml-1">
+                      {FORMATIONS_PREVIEW.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-foreground">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-500 flex-shrink-0 mt-0.5" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                      <li className="flex items-start gap-2 text-xs text-muted-foreground italic mt-2">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-500 flex-shrink-0 mt-0.5" />
+                        <span>...et plein d'autres formations à découvrir une fois ton compte activé</span>
                       </li>
-                    ))}
-                  </ul>
+                    </ul>
+                  </div>
+
+                  {/* 4. Bonus exclusifs */}
+                  <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                        <Gift className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground text-sm">Cadeaux & bonus exclusifs</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Des bonus à valeur réelle, offerts gratuitement avec ton activation :</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      {BONUS_LIST.map((b, i) => {
+                        const Icon = b.icon;
+                        return (
+                          <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-card border border-border">
+                            <div className={`w-8 h-8 rounded-lg ${b.bg} flex items-center justify-center flex-shrink-0`}>
+                              <Icon className={`w-4 h-4 ${b.color}`} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-foreground">{b.title}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{b.desc}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5 pt-1">
+                        <Sparkles className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <span>Et beaucoup d'autres bonus à découvrir une fois ton compte activé</span>
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-                  <h4 className="font-semibold text-foreground text-sm mb-3 flex items-center gap-1.5">
-                    <X className="w-4 h-4 text-destructive" /> Sans activation
-                  </h4>
-                  <ul className="space-y-2.5">
-                    {BENEFITS_WITHOUT.map((b, i) => (
-                      <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <X className="w-3 h-3 text-destructive flex-shrink-0" /> {b}
-                      </li>
-                    ))}
-                  </ul>
+              </div>
+
+              {/* ── 3 FAÇONS DE GAGNER ── (rassurer ceux qui ne veulent pas parrainer) */}
+              <div className="bg-gradient-to-br from-primary/8 to-primary/3 border border-primary/20 rounded-2xl p-5">
+                <h2 className="text-lg font-bold text-foreground mb-1">3 façons de gagner — chacun trouve son compte</h2>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Pas obligé de parrainer pour gagner. Tu choisis le chemin qui te correspond :
+                </p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center mb-2">
+                      <Briefcase className="w-4 h-4 text-primary" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">Avec les tâches</h4>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Réalise des missions quotidiennes simples et gagne, même sans parrainer personne.
+                    </p>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center mb-2">
+                      <Share2 className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">Avec le parrainage</h4>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Invite des amis et touche des commissions sur 3 niveaux, automatiquement.
+                    </p>
+                  </div>
+                  <div className="bg-card border border-border rounded-xl p-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center mb-2">
+                      <Gift className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">Avec les bonus</h4>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Revends tes comptes Canal+ et utilise les formations pour générer tes propres revenus.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-foreground leading-relaxed">
+                    <strong>Dans tous les cas, tu auras de l'argent à gagner.</strong> Que tu sois un parrain motivé, un travailleur de tâches discret, ou un revendeur de bonus — TRIXHUB est fait pour toi.
+                  </p>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* ── COLONNE DROITE : Prix, pays acceptés, CTA ── */}
+            <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
               <div className="bg-card border-2 border-primary rounded-2xl p-6 relative overflow-hidden">
                 <div className="absolute top-4 right-4">
                   <span className="bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -366,7 +507,7 @@ export default function ActivatePage() {
                 <p className="text-xs text-muted-foreground mb-4">Paiement unique — accès permanent à toutes les fonctionnalités</p>
                 <div className="flex items-center gap-2 p-3 bg-primary/8 rounded-xl">
                   <TrendingUp className="w-4 h-4 text-primary flex-shrink-0" />
-                  <p className="text-xs text-foreground">Récupère tes 3 600 FCFA avec seulement <strong>2 filleuls actifs</strong> (2 × 1 700 = 3 400 FCFA)</p>
+                  <p className="text-xs text-foreground">Récupère tes 3 600 FCFA avec seulement <strong>2 filleuls actifs</strong> (2 × 1 700 = 3 400 FCFA), ou en réalisant tes premières missions rémunérées.</p>
                 </div>
               </div>
 
@@ -395,13 +536,13 @@ export default function ActivatePage() {
                 <ChevronRight className="w-5 h-5" />
               </button>
               <p className="text-center text-xs text-muted-foreground">
-                Paiement sécurisé via AccountPE · Mobile Money · Toute l'Afrique
+                Paiement sécurisé via notre partenaire · Mobile Money · Toute l'Afrique
               </p>
             </div>
           </div>
         )}
 
-        {/* ÉTAPE 2 : Payer via AccountPE */}
+        {/* ÉTAPE 2 : Payer via le partenaire de paiement */}
         {step === "pay" && (
           <div className="max-w-xl mx-auto">
             <button onClick={() => setStep("info")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -409,7 +550,7 @@ export default function ActivatePage() {
             </button>
 
             <h2 className="text-2xl font-bold text-foreground mb-1">Paiement sécurisé</h2>
-            <p className="text-muted-foreground text-sm mb-6">Tu vas être redirigé vers la page de paiement AccountPE</p>
+            <p className="text-muted-foreground text-sm mb-6">Tu vas être redirigé vers la page de paiement de notre partenaire</p>
 
             {/* Résumé de la commande */}
             <div className="bg-card border-2 border-primary/30 rounded-2xl p-6 mb-6">
@@ -443,7 +584,7 @@ export default function ActivatePage() {
               <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-2">Comment ça fonctionne</h4>
               <ol className="text-xs text-blue-800 dark:text-blue-400 space-y-1.5 list-decimal list-inside">
                 <li>Clique sur le bouton ci-dessous</li>
-                <li>Tu es redirigé vers la <strong>page de paiement sécurisée AccountPE</strong></li>
+                <li>Tu es redirigé vers la <strong>page de paiement sécurisée de notre partenaire</strong></li>
                 <li>Choisis ton opérateur (MTN, Orange, Wave, etc.) et confirme le paiement</li>
                 <li>Après paiement, reviens sur TRIXHUB — ton compte est <strong>activé automatiquement</strong></li>
               </ol>
@@ -493,7 +634,7 @@ export default function ActivatePage() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-2">
-                Ce numéro sera pré-rempli sur la page de paiement AccountPE. Vous pourrez aussi le modifier directement sur la page de paiement.
+                Ce numéro sera pré-rempli sur la page de paiement de notre partenaire. Vous pourrez aussi le modifier directement sur la page de paiement.
               </p>
             </div>
 
@@ -503,14 +644,14 @@ export default function ActivatePage() {
               className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25"
             >
               {isLoading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Connexion à AccountPE...</>
+                <><Loader2 className="w-5 h-5 animate-spin" /> Connexion en cours...</>
               ) : (
-                <><ExternalLink className="w-5 h-5" /> Payer 3 600 FCFA via AccountPE</>
+                <><ExternalLink className="w-5 h-5" /> Payer 3 600 FCFA en sécurité</>
               )}
             </button>
 
             <p className="text-center text-xs text-muted-foreground mt-3">
-              Paiement 100% sécurisé par AccountPE · Orange Money, MTN, Wave et plus
+              Paiement 100% sécurisé par notre partenaire · Orange Money, MTN, Wave et plus
             </p>
           </div>
         )}
@@ -528,7 +669,7 @@ export default function ActivatePage() {
               Nous vérifions automatiquement ton paiement de <strong>3 600 FCFA</strong>
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Si tu viens de terminer ton paiement sur AccountPE, la confirmation arrive dans quelques secondes.
+              Si tu viens de terminer ton paiement, la confirmation arrive dans quelques secondes.
             </p>
 
             {checkoutUrl && (
@@ -619,7 +760,7 @@ export default function ActivatePage() {
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Paiement non confirmé</h2>
             <p className="text-muted-foreground mb-6">
-              Le paiement n'a pas pu être confirmé. Vérifie que tu as bien finalisé la transaction sur AccountPE.
+              Le paiement n'a pas pu être confirmé. Vérifie que tu as bien finalisé la transaction sur la page de notre partenaire.
             </p>
             <div className="space-y-3">
               <button

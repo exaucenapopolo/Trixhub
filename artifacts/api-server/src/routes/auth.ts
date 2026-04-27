@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, or } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
 import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth";
 import { authenticate } from "../middlewares/authenticate";
 import {
