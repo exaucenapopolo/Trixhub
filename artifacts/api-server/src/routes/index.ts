@@ -7,6 +7,7 @@ import balancesRouter from "./balances";
 import withdrawalsRouter from "./withdrawals";
 import tasksRouter from "./tasks";
 import configRouter from "./config";
+import swychrRouter from "./swychr";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(balancesRouter);
 router.use(withdrawalsRouter);
 router.use(tasksRouter);
 router.use(configRouter);
+router.use(swychrRouter);
 
 export default router;
