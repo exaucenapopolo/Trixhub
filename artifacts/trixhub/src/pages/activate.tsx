@@ -4,8 +4,43 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import {
   CheckCircle2, ChevronRight, Zap, TrendingUp,
-  Globe, X, Star, Loader2, Clock, ExternalLink, RefreshCw
+  Globe, X, Star, Loader2, Clock, ExternalLink, RefreshCw,
+  Phone, Pencil
 } from "lucide-react";
+
+const TICKER_ITEMS = [
+  "💰 Gagne jusqu'à 1 700 FCFA par filleul direct activé",
+  "📹 Regarde des vidéos et sois rémunéré immédiatement",
+  "✅ Réalise de petites tâches simples et sois payé",
+  "🌍 Réseau de membres dans 18 pays africains",
+  "📱 Tout depuis ton téléphone, partout et à tout moment",
+  "💳 Retrait via Orange Money, Wave, MTN, M-Pesa et plus",
+  "👥 Commissions sur 3 niveaux de parrainage",
+  "🚀 Activation unique 3 600 FCFA — Accès à vie à la plateforme",
+  "🎯 Missions rémunérées disponibles chaque jour",
+  "🔗 Partage ton lien unique et génère des revenus passifs",
+];
+
+function Ticker() {
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="w-full overflow-hidden bg-primary py-2.5 relative">
+      <div className="flex gap-12 whitespace-nowrap" style={{ animation: "ticker-slide 38s linear infinite" }}>
+        {items.map((item, i) => (
+          <span key={i} className="text-primary-foreground text-sm font-medium flex-shrink-0">
+            {item} <span className="opacity-40 mx-2">•</span>
+          </span>
+        ))}
+      </div>
+      <style>{`
+        @keyframes ticker-slide {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const TOKEN_KEY = "trixhub_token";
@@ -71,6 +106,8 @@ export default function ActivatePage() {
   const [txId, setTxId] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [payPhone, setPayPhone] = useState("");
+  const [editingPhone, setEditingPhone] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -79,6 +116,11 @@ export default function ActivatePage() {
   useEffect(() => {
     if (user?.isActivated) navigate("/dashboard");
   }, [user]);
+
+  // Pre-fill phone number from user profile
+  useEffect(() => {
+    if (user?.phone && !payPhone) setPayPhone(user.phone);
+  }, [user?.phone]);
 
   // Auto-slide
   useEffect(() => {
@@ -164,13 +206,17 @@ export default function ActivatePage() {
   }, [doPoll]);
 
   const handlePay = async () => {
+    if (!payPhone.trim()) {
+      toast({ title: "Numéro requis", description: "Veuillez renseigner votre numéro de téléphone.", variant: "destructive" });
+      return;
+    }
     setIsLoading(true);
     const token = localStorage.getItem(TOKEN_KEY);
     try {
       const res = await fetch(`${BASE}/api/swychr/initiate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ phoneNumber: payPhone.trim() }),
       });
       const data = await res.json() as {
         success: boolean;
@@ -221,6 +267,9 @@ export default function ActivatePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Scrolling ticker */}
+      <Ticker />
+
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -398,9 +447,57 @@ export default function ActivatePage() {
               </ol>
             </div>
 
+            {/* Numéro de téléphone confirmable */}
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Numéro de paiement Mobile Money</span>
+                </div>
+                {!editingPhone && (
+                  <button
+                    onClick={() => setEditingPhone(true)}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Modifier
+                  </button>
+                )}
+              </div>
+
+              {editingPhone ? (
+                <div className="space-y-2">
+                  <input
+                    type="tel"
+                    value={payPhone}
+                    onChange={e => setPayPhone(e.target.value)}
+                    placeholder="+225 07 00 00 00 00"
+                    className="w-full px-4 py-3 bg-muted/40 border border-primary rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-mono"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => setEditingPhone(false)}
+                    className="w-full py-2 text-xs bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors font-medium"
+                  >
+                    Confirmer ce numéro
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-muted/50 rounded-xl px-4 py-3 flex items-center gap-3">
+                  <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="font-mono text-sm font-semibold text-foreground tracking-wide">
+                    {payPhone || "—"}
+                  </span>
+                  <span className="ml-auto text-xs text-green-500 font-medium">✓ Confirmé</span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                Ce numéro sera pré-rempli sur la page de paiement AccountPE. Vous pourrez aussi le modifier directement sur la page de paiement.
+              </p>
+            </div>
+
             <button
               onClick={handlePay}
-              disabled={isLoading}
+              disabled={isLoading || editingPhone}
               className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25"
             >
               {isLoading ? (

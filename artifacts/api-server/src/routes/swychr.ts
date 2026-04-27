@@ -53,10 +53,13 @@ router.post("/swychr/initiate", authenticate, async (req, res): Promise<void> =>
     return;
   }
 
+  const { phoneNumber: customPhone } = req.body as { phoneNumber?: string };
+
   const transactionId = `TRIX-${Date.now()}-${user.id}`;
   const countryCode = COUNTRY_CODES[user.country] || "CM";
   const callbackUrl = getWebhookUrl();
-  const mobile = user.phone.replace(/\D/g, "");
+  // Utiliser le numéro fourni par l'utilisateur (modifié dans le formulaire) ou celui du profil
+  const mobile = (customPhone || user.phone).replace(/\D/g, "");
   const name = user.displayName || deriveDisplayName(user.email);
 
   req.log.info({ transactionId, callbackUrl, countryCode }, "[AccountPE] Initiating payment link");

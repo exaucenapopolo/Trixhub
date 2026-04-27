@@ -57,7 +57,13 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get("ref");
+    const urlRef = params.get("ref");
+    // Si un code parrain est dans l'URL, on le stocke en localStorage pour ne pas le perdre au rechargement
+    if (urlRef) {
+      localStorage.setItem("trixhub_referral", urlRef);
+    }
+    // On utilise le code de l'URL ou celui stocké en localStorage
+    const ref = urlRef || localStorage.getItem("trixhub_referral");
     if (ref) {
       setRefCode(ref);
       fetch(`${BASE}/api/auth/referrer/${ref}`)
@@ -93,6 +99,8 @@ export default function RegisterPage() {
         return;
       }
       login(data.token, data.user);
+      // Nettoyer le code parrain stocké après inscription réussie
+      localStorage.removeItem("trixhub_referral");
       toast({ title: "Bienvenue !", description: "Compte créé avec succès." });
       navigate("/activate");
     } catch {

@@ -1,13 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { Sun, Moon, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import { Sun, Moon, Eye, EyeOff, Mail, Lock, ArrowRight, Zap, AlertCircle } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
+
+const TICKER_ITEMS = [
+  "💰 Gagne jusqu'à 1 700 FCFA par filleul direct activé",
+  "📹 Regarde des vidéos et sois rémunéré immédiatement",
+  "✅ Réalise de petites tâches simples et sois payé",
+  "🌍 Réseau de membres dans 18 pays africains",
+  "📱 Tout depuis ton téléphone, partout et à tout moment",
+  "💳 Retrait via Orange Money, Wave, MTN, M-Pesa et plus",
+  "👥 Commissions sur 3 niveaux de parrainage",
+  "🚀 Activation unique 3 600 FCFA — Accès à vie à la plateforme",
+  "🎯 Missions rémunérées disponibles chaque jour",
+  "🔗 Partage ton lien unique et génère des revenus passifs",
+];
+
+function Ticker() {
+  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  return (
+    <div className="w-full overflow-hidden bg-primary py-2.5 relative">
+      <div className="flex gap-12 animate-marquee whitespace-nowrap">
+        {items.map((item, i) => (
+          <span key={i} className="text-primary-foreground text-sm font-medium flex-shrink-0">
+            {item} <span className="opacity-40 mx-2">•</span>
+          </span>
+        ))}
+      </div>
+      <style>{`
+        .animate-marquee {
+          animation: marquee 35s linear infinite;
+        }
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
@@ -19,6 +56,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [notActivated, setNotActivated] = useState(false);
+  const [loggedUser, setLoggedUser] = useState<{ displayName?: string } | null>(null);
+
+  useEffect(() => {
+    // If URL has ?activation=pending, show banner directly
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("activation") === "pending") setNotActivated(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +80,14 @@ export default function LoginPage() {
         return;
       }
       login(data.token, data.user);
-      toast({ title: "Connexion réussie", description: `Bon retour !` });
-      navigate(data.user?.isActivated ? "/dashboard" : "/activate");
+      if (data.user?.isActivated) {
+        toast({ title: "Connexion réussie", description: "Bon retour !" });
+        navigate("/dashboard");
+      } else {
+        // Account not activated → show in-page activation prompt
+        setLoggedUser(data.user);
+        setNotActivated(true);
+      }
     } catch {
       toast({ title: "Erreur réseau", description: "Impossible de se connecter. Réessayez.", variant: "destructive" });
     } finally {
@@ -46,6 +97,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+      {/* Scrolling ticker */}
+      <Ticker />
+
       {/* Top bar */}
       <div className="flex items-center justify-between p-4 lg:p-6">
         <Link href="/" className="flex items-center gap-2">
@@ -60,77 +114,137 @@ export default function LoginPage() {
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-              <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-10 w-10 rounded-xl object-contain" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Bon retour !</h1>
-            <p className="text-muted-foreground text-sm mt-1">Connectez-vous à votre compte TRIXHUB</p>
-          </div>
 
-          {/* Card */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Adresse e-mail</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="email" required value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="exemple@email.com"
-                    autoComplete="email"
-                    className="w-full pl-10 pr-4 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  />
+          {/* ── Compte non activé ── */}
+          {notActivated ? (
+            <div className="space-y-4">
+              {/* Alert card */}
+              <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-amber-500" />
                 </div>
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  Compte non activé
+                </h2>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {loggedUser?.displayName ? `Bonjour ${loggedUser.displayName},` : "Bonjour,"} ton compte est créé mais n'est pas encore activé.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Tu dois payer les <strong className="text-foreground">3 600 FCFA</strong> d'activation pour accéder au tableau de bord et commencer à gagner de l'argent.
+                </p>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-foreground">Mot de passe</label>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type={showPassword ? "text" : "password"} required value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="Votre mot de passe"
-                    autoComplete="current-password"
-                    className="w-full pl-10 pr-11 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-                  />
-                  <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+              {/* What you unlock */}
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Ce que tu débloqueras :</h3>
+                <ul className="space-y-2">
+                  {[
+                    { icon: "💰", text: "1 700 FCFA de commission par filleul direct" },
+                    { icon: "📊", text: "Tableau de bord avec suivi de tes gains" },
+                    { icon: "🎯", text: "Missions quotidiennes rémunérées" },
+                    { icon: "💳", text: "Retrait via Mobile Money" },
+                    { icon: "🔗", text: "Lien de parrainage actif" },
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                      <span className="text-base">{item.icon}</span>
+                      <span>{item.text}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
+
+              {/* CTA button */}
+              <button
+                onClick={() => navigate("/activate")}
+                className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25"
+              >
+                <Zap className="w-5 h-5" />
+                Activer mon compte — 3 600 FCFA
+              </button>
 
               <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98] text-sm flex items-center justify-center gap-2 mt-2"
+                onClick={() => setNotActivated(false)}
+                className="w-full py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
               >
-                {isLoading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
-                    Connexion...
-                  </>
-                ) : (
-                  <>
-                    Se connecter
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
+                ← Se connecter avec un autre compte
               </button>
-            </form>
-          </div>
+            </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Pas encore membre ?{" "}
-            <Link href="/" className="text-primary font-semibold hover:underline">
-              Créer un compte
-            </Link>
-          </p>
+          ) : (
+
+            /* ── Formulaire de connexion ── */
+            <>
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+                  <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-10 w-10 rounded-xl object-contain" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground">Bon retour !</h1>
+                <p className="text-muted-foreground text-sm mt-1">Connectez-vous à votre compte TRIXHUB</p>
+              </div>
+
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Adresse e-mail</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="email" required value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="exemple@email.com"
+                        autoComplete="email"
+                        className="w-full pl-10 pr-4 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-sm font-medium text-foreground">Mot de passe</label>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type={showPassword ? "text" : "password"} required value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="Votre mot de passe"
+                        autoComplete="current-password"
+                        className="w-full pl-10 pr-11 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                      />
+                      <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98] text-sm flex items-center justify-center gap-2 mt-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                        Connexion...
+                      </>
+                    ) : (
+                      <>
+                        Se connecter
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                Pas encore membre ?{" "}
+                <Link href="/" className="text-primary font-semibold hover:underline">
+                  Créer un compte
+                </Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
