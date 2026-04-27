@@ -4,19 +4,30 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Sun, Moon, Eye, EyeOff, Mail, Lock, ArrowRight, Zap, AlertCircle } from "lucide-react";
+import PartnersFooter from "@/components/PartnersFooter";
+import JoinCommunityButton from "@/components/JoinCommunityButton";
+import ImageLightbox from "@/components/ImageLightbox";
+import { formatLocalWithFcfa, formatLocal } from "@/lib/currency";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
-// 3 vraies images d'illustration affichées au-dessus du logo (carrousel automatique)
+// 4 vraies images d'illustration affichées au-dessus du logo (carrousel automatique).
+// Les 3 premières viennent du jeu d'images de la page d'activation, la 4ème est ajoutée
+// ici pour compléter et donner plus de visuels à l'utilisateur.
 const LOGIN_IMAGES = [
   "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/file_000000002ab47243b5d65bb309e5bb77.png",
+  "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/Noir%20et%20Jaune%20Dessin%C3%A9%20%C3%A0%20la%20main%20Voyage%20Tutoriel%20%20Comment%20faire%20Instagram%20St_20260426_195825_0000.png",
   "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/IMG-20260426-WA0001.jpg",
   "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/Photo/TRIXHUB/Jaune%20Portraits%20Enseignant%20%C3%89ducation%20Comment%20Podcast%20Couverture_20260426_194410_0000.png",
 ];
 
-function IllustrationCarousel() {
+interface IllustrationCarouselProps {
+  onImageClick: (src: string) => void;
+}
+
+function IllustrationCarousel({ onImageClick }: IllustrationCarouselProps) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -26,17 +37,26 @@ function IllustrationCarousel() {
 
   return (
     <div className="mb-6">
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-muted/30 aspect-[4/5]">
+      <button
+        type="button"
+        onClick={() => onImageClick(LOGIN_IMAGES[current])}
+        aria-label="Voir l'image en grand"
+        className="block w-full relative overflow-hidden rounded-2xl border border-border bg-muted/30 aspect-[4/5] cursor-zoom-in group"
+      >
         {LOGIN_IMAGES.map((src, i) => (
           <img
             key={i}
             src={src}
             alt={`Illustration ${i + 1}`}
             loading={i === 0 ? "eager" : "lazy"}
+            referrerPolicy="no-referrer"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === current ? "opacity-100" : "opacity-0"}`}
           />
         ))}
-      </div>
+        <span className="absolute bottom-2 right-2 bg-black/55 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+          Cliquer pour agrandir
+        </span>
+      </button>
       <div className="flex justify-center gap-1.5 mt-3">
         {LOGIN_IMAGES.map((_, i) => (
           <button
@@ -62,7 +82,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [notActivated, setNotActivated] = useState(false);
-  const [loggedUser, setLoggedUser] = useState<{ displayName?: string } | null>(null);
+  const [loggedUser, setLoggedUser] = useState<{ displayName?: string; country?: string } | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  // Si l'utilisateur est connecté (compte non activé), on convertit dans sa devise locale
+  const userCountry = loggedUser?.country;
+  const activationPrice = formatLocalWithFcfa(3600, userCountry);
+  const commissionN1Local = formatLocal(1700, userCountry);
 
   useEffect(() => {
     // Si l'URL contient ?activation=pending, on affiche directement la bannière d'activation
@@ -90,7 +116,8 @@ export default function LoginPage() {
         navigate("/dashboard");
       } else {
         // Compte créé mais pas encore activé : on affiche la carte d'invitation à l'activation
-        setLoggedUser(data.user);
+        // On garde aussi le pays pour pouvoir afficher les montants en devise locale
+        setLoggedUser({ displayName: data.user?.displayName, country: data.user?.country });
         setNotActivated(true);
       }
     } catch {
@@ -132,7 +159,9 @@ export default function LoginPage() {
                   {loggedUser?.displayName ? `Bonjour ${loggedUser.displayName},` : "Bonjour,"} ton compte est créé mais n'est pas encore activé.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Tu dois payer les <strong className="text-foreground">3 600 FCFA</strong> d'activation pour accéder au tableau de bord et commencer à gagner de l'argent.
+                  Tu dois payer les <strong className="text-foreground">{activationPrice.primary}</strong>
+                  {activationPrice.secondary && <span className="text-xs text-muted-foreground"> ({activationPrice.secondary})</span>}
+                  {" "}d'activation pour accéder au tableau de bord et commencer à gagner de l'argent.
                 </p>
               </div>
 
@@ -141,7 +170,7 @@ export default function LoginPage() {
                 <h3 className="text-sm font-semibold text-foreground mb-3">Ce que tu débloqueras :</h3>
                 <ul className="space-y-2">
                   {[
-                    { icon: "💰", text: "1 700 FCFA de commission par filleul direct" },
+                    { icon: "💰", text: `${commissionN1Local} de commission par filleul direct` },
                     { icon: "📊", text: "Tableau de bord avec suivi de tes gains" },
                     { icon: "🎯", text: "Missions quotidiennes rémunérées" },
                     { icon: "💳", text: "Retrait via Mobile Money" },
@@ -161,8 +190,11 @@ export default function LoginPage() {
                 className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25"
               >
                 <Zap className="w-5 h-5" />
-                Activer mon compte — 3 600 FCFA
+                Activer mon compte — {activationPrice.primary}
               </button>
+
+              {/* Bouton communauté */}
+              <JoinCommunityButton />
 
               <button
                 onClick={() => setNotActivated(false)}
@@ -176,8 +208,8 @@ export default function LoginPage() {
 
             /* ── Formulaire de connexion ── */
             <>
-              {/* Carrousel d'illustrations au-dessus du logo */}
-              <IllustrationCarousel />
+              {/* Carrousel d'illustrations au-dessus du logo (cliquable pour agrandir) */}
+              <IllustrationCarousel onImageClick={setLightboxSrc} />
 
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
@@ -248,10 +280,25 @@ export default function LoginPage() {
                   Créer un compte
                 </Link>
               </p>
+
+              {/* Bouton communauté WhatsApp */}
+              <div className="mt-6">
+                <JoinCommunityButton />
+              </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Pied de page partenaires */}
+      <PartnersFooter />
+
+      {/* Modale image en grand */}
+      <ImageLightbox
+        src={lightboxSrc}
+        alt="Illustration TRIXHUB"
+        onClose={() => setLightboxSrc(null)}
+      />
     </div>
   );
 }

@@ -4,11 +4,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, ChevronDown } from "lucide-react";
+import PartnersFooter from "@/components/PartnersFooter";
+import JoinCommunityButton from "@/components/JoinCommunityButton";
+import { formatLocal } from "@/lib/currency";
+
+const SSG_URL = "https://socialsuccesgroup.socialboosthorizon.com/index.html";
+const SBH_URL = "https://socialboosthorizon.com";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
-// Liste des 18 pays africains réellement supportés par AccountPE (Swychr Connect)
-// Vérifiée en direct via leur API /api/payout/payout_methods
+// Liste des 18 pays africains réellement supportés par notre partenaire de paiement.
+// Vérifiée en direct via l'API publique des méthodes de paiement.
 const AFRICAN_COUNTRIES = [
   { code: "BJ", name: "Bénin", flag: "🇧🇯", dial: "+229" },
   { code: "BF", name: "Burkina Faso", flag: "🇧🇫", dial: "+226" },
@@ -163,7 +169,7 @@ export default function RegisterPage() {
 
           <div className="space-y-3">
             {[
-              { icon: "💰", title: "Gagne jusqu'à 1 700 FCFA", desc: "Par filleul qui active son compte" },
+              { icon: "💰", title: `Gagne jusqu'à ${formatLocal(1700, country)}`, desc: "Par filleul qui active son compte" },
               { icon: "🌍", title: "18 pays africains couverts", desc: "Rejoins notre réseau continental" },
               { icon: "📱", title: "100% sur mobile", desc: "Orange Money, Wave, MTN et plus" },
             ].map((item, i) => (
@@ -179,17 +185,29 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative z-10 border-t border-white/10 pt-6">
-          <p className="text-white/40 text-xs mb-3 uppercase tracking-wider">Un projet de</p>
+          <p className="text-white/40 text-xs mb-3 uppercase tracking-wider">Un projet de Social Succès Group, en partenariat avec</p>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-              <img src={SSG_LOGO} alt="Social Succès Group" className="h-7 w-7 rounded-full object-cover" />
-              <p className="text-white text-xs font-semibold">Social Succès Group</p>
-            </div>
+            <a
+              href={SSG_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2 bg-white/10 hover:bg-white/15 rounded-lg px-3 py-2 transition-colors"
+              aria-label="Visiter le site de Social Succès Group (nouvel onglet)"
+            >
+              <img src={SSG_LOGO} alt="Social Succès Group" className="h-7 w-7 rounded-full object-cover" referrerPolicy="no-referrer" />
+              <p className="text-white text-xs font-semibold group-hover:underline">Social Succès Group</p>
+            </a>
             <span className="text-white/30 text-sm">×</span>
-            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-              <img src={SBH_LOGO} alt="Social Boost Horizon" className="h-7 w-7 rounded-full object-cover" />
-              <p className="text-white text-xs font-semibold">Social Boost Horizon</p>
-            </div>
+            <a
+              href={SBH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2 bg-white/10 hover:bg-white/15 rounded-lg px-3 py-2 transition-colors"
+              aria-label="Visiter le site de Social Boost Horizon (nouvel onglet)"
+            >
+              <img src={SBH_LOGO} alt="Social Boost Horizon" className="h-7 w-7 rounded-full object-cover" referrerPolicy="no-referrer" />
+              <p className="text-white text-xs font-semibold group-hover:underline">Social Boost Horizon</p>
+            </a>
           </div>
         </div>
       </div>
@@ -364,19 +382,16 @@ export default function RegisterPage() {
               </p>
             </form>
 
-            <div className="lg:hidden mt-8 pt-6 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center mb-3">Un projet de</p>
-              <div className="flex items-center justify-center gap-4 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <img src={SSG_LOGO} alt="SSG" className="h-6 w-6 rounded-full object-cover" />
-                  <span className="text-xs text-muted-foreground font-medium">Social Succès Group</span>
-                </div>
-                <span className="text-muted-foreground/30">×</span>
-                <div className="flex items-center gap-1.5">
-                  <img src={SBH_LOGO} alt="SBH" className="h-6 w-6 rounded-full object-cover" />
-                  <span className="text-xs text-muted-foreground font-medium">Social Boost Horizon</span>
-                </div>
-              </div>
+            {/* Bouton communauté WhatsApp (visible sur tous écrans, juste après le formulaire) */}
+            <div className="mt-6">
+              <JoinCommunityButton />
+            </div>
+
+            {/* Footer mobile : sur les petits écrans, on remplace l'ancien footer mobile par
+                le PartnersFooter standard (logos cliquables vers SSG / SBH). Le panneau gauche
+                desktop garde son propre rendu. */}
+            <div className="lg:hidden mt-8">
+              <PartnersFooter />
             </div>
           </div>
         </div>

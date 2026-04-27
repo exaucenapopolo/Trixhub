@@ -12,7 +12,7 @@ export const CURRENCY_RATES: Record<string, number> = {
   MAD: 0.0168,
   TND: 0.00512,
   DZD: 0.224,
-  CDF: 4.73,
+  CDF: 4.139,
   XOF: 1,
   XAF: 1,
   ZAR: 0.0310,

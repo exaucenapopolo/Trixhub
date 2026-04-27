@@ -7,22 +7,29 @@ import {
   Globe, X, Star, Loader2, Clock, ExternalLink, RefreshCw,
   Phone, Pencil, Briefcase, Share2, GraduationCap, Gift, Sparkles, Wifi, Tv, Palette
 } from "lucide-react";
+import PartnersFooter from "@/components/PartnersFooter";
+import JoinCommunityButton from "@/components/JoinCommunityButton";
+import ImageLightbox from "@/components/ImageLightbox";
+import { formatLocalWithFcfa, formatLocal } from "@/lib/currency";
 
-const TICKER_ITEMS = [
-  "💰 Gagne jusqu'à 1 700 FCFA par filleul direct activé",
-  "📹 Regarde des vidéos et sois rémunéré immédiatement",
-  "✅ Réalise de petites tâches simples et sois payé",
-  "🌍 Réseau de membres dans 18 pays africains",
-  "📱 Tout depuis ton téléphone, partout et à tout moment",
-  "💳 Retrait via Orange Money, Wave, MTN, M-Pesa et plus",
-  "👥 Commissions sur 3 niveaux de parrainage",
-  "🚀 Activation unique 3 600 FCFA — Accès à vie à la plateforme",
-  "🎯 Missions rémunérées disponibles chaque jour",
-  "🔗 Partage ton lien unique et génère des revenus passifs",
-];
+function buildTickerItems(country?: string | null) {
+  return [
+    `💰 Gagne jusqu'à ${formatLocal(1700, country)} par filleul direct activé`,
+    "📹 Regarde des vidéos et sois rémunéré immédiatement",
+    "✅ Réalise de petites tâches simples et sois payé",
+    "🌍 Réseau de membres dans 18 pays africains",
+    "📱 Tout depuis ton téléphone, partout et à tout moment",
+    "💳 Retrait via Orange Money, Wave, MTN, M-Pesa et plus",
+    "👥 Commissions sur 3 niveaux de parrainage",
+    `🚀 Activation unique ${formatLocal(3600, country)} — Accès à vie à la plateforme`,
+    "🎯 Missions rémunérées disponibles chaque jour",
+    "🔗 Partage ton lien unique et génère des revenus passifs",
+  ];
+}
 
-function Ticker() {
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+function Ticker({ country }: { country?: string | null }) {
+  const base = buildTickerItems(country);
+  const items = [...base, ...base];
   return (
     <div className="w-full overflow-hidden bg-primary py-2.5 relative">
       <div className="flex gap-12 whitespace-nowrap" style={{ animation: "ticker-slide 38s linear infinite" }}>
@@ -48,8 +55,8 @@ const PAYMENT_TX_KEY = "trixhub_payment_tx";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
-// Liste des 18 pays africains réellement supportés par AccountPE (Swychr Connect)
-// Vérifiée en direct via leur API /api/payout/payout_methods
+// Liste des 18 pays africains réellement supportés par notre partenaire de paiement.
+// Vérifiée en direct via leur API de méthodes de paiement.
 const AFRICAN_COUNTRIES = [
   { code: "BJ", name: "Bénin", flag: "🇧🇯", method: "MTN / Moov Money", dial: "+229" },
   { code: "BF", name: "Burkina Faso", flag: "🇧🇫", method: "Orange Money / Moov", dial: "+226" },
@@ -93,8 +100,8 @@ const FORMATIONS_PREVIEW = [
 const BONUS_LIST = [
   {
     icon: Tv,
-    title: "Compte Canal+ gratuit",
-    desc: "Profite d'un compte Canal+ que tu peux utiliser toi-même OU revendre à tes propres clients au prix que tu fixes.",
+    title: "Abonnement à TOUT Canal+ gratuitement",
+    desc: "Reçois un abonnement complet à toutes les chaînes Canal+ (Canal+ Premium, Sport, Cinéma, Séries, etc.) sans rien payer chaque mois. Tu peux en profiter toi-même OU le revendre à tes propres clients au prix que tu fixes.",
     color: "text-red-500",
     bg: "bg-red-500/10",
   },
@@ -129,6 +136,13 @@ export default function ActivatePage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [payPhone, setPayPhone] = useState("");
   const [editingPhone, setEditingPhone] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  // Conversion automatique du prix d'activation 3 600 FCFA en devise locale
+  const priceDisplay = formatLocalWithFcfa(3600, user?.country);
+  const commissionN1 = formatLocal(1700, user?.country);
+  const commissionN2 = formatLocal(700, user?.country);
+  const commissionN3 = formatLocal(300, user?.country);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -289,7 +303,7 @@ export default function ActivatePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Scrolling ticker */}
-      <Ticker />
+      <Ticker country={user?.country} />
 
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -328,19 +342,28 @@ export default function ActivatePage() {
                 <p className="text-muted-foreground mt-2">Une seule activation pour débloquer tout le potentiel de la plateforme</p>
               </div>
 
-              {/* Carrousel d'images réelles (pas d'overlay texte — les images parlent d'elles-mêmes) */}
+              {/* Carrousel d'images réelles (cliquables pour voir l'image en grand) */}
               <div className="relative">
-                <div className="relative overflow-hidden rounded-2xl bg-muted/30 border border-border aspect-[4/5] sm:aspect-[3/4]">
+                <button
+                  type="button"
+                  onClick={() => setLightboxSrc(IMAGE_SLIDES[currentSlide])}
+                  aria-label="Voir l'image en grand"
+                  className="block w-full relative overflow-hidden rounded-2xl bg-muted/30 border border-border aspect-[4/5] sm:aspect-[3/4] cursor-zoom-in group"
+                >
                   {IMAGE_SLIDES.map((src, i) => (
                     <img
                       key={i}
                       src={src}
                       alt={`Illustration TRIXHUB ${i + 1}`}
                       loading={i === 0 ? "eager" : "lazy"}
+                      referrerPolicy="no-referrer"
                       className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === currentSlide ? "opacity-100" : "opacity-0"}`}
                     />
                   ))}
-                </div>
+                  <span className="absolute bottom-2 right-2 bg-black/55 backdrop-blur-sm text-white text-[10px] font-medium px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                    Cliquer pour agrandir
+                  </span>
+                </button>
                 <div className="flex justify-center gap-2 mt-3">
                   {IMAGE_SLIDES.map((_, i) => (
                     <button
@@ -358,7 +381,7 @@ export default function ActivatePage() {
                 <h2 className="text-lg font-bold text-foreground mb-1 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary" /> Pourquoi activer mon compte ?
                 </h2>
-                <p className="text-xs text-muted-foreground mb-5">Voici tout ce que tu débloques avec ton activation à 3 600 FCFA :</p>
+                <p className="text-xs text-muted-foreground mb-5">Voici tout ce que tu débloques avec ton activation à {priceDisplay.primary} :</p>
 
                 {/* 1. Missions rémunérées */}
                 <div className="space-y-4">
@@ -382,7 +405,7 @@ export default function ActivatePage() {
                     <div className="min-w-0">
                       <h3 className="font-semibold text-foreground text-sm">Accès au parrainage</h3>
                       <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                        Lien de parrainage unique, commissions automatiques sur 3 niveaux : <strong className="text-foreground">1 700 / 700 / 300 FCFA</strong> par filleul activé.
+                        Lien de parrainage unique, commissions automatiques sur 3 niveaux : <strong className="text-foreground">{commissionN1} / {commissionN2} / {commissionN3}</strong> par filleul activé.
                       </p>
                     </div>
                   </div>
@@ -500,14 +523,16 @@ export default function ActivatePage() {
                   </span>
                 </div>
                 <p className="text-muted-foreground text-sm">Frais d'activation unique</p>
-                <div className="flex items-baseline gap-2 my-3">
-                  <span className="text-4xl font-bold text-foreground font-mono">3 600</span>
-                  <span className="text-xl font-semibold text-muted-foreground">FCFA</span>
+                <div className="my-3">
+                  <p className="text-4xl font-bold text-foreground font-mono leading-tight break-all">{priceDisplay.primary}</p>
+                  {priceDisplay.secondary && (
+                    <p className="text-xs text-muted-foreground mt-1">{priceDisplay.secondary}</p>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground mb-4">Paiement unique — accès permanent à toutes les fonctionnalités</p>
                 <div className="flex items-center gap-2 p-3 bg-primary/8 rounded-xl">
                   <TrendingUp className="w-4 h-4 text-primary flex-shrink-0" />
-                  <p className="text-xs text-foreground">Récupère tes 3 600 FCFA avec seulement <strong>2 filleuls actifs</strong> (2 × 1 700 = 3 400 FCFA), ou en réalisant tes premières missions rémunérées.</p>
+                  <p className="text-xs text-foreground">Récupère ton activation avec seulement <strong>2 filleuls actifs</strong> (2 × {commissionN1}), ou en réalisant tes premières missions rémunérées.</p>
                 </div>
               </div>
 
@@ -538,6 +563,14 @@ export default function ActivatePage() {
               <p className="text-center text-xs text-muted-foreground">
                 Paiement sécurisé via notre partenaire · Mobile Money · Toute l'Afrique
               </p>
+
+              {/* Bouton communauté WhatsApp — accessible avant et après activation */}
+              <div className="pt-2 space-y-2">
+                <p className="text-center text-xs text-muted-foreground">
+                  Une question ? Rejoins-nous :
+                </p>
+                <JoinCommunityButton />
+              </div>
             </div>
           </div>
         )}
@@ -554,19 +587,22 @@ export default function ActivatePage() {
 
             {/* Résumé de la commande */}
             <div className="bg-card border-2 border-primary/30 rounded-2xl p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
+              <div className="flex items-center justify-between mb-4 gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm text-muted-foreground">Activation compte TRIXHUB</p>
-                  <p className="text-3xl font-bold text-foreground font-mono mt-1">3 600 FCFA</p>
+                  <p className="text-3xl font-bold text-foreground font-mono mt-1 break-all">{priceDisplay.primary}</p>
+                  {priceDisplay.secondary && (
+                    <p className="text-xs text-muted-foreground mt-1">{priceDisplay.secondary}</p>
+                  )}
                 </div>
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                   <Zap className="w-7 h-7 text-primary" />
                 </div>
               </div>
               <div className="space-y-2 border-t border-border pt-4">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm gap-2">
                   <span className="text-muted-foreground">Activation compte</span>
-                  <span className="font-medium text-foreground">3 600 FCFA</span>
+                  <span className="font-medium text-foreground text-right break-all">{priceDisplay.primary}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Accès parrainage</span>
@@ -646,13 +682,21 @@ export default function ActivatePage() {
               {isLoading ? (
                 <><Loader2 className="w-5 h-5 animate-spin" /> Connexion en cours...</>
               ) : (
-                <><ExternalLink className="w-5 h-5" /> Payer 3 600 FCFA en sécurité</>
+                <><ExternalLink className="w-5 h-5" /> Payer {priceDisplay.primary} en sécurité</>
               )}
             </button>
 
             <p className="text-center text-xs text-muted-foreground mt-3">
               Paiement 100% sécurisé par notre partenaire · Orange Money, MTN, Wave et plus
             </p>
+
+            {/* Bouton communauté WhatsApp */}
+            <div className="mt-6 pt-6 border-t border-border space-y-2">
+              <p className="text-center text-xs text-muted-foreground">
+                Une question avant de payer ?
+              </p>
+              <JoinCommunityButton />
+            </div>
           </div>
         )}
 
@@ -666,7 +710,7 @@ export default function ActivatePage() {
 
             <h2 className="text-2xl font-bold text-foreground mb-2">Vérification du paiement</h2>
             <p className="text-muted-foreground mb-2">
-              Nous vérifions automatiquement ton paiement de <strong>3 600 FCFA</strong>
+              Nous vérifions automatiquement ton paiement de <strong>{priceDisplay.primary}</strong>
             </p>
             <p className="text-sm text-muted-foreground mb-6">
               Si tu viens de terminer ton paiement, la confirmation arrive dans quelques secondes.
@@ -732,12 +776,12 @@ export default function ActivatePage() {
             </p>
             <div className="grid grid-cols-3 gap-4 mb-8">
               {[
-                { label: "Commission N1", value: "1 700 FCFA", color: "text-green-500" },
-                { label: "Commission N2", value: "700 FCFA", color: "text-blue-500" },
-                { label: "Commission N3", value: "300 FCFA", color: "text-purple-500" },
+                { label: "Commission N1", value: commissionN1, color: "text-green-500" },
+                { label: "Commission N2", value: commissionN2, color: "text-blue-500" },
+                { label: "Commission N3", value: commissionN3, color: "text-purple-500" },
               ].map((c, i) => (
                 <div key={i} className="bg-card border border-border rounded-xl p-3">
-                  <p className={`text-lg font-bold ${c.color} font-mono`}>{c.value}</p>
+                  <p className={`text-base sm:text-lg font-bold ${c.color} font-mono break-all`}>{c.value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{c.label}</p>
                 </div>
               ))}
@@ -779,6 +823,16 @@ export default function ActivatePage() {
           </div>
         )}
       </div>
+
+      {/* Pied de page partenaires */}
+      <PartnersFooter />
+
+      {/* Modale image en grand (cliquer sur une illustration du carrousel) */}
+      <ImageLightbox
+        src={lightboxSrc}
+        alt="Illustration TRIXHUB"
+        onClose={() => setLightboxSrc(null)}
+      />
     </div>
   );
 }

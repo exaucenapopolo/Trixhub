@@ -9,6 +9,8 @@ import {
   Menu, X, Sun, Moon, ChevronDown, TrendingUp, PlayCircle, BookOpen, Share2, Compass
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PartnersFooter from "@/components/PartnersFooter";
+import { formatLocal } from "@/lib/currency";
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -29,12 +31,14 @@ const missionItems = [
   { label: "Mission Découverte", href: "/tasks", icon: Compass, color: "text-purple-500" },
 ];
 
-const levelItems = [
-  { label: "Toute l'équipe", href: "/team" },
-  { label: "Niveau 1 — 1 700 FCFA", href: "/team/level/1" },
-  { label: "Niveau 2 — 700 FCFA", href: "/team/level/2" },
-  { label: "Niveau 3 — 300 FCFA", href: "/team/level/3" },
-];
+function buildLevelItems(country: string | undefined) {
+  return [
+    { label: "Toute l'équipe", href: "/team" },
+    { label: `Niveau 1 — ${formatLocal(1700, country)}`, href: "/team/level/1" },
+    { label: `Niveau 2 — ${formatLocal(700, country)}`, href: "/team/level/2" },
+    { label: `Niveau 3 — ${formatLocal(300, country)}`, href: "/team/level/3" },
+  ];
+}
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -48,6 +52,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const displayName = user?.displayName || user?.email?.split("@")[0] || "Membre";
   const initials = displayName.charAt(0).toUpperCase();
+  const levelItems = buildLevelItems(user?.country);
 
   const handleThemeToggle = useCallback(async () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -229,8 +234,12 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 lg:p-6">
+            {children}
+          </div>
+          {/* Pied de page partenaires (visible sur toutes les pages connectées) */}
+          <PartnersFooter />
         </main>
       </div>
     </div>
