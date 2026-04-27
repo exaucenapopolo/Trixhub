@@ -1,22 +1,37 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: TRIXHUB Affiliation Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: referrals
+    description: Referral system
+  - name: balances
+    description: Balance management
+  - name: withdrawals
+    description: Withdrawal requests
+  - name: tasks
+    description: Tasks and missions
+  - name: config
+    description: Platform configuration
+  - name: currency
+    description: Currency conversion
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +39,347 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/activate:
+    post:
+      operationId: activateAccount
+      tags: [auth]
+      summary: Activate user account (3600 FCFA)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateBody"
+      responses:
+        "200":
+          description: Account activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me:
+    patch:
+      operationId: updateProfile
+      tags: [users]
+      summary: Update profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/me/dashboard:
+    get:
+      operationId: getDashboard
+      tags: [users]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /referrals/team:
+    get:
+      operationId: getTeam
+      tags: [referrals]
+      summary: Get referral team
+      responses:
+        "200":
+          description: Team list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /referrals/level/{level}:
+    get:
+      operationId: getReferralsByLevel
+      tags: [referrals]
+      summary: Get referrals by level
+      parameters:
+        - name: level
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Referrals at level
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralLevelResponse"
+
+  /balances:
+    get:
+      operationId: getBalances
+      tags: [balances]
+      summary: Get all balances
+      responses:
+        "200":
+          description: Balances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceSummary"
+
+  /withdrawals:
+    get:
+      operationId: listWithdrawals
+      tags: [withdrawals]
+      summary: List withdrawal requests
+      responses:
+        "200":
+          description: Withdrawal list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+    post:
+      operationId: requestWithdrawal
+      tags: [withdrawals]
+      summary: Request withdrawal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalBody"
+      responses:
+        "201":
+          description: Withdrawal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks and missions
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+
+  /tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      summary: Mark task as complete
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /config/platform:
+    get:
+      operationId: getPlatformConfig
+      tags: [config]
+      summary: Get platform config and commission rates
+      responses:
+        "200":
+          description: Platform config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformConfig"
+
+  /currency/rates:
+    get:
+      operationId: getCurrencyRates
+      tags: [currency]
+      summary: Get currency exchange rates vs FCFA
+      responses:
+        "200":
+          description: Currency rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrencyRates"
+
+  /users/me/preferred-currency:
+    patch:
+      operationId: updatePreferredCurrency
+      tags: [users]
+      summary: Update preferred currency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCurrencyBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /referrals/activity:
+    get:
+      operationId: getReferralActivity
+      tags: [referrals]
+      summary: Get recent referral activity feed
+      responses:
+        "200":
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +387,325 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]
+
+    RegisterBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        country:
+          type: string
+        password:
+          type: string
+        referralCode:
+          type: ["string", "null"]
+      required: [firstName, lastName, email, phone, country, password]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+
+    ActivateBody:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+        paymentReference:
+          type: string
+        currency:
+          type: string
+      required: [paymentMethod, paymentReference]
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+
+    UpdateCurrencyBody:
+      type: object
+      properties:
+        currency:
+          type: string
+      required: [currency]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        country:
+          type: string
+        isActivated:
+          type: boolean
+        referralCode:
+          type: string
+        referredByCode:
+          type: ["string", "null"]
+        preferredCurrency:
+          type: string
+        createdAt:
+          type: string
+      required: [id, firstName, lastName, email, phone, country, isActivated, referralCode, preferredCurrency, createdAt]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required: [user, token]
+
+    Dashboard:
+      type: object
+      properties:
+        totalBalance:
+          type: number
+        referralBalance:
+          type: number
+        taskBalance:
+          type: number
+        withdrawnAmount:
+          type: number
+        spentAmount:
+          type: number
+        inactiveBalance:
+          type: number
+        totalReferrals:
+          type: integer
+        activeReferrals:
+          type: integer
+        inactiveReferrals:
+          type: integer
+        level1Count:
+          type: integer
+        level2Count:
+          type: integer
+        level3Count:
+          type: integer
+        pendingWithdrawals:
+          type: integer
+        currency:
+          type: string
+        exchangeRate:
+          type: number
+      required: [totalBalance, referralBalance, taskBalance, withdrawnAmount, spentAmount, inactiveBalance, totalReferrals, activeReferrals, inactiveReferrals, level1Count, level2Count, level3Count, pendingWithdrawals, currency, exchangeRate]
+
+    ReferralUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        country:
+          type: string
+        isActivated:
+          type: boolean
+        joinedAt:
+          type: string
+        level:
+          type: integer
+      required: [id, firstName, lastName, country, isActivated, joinedAt, level]
+
+    TeamResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        inactive:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReferralUser"
+      required: [total, active, inactive, members]
+
+    ReferralLevelResponse:
+      type: object
+      properties:
+        level:
+          type: integer
+        commission:
+          type: number
+        total:
+          type: integer
+        active:
+          type: integer
+        inactive:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReferralUser"
+      required: [level, commission, total, active, inactive, members]
+
+    BalanceSummary:
+      type: object
+      properties:
+        totalBalance:
+          type: number
+        referralBalance:
+          type: number
+        taskBalance:
+          type: number
+        inactiveBalance:
+          type: number
+        withdrawnAmount:
+          type: number
+        spentAmount:
+          type: number
+        minimumWithdrawal:
+          type: number
+        currency:
+          type: string
+        exchangeRate:
+          type: number
+      required: [totalBalance, referralBalance, taskBalance, inactiveBalance, withdrawnAmount, spentAmount, minimumWithdrawal, currency, exchangeRate]
+
+    WithdrawalBody:
+      type: object
+      properties:
+        amount:
+          type: number
+        method:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+      required: [amount, method, accountNumber, accountName]
+
+    Withdrawal:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+        method:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+        status:
+          type: string
+        requestedAt:
+          type: string
+        processedAt:
+          type: ["string", "null"]
+      required: [id, amount, method, accountNumber, accountName, status, requestedAt]
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        reward:
+          type: number
+        type:
+          type: string
+        isCompleted:
+          type: boolean
+        completedAt:
+          type: ["string", "null"]
+        url:
+          type: ["string", "null"]
+      required: [id, title, description, reward, type, isCompleted]
+
+    PlatformConfig:
+      type: object
+      properties:
+        activationFee:
+          type: number
+        level1Commission:
+          type: number
+        level2Commission:
+          type: number
+        level3Commission:
+          type: number
+        minimumWithdrawal:
+          type: number
+        currency:
+          type: string
+      required: [activationFee, level1Commission, level2Commission, level3Commission, minimumWithdrawal, currency]
+
+    CurrencyRates:
+      type: object
+      properties:
+        baseCurrency:
+          type: string
+        rates:
+          type: object
+          additionalProperties:
+            type: number
+        updatedAt:
+          type: string
+      required: [baseCurrency, rates, updatedAt]
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        message:
+          type: string
+        amount:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+      required: [id, type, message, createdAt]

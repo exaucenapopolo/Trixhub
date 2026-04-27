@@ -1,0 +1,37 @@
+export const CURRENCY_RATES: Record<string, number> = {
+  FCFA: 1,
+  EUR: 0.00152,
+  USD: 0.00165,
+  GBP: 0.00130,
+  CAD: 0.00226,
+  CHF: 0.00148,
+  JPY: 0.248,
+  NGN: 2.72,
+  GHS: 0.0248,
+  KES: 0.213,
+  MAD: 0.0168,
+  TND: 0.00512,
+  DZD: 0.224,
+  CDF: 4.73,
+  XOF: 1,
+  XAF: 1,
+  ZAR: 0.0310,
+  EGP: 0.0817,
+  ETB: 0.201,
+  TZS: 4.27,
+  UGX: 6.13,
+  RWF: 2.24,
+  BIF: 4.72,
+  MXN: 0.0325,
+  BRL: 0.00913,
+  ARS: 1.92,
+  INR: 0.138,
+  CNY: 0.0120,
+  AED: 0.00606,
+  SAR: 0.00619,
+  QAR: 0.00600,
+};
+
+export function getRates(): Record<string, number> {
+  return { ...CURRENCY_RATES };
+}
