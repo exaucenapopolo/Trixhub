@@ -1,30 +1,21 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: TRIXHUB Affiliation Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: auth
-    description: Authentication
   - name: users
-    description: User management
   - name: referrals
-    description: Referral system
   - name: balances
-    description: Balance management
   - name: withdrawals
-    description: Withdrawal requests
   - name: tasks
-    description: Tasks and missions
   - name: config
-    description: Platform configuration
   - name: currency
-    description: Currency conversion
 
 paths:
   /healthz:
@@ -65,7 +56,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "409":
-          description: Email already exists
+          description: Email or phone already exists
           content:
             application/json:
               schema:
@@ -121,18 +112,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
   /auth/activate:
     post:
       operationId: activateAccount
       tags: [auth]
-      summary: Activate user account (3600 FCFA)
+      summary: Activate account
       requestBody:
         required: true
         content:
@@ -141,13 +126,32 @@ paths:
               $ref: "#/components/schemas/ActivateBody"
       responses:
         "200":
-          description: Account activated
+          description: Activated
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
-        "400":
-          description: Bad request
+
+  /auth/referrer/{code}:
+    get:
+      operationId: getReferrer
+      tags: [auth]
+      summary: Get referrer info by referral code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Referrer info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferrerInfo"
+        "404":
+          description: Not found
           content:
             application/json:
               schema:
@@ -176,7 +180,7 @@ paths:
     get:
       operationId: getDashboard
       tags: [users]
-      summary: Get dashboard summary
+      summary: Get dashboard data
       responses:
         "200":
           description: Dashboard data
@@ -184,31 +188,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
-        "401":
-          description: Unauthorized
+
+  /users/me/preferred-currency:
+    patch:
+      operationId: updatePreferredCurrency
+      tags: [users]
+      summary: Update preferred currency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCurrencyBody"
+      responses:
+        "200":
+          description: Updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/User"
+
+  /users/me/theme:
+    patch:
+      operationId: updateTheme
+      tags: [users]
+      summary: Update theme preference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateThemeBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
 
   /referrals/team:
     get:
       operationId: getTeam
       tags: [referrals]
-      summary: Get referral team
+      summary: Get full team (all levels)
       responses:
         "200":
-          description: Team list
+          description: Team
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/TeamResponse"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
   /referrals/level/{level}:
     get:
@@ -223,11 +253,26 @@ paths:
             type: integer
       responses:
         "200":
-          description: Referrals at level
+          description: Referrals by level
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReferralLevelResponse"
+
+  /referrals/activity:
+    get:
+      operationId: getReferralActivity
+      tags: [referrals]
+      summary: Get recent referral activity feed
+      responses:
+        "200":
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
 
   /balances:
     get:
@@ -249,7 +294,7 @@ paths:
       summary: List withdrawal requests
       responses:
         "200":
-          description: Withdrawal list
+          description: Withdrawals
           content:
             application/json:
               schema:
@@ -259,7 +304,7 @@ paths:
     post:
       operationId: requestWithdrawal
       tags: [withdrawals]
-      summary: Request withdrawal
+      summary: Request a withdrawal
       requestBody:
         required: true
         content:
@@ -273,21 +318,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Withdrawal"
-        "400":
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
 
   /tasks:
     get:
       operationId: listTasks
       tags: [tasks]
-      summary: List tasks and missions
+      summary: List tasks/missions
       responses:
         "200":
-          description: Task list
+          description: Tasks
           content:
             application/json:
               schema:
@@ -324,7 +363,7 @@ paths:
     get:
       operationId: getPlatformConfig
       tags: [config]
-      summary: Get platform config and commission rates
+      summary: Get platform config
       responses:
         "200":
           description: Platform config
@@ -337,7 +376,7 @@ paths:
     get:
       operationId: getCurrencyRates
       tags: [currency]
-      summary: Get currency exchange rates vs FCFA
+      summary: Get currency exchange rates
       responses:
         "200":
           description: Currency rates
@@ -345,40 +384,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CurrencyRates"
-
-  /users/me/preferred-currency:
-    patch:
-      operationId: updatePreferredCurrency
-      tags: [users]
-      summary: Update preferred currency
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateCurrencyBody"
-      responses:
-        "200":
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-
-  /referrals/activity:
-    get:
-      operationId: getReferralActivity
-      tags: [referrals]
-      summary: Get recent referral activity feed
-      responses:
-        "200":
-          description: Activity feed
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ActivityItem"
 
 components:
   schemas:
@@ -408,10 +413,6 @@ components:
     RegisterBody:
       type: object
       properties:
-        firstName:
-          type: string
-        lastName:
-          type: string
         email:
           type: string
         phone:
@@ -422,7 +423,7 @@ components:
           type: string
         referralCode:
           type: ["string", "null"]
-      required: [firstName, lastName, email, phone, country, password]
+      required: [email, phone, country, password]
 
     LoginBody:
       type: object
@@ -447,9 +448,7 @@ components:
     UpdateProfileBody:
       type: object
       properties:
-        firstName:
-          type: ["string", "null"]
-        lastName:
+        displayName:
           type: ["string", "null"]
         phone:
           type: ["string", "null"]
@@ -463,14 +462,30 @@ components:
           type: string
       required: [currency]
 
+    UpdateThemeBody:
+      type: object
+      properties:
+        theme:
+          type: string
+      required: [theme]
+
+    ReferrerInfo:
+      type: object
+      properties:
+        displayName:
+          type: string
+        referralCode:
+          type: string
+        country:
+          type: string
+      required: [displayName, referralCode]
+
     User:
       type: object
       properties:
         id:
           type: integer
-        firstName:
-          type: string
-        lastName:
+        displayName:
           type: string
         email:
           type: string
@@ -486,9 +501,11 @@ components:
           type: ["string", "null"]
         preferredCurrency:
           type: string
+        themePreference:
+          type: string
         createdAt:
           type: string
-      required: [id, firstName, lastName, email, phone, country, isActivated, referralCode, preferredCurrency, createdAt]
+      required: [id, displayName, email, phone, country, isActivated, referralCode, preferredCurrency, themePreference, createdAt]
 
     AuthResponse:
       type: object
@@ -539,9 +556,7 @@ components:
       properties:
         id:
           type: integer
-        firstName:
-          type: string
-        lastName:
+        displayName:
           type: string
         country:
           type: string
@@ -551,7 +566,7 @@ components:
           type: string
         level:
           type: integer
-      required: [id, firstName, lastName, country, isActivated, joinedAt, level]
+      required: [id, displayName, country, isActivated, joinedAt, level]
 
     TeamResponse:
       type: object

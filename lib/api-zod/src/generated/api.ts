@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * TRIXHUB Affiliation Platform API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from "zod";
 
@@ -18,8 +18,6 @@ export const HealthCheckResponse = zod.object({
  * @summary Register a new user
  */
 export const RegisterBody = zod.object({
-  firstName: zod.string(),
-  lastName: zod.string(),
   email: zod.string(),
   phone: zod.string(),
   country: zod.string(),
@@ -38,8 +36,7 @@ export const LoginBody = zod.object({
 export const LoginResponse = zod.object({
   user: zod.object({
     id: zod.number(),
-    firstName: zod.string(),
-    lastName: zod.string(),
+    displayName: zod.string(),
     email: zod.string(),
     phone: zod.string(),
     country: zod.string(),
@@ -47,6 +44,7 @@ export const LoginResponse = zod.object({
     referralCode: zod.string(),
     referredByCode: zod.string().nullish(),
     preferredCurrency: zod.string(),
+    themePreference: zod.string(),
     createdAt: zod.string(),
   }),
   token: zod.string(),
@@ -65,8 +63,7 @@ export const LogoutResponse = zod.object({
  */
 export const GetMeResponse = zod.object({
   id: zod.number(),
-  firstName: zod.string(),
-  lastName: zod.string(),
+  displayName: zod.string(),
   email: zod.string(),
   phone: zod.string(),
   country: zod.string(),
@@ -74,11 +71,12 @@ export const GetMeResponse = zod.object({
   referralCode: zod.string(),
   referredByCode: zod.string().nullish(),
   preferredCurrency: zod.string(),
+  themePreference: zod.string(),
   createdAt: zod.string(),
 });
 
 /**
- * @summary Activate user account (3600 FCFA)
+ * @summary Activate account
  */
 export const ActivateAccountBody = zod.object({
   paymentMethod: zod.string(),
@@ -89,8 +87,7 @@ export const ActivateAccountBody = zod.object({
 export const ActivateAccountResponse = zod.object({
   user: zod.object({
     id: zod.number(),
-    firstName: zod.string(),
-    lastName: zod.string(),
+    displayName: zod.string(),
     email: zod.string(),
     phone: zod.string(),
     country: zod.string(),
@@ -98,25 +95,37 @@ export const ActivateAccountResponse = zod.object({
     referralCode: zod.string(),
     referredByCode: zod.string().nullish(),
     preferredCurrency: zod.string(),
+    themePreference: zod.string(),
     createdAt: zod.string(),
   }),
   token: zod.string(),
 });
 
 /**
+ * @summary Get referrer info by referral code
+ */
+export const GetReferrerParams = zod.object({
+  code: zod.coerce.string(),
+});
+
+export const GetReferrerResponse = zod.object({
+  displayName: zod.string(),
+  referralCode: zod.string(),
+  country: zod.string().optional(),
+});
+
+/**
  * @summary Update profile
  */
 export const UpdateProfileBody = zod.object({
-  firstName: zod.string().nullish(),
-  lastName: zod.string().nullish(),
+  displayName: zod.string().nullish(),
   phone: zod.string().nullish(),
   country: zod.string().nullish(),
 });
 
 export const UpdateProfileResponse = zod.object({
   id: zod.number(),
-  firstName: zod.string(),
-  lastName: zod.string(),
+  displayName: zod.string(),
   email: zod.string(),
   phone: zod.string(),
   country: zod.string(),
@@ -124,11 +133,12 @@ export const UpdateProfileResponse = zod.object({
   referralCode: zod.string(),
   referredByCode: zod.string().nullish(),
   preferredCurrency: zod.string(),
+  themePreference: zod.string(),
   createdAt: zod.string(),
 });
 
 /**
- * @summary Get dashboard summary
+ * @summary Get dashboard data
  */
 export const GetDashboardResponse = zod.object({
   totalBalance: zod.number(),
@@ -149,7 +159,49 @@ export const GetDashboardResponse = zod.object({
 });
 
 /**
- * @summary Get referral team
+ * @summary Update preferred currency
+ */
+export const UpdatePreferredCurrencyBody = zod.object({
+  currency: zod.string(),
+});
+
+export const UpdatePreferredCurrencyResponse = zod.object({
+  id: zod.number(),
+  displayName: zod.string(),
+  email: zod.string(),
+  phone: zod.string(),
+  country: zod.string(),
+  isActivated: zod.boolean(),
+  referralCode: zod.string(),
+  referredByCode: zod.string().nullish(),
+  preferredCurrency: zod.string(),
+  themePreference: zod.string(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Update theme preference
+ */
+export const UpdateThemeBody = zod.object({
+  theme: zod.string(),
+});
+
+export const UpdateThemeResponse = zod.object({
+  id: zod.number(),
+  displayName: zod.string(),
+  email: zod.string(),
+  phone: zod.string(),
+  country: zod.string(),
+  isActivated: zod.boolean(),
+  referralCode: zod.string(),
+  referredByCode: zod.string().nullish(),
+  preferredCurrency: zod.string(),
+  themePreference: zod.string(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Get full team (all levels)
  */
 export const GetTeamResponse = zod.object({
   total: zod.number(),
@@ -158,8 +210,7 @@ export const GetTeamResponse = zod.object({
   members: zod.array(
     zod.object({
       id: zod.number(),
-      firstName: zod.string(),
-      lastName: zod.string(),
+      displayName: zod.string(),
       country: zod.string(),
       isActivated: zod.boolean(),
       joinedAt: zod.string(),
@@ -184,8 +235,7 @@ export const GetReferralsByLevelResponse = zod.object({
   members: zod.array(
     zod.object({
       id: zod.number(),
-      firstName: zod.string(),
-      lastName: zod.string(),
+      displayName: zod.string(),
       country: zod.string(),
       isActivated: zod.boolean(),
       joinedAt: zod.string(),
@@ -193,6 +243,20 @@ export const GetReferralsByLevelResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary Get recent referral activity feed
+ */
+export const GetReferralActivityResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  message: zod.string(),
+  amount: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+export const GetReferralActivityResponse = zod.array(
+  GetReferralActivityResponseItem,
+);
 
 /**
  * @summary Get all balances
@@ -225,7 +289,7 @@ export const ListWithdrawalsResponseItem = zod.object({
 export const ListWithdrawalsResponse = zod.array(ListWithdrawalsResponseItem);
 
 /**
- * @summary Request withdrawal
+ * @summary Request a withdrawal
  */
 export const RequestWithdrawalBody = zod.object({
   amount: zod.number(),
@@ -235,7 +299,7 @@ export const RequestWithdrawalBody = zod.object({
 });
 
 /**
- * @summary List tasks and missions
+ * @summary List tasks/missions
  */
 export const ListTasksResponseItem = zod.object({
   id: zod.number(),
@@ -268,7 +332,7 @@ export const CompleteTaskResponse = zod.object({
 });
 
 /**
- * @summary Get platform config and commission rates
+ * @summary Get platform config
  */
 export const GetPlatformConfigResponse = zod.object({
   activationFee: zod.number(),
@@ -280,45 +344,10 @@ export const GetPlatformConfigResponse = zod.object({
 });
 
 /**
- * @summary Get currency exchange rates vs FCFA
+ * @summary Get currency exchange rates
  */
 export const GetCurrencyRatesResponse = zod.object({
   baseCurrency: zod.string(),
   rates: zod.record(zod.string(), zod.number()),
   updatedAt: zod.string(),
 });
-
-/**
- * @summary Update preferred currency
- */
-export const UpdatePreferredCurrencyBody = zod.object({
-  currency: zod.string(),
-});
-
-export const UpdatePreferredCurrencyResponse = zod.object({
-  id: zod.number(),
-  firstName: zod.string(),
-  lastName: zod.string(),
-  email: zod.string(),
-  phone: zod.string(),
-  country: zod.string(),
-  isActivated: zod.boolean(),
-  referralCode: zod.string(),
-  referredByCode: zod.string().nullish(),
-  preferredCurrency: zod.string(),
-  createdAt: zod.string(),
-});
-
-/**
- * @summary Get recent referral activity feed
- */
-export const GetReferralActivityResponseItem = zod.object({
-  id: zod.number(),
-  type: zod.string(),
-  message: zod.string(),
-  amount: zod.number().nullish(),
-  createdAt: zod.string(),
-});
-export const GetReferralActivityResponse = zod.array(
-  GetReferralActivityResponseItem,
-);

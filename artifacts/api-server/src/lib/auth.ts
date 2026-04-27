@@ -28,8 +28,8 @@ export function verifyToken(token: string): { userId: number } | null {
   }
 }
 
-export function generateReferralCode(firstName: string, id: number): string {
-  const prefix = firstName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
+export function generateReferralCode(displayName: string, id: number): string {
+  const prefix = displayName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X");
   const suffix = id.toString().padStart(4, "0");
   const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
   return `${prefix}${suffix}${rand}`;

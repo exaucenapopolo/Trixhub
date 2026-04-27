@@ -1,288 +1,268 @@
 import { useState } from "react";
-import { useGetDashboard, useGetReferralActivity, useGetPlatformConfig, getGetDashboardQueryKey } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useGetDashboard, useGetReferralActivity, useGetPlatformConfig } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  TrendingUp, Users, CheckSquare, Wallet, ArrowDownRight, ArrowUpRight,
-  Copy, Share2, AlertCircle, Clock, CheckCircle, Shield, Info, ExternalLink
-} from "lucide-react";
-import { formatDualAmount } from "@/lib/currency";
+import { Copy, CheckCheck, TrendingUp, Users, Wallet, ArrowDownLeft, Zap, Gift, PlayCircle, BookOpen, Share2, Compass, ChevronRight, Clock, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { Link } from "wouter";
 
-function StatCard({
-  title, amount, currency, exchangeRate, subtitle, icon: Icon, color, badge, info
-}: {
-  title: string; amount: number; currency: string; exchangeRate: number;
-  subtitle?: string; icon: React.ElementType; color: string; badge?: string; info?: string;
-}) {
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
+function AmountDisplay({ amount, currency, size = "md" }: { amount: number; currency: string; size?: "sm" | "md" | "lg" }) {
+  const sizeClass = size === "lg" ? "text-3xl" : size === "md" ? "text-xl" : "text-base";
   return (
-    <Card className="border-card-border">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", color)}>
-            <Icon size={18} className="text-white" />
-          </div>
-          {badge && (
-            <Badge variant="outline" className="text-xs">{badge}</Badge>
-          )}
-        </div>
-        <div className="amount-display text-2xl font-bold text-foreground mb-0.5">
-          {amount.toLocaleString("fr-FR")} <span className="text-sm font-normal text-muted-foreground">FCFA</span>
-        </div>
-        {currency !== "FCFA" && exchangeRate !== 1 && (
-          <p className="text-xs text-muted-foreground">≈ {(amount * exchangeRate).toFixed(2)} {currency}</p>
-        )}
-        <p className="text-sm text-muted-foreground mt-1">{title}</p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
-        {info && (
-          <div className="flex items-start gap-1.5 mt-2 p-2 bg-amber-500/10 rounded-lg">
-            <Info size={12} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-600 dark:text-amber-400">{info}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <span className={`${sizeClass} font-bold font-mono tabular-nums`}>
+      {amount.toLocaleString("fr-FR")} <span className="text-xs font-medium opacity-70">{currency}</span>
+    </span>
   );
 }
 
-function ActivityItem({ item }: { item: { id: number; type: string; message: string; amount: number | null; createdAt: string } }) {
-  const getIcon = () => {
-    if (item.type.includes("referral")) return <Users size={14} className="text-primary" />;
-    if (item.type === "task") return <CheckSquare size={14} className="text-blue-500" />;
-    if (item.type === "withdrawal") return <Wallet size={14} className="text-red-500" />;
-    if (item.type === "activation") return <Shield size={14} className="text-muted-foreground" />;
-    return <TrendingUp size={14} className="text-muted-foreground" />;
-  };
-
-  const isPositive = item.amount != null && item.amount > 0;
-  const isNegative = item.amount != null && item.amount < 0;
-
-  return (
-    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
-      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-        {getIcon()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground truncate">{item.message}</p>
-        <p className="text-xs text-muted-foreground">
-          {new Date(item.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-        </p>
-      </div>
-      {item.amount != null && (
-        <div className={cn("text-sm font-semibold amount-display shrink-0", isPositive ? "text-primary" : "text-destructive")}>
-          {isPositive ? "+" : ""}{Math.abs(item.amount).toLocaleString("fr-FR")} FCFA
-        </div>
-      )}
-    </div>
-  );
-}
+const MISSION_TYPES = [
+  { icon: PlayCircle, label: "Mission Vidéo", color: "text-red-500 bg-red-50 dark:bg-red-950/30", desc: "Regarde des vidéos et gagne des FCFA", soon: false },
+  { icon: BookOpen, label: "Mission Lecture", color: "text-blue-500 bg-blue-50 dark:bg-blue-950/30", desc: "Lis du contenu sponsorisé", soon: false },
+  { icon: Share2, label: "Mission Partage", color: "text-green-500 bg-green-50 dark:bg-green-950/30", desc: "Partage sur tes réseaux sociaux", soon: false },
+  { icon: Compass, label: "Mission Découverte", color: "text-purple-500 bg-purple-50 dark:bg-purple-950/30", desc: "Découvre de nouveaux produits africains", soon: true },
+];
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: dashboard, isLoading } = useGetDashboard({ query: { queryKey: getGetDashboardQueryKey() } });
+  const [copied, setCopied] = useState(false);
+
+  const { data: dashboard, isLoading: dashLoading } = useGetDashboard();
   const { data: activity } = useGetReferralActivity();
   const { data: config } = useGetPlatformConfig();
 
-  const currency = dashboard?.currency ?? "FCFA";
-  const exchangeRate = dashboard?.exchangeRate ?? 1;
-
-  const referralLink = `${window.location.origin}/?ref=${user?.referralCode}`;
+  const referralLink = `${window.location.origin}${BASE}/?ref=${user?.referralCode}`;
+  const currency = dashboard?.currency || user?.preferredCurrency || "FCFA";
 
   const copyLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast({ title: "Lien copié !", description: "Votre lien de parrainage a été copié dans le presse-papiers." });
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setCopied(true);
+      toast({ title: "Lien copié !", description: "Partagez ce lien pour recruter des filleuls." });
+      setTimeout(() => setCopied(false), 2500);
+    });
   };
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="space-y-6">
-          <Skeleton className="h-8 w-48" />
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-36" />)}
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  const stats = [
-    {
-      title: "Solde Total Disponible",
-      amount: dashboard?.totalBalance ?? 0,
-      icon: Wallet,
-      color: "gradient-green",
-      badge: "Retirable",
-    },
-    {
-      title: "Solde de Parrainage",
-      amount: dashboard?.referralBalance ?? 0,
-      icon: Users,
-      color: "bg-primary",
-      subtitle: "Commissions de votre réseau",
-    },
-    {
-      title: "Solde Tâches & Missions",
-      amount: dashboard?.taskBalance ?? 0,
-      icon: CheckSquare,
-      color: "bg-blue-600",
-      subtitle: "Gains des missions complétées",
-    },
-    {
-      title: "Montant Retiré",
-      amount: dashboard?.withdrawnAmount ?? 0,
-      icon: ArrowUpRight,
-      color: "bg-slate-600",
-      subtitle: "Total des retraits effectués",
-    },
-    {
-      title: "Montant Investi",
-      amount: dashboard?.spentAmount ?? 0,
-      icon: ArrowDownRight,
-      color: "bg-slate-500",
-      subtitle: "Dont activation de compte",
-    },
-    {
-      title: "Solde des Inactifs",
-      amount: dashboard?.inactiveBalance ?? 0,
-      icon: Clock,
-      color: "bg-amber-600",
-      subtitle: "En attente d'activation",
-      info: "Ces gains seront libérés dès que vos filleuls activent leur compte",
-    },
-  ];
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Welcome bar */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Bonjour, {user?.firstName} !</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">
-              {new Date().toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-            </p>
+            <h1 className="text-xl font-bold text-foreground">
+              Bonjour, {user?.displayName || user?.email?.split("@")[0]} 👋
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Voici un aperçu de vos revenus</p>
           </div>
-          <div className="flex items-center gap-2">
-            {user?.isActivated ? (
-              <Badge className="gap-1.5 bg-primary/10 text-primary border-primary/30">
-                <Shield size={12} />Compte Actif
-              </Badge>
-            ) : (
-              <Link href="/activate">
-                <Badge variant="destructive" className="gap-1.5 cursor-pointer">
-                  <AlertCircle size={12} />Activer mon compte
-                </Badge>
-              </Link>
+          <button className="relative p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors">
+            <Bell className="w-5 h-5 text-muted-foreground" />
+            {(activity?.length ?? 0) > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
             )}
-          </div>
+          </button>
         </div>
 
-        {/* Balance stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {stats.map((s) => (
-            <StatCard
-              key={s.title}
-              {...s}
-              currency={currency}
-              exchangeRate={exchangeRate}
-            />
-          ))}
-        </div>
-
-        {/* Team stats */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "Niveau 1", count: dashboard?.level1Count ?? 0, commission: config?.level1Commission ?? 1700, href: "/team/level/1" },
-            { label: "Niveau 2", count: dashboard?.level2Count ?? 0, commission: config?.level2Commission ?? 700, href: "/team/level/2" },
-            { label: "Niveau 3", count: dashboard?.level3Count ?? 0, commission: config?.level3Commission ?? 300, href: "/team/level/3" },
-          ].map(({ label, count, commission, href }) => (
-            <Link key={label} href={href}>
-              <Card className="border-card-border hover:border-primary/30 transition-colors cursor-pointer">
-                <CardContent className="p-4 text-center">
-                  <p className="text-2xl font-bold text-foreground amount-display">{count}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-                  <p className="text-xs text-primary font-medium mt-1">{commission.toLocaleString("fr-FR")} FCFA/act.</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-
-        {/* Team overview */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="border-card-border">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-foreground amount-display">{dashboard?.totalReferrals ?? 0}</p>
-              <p className="text-sm text-muted-foreground mt-1">Membres totaux</p>
-            </CardContent>
-          </Card>
-          <Card className="border-card-border">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-primary amount-display">{dashboard?.activeReferrals ?? 0}</p>
-              <p className="text-sm text-muted-foreground mt-1">Membres actifs</p>
-            </CardContent>
-          </Card>
-          <Card className="border-card-border">
-            <CardContent className="p-4 text-center">
-              <p className="text-3xl font-bold text-amber-500 amount-display">{dashboard?.inactiveReferrals ?? 0}</p>
-              <p className="text-sm text-muted-foreground mt-1">En attente d'activation</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Referral link */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Share2 size={18} className="text-primary" />
-              Votre lien de parrainage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2 bg-background rounded-lg border border-border text-sm text-muted-foreground truncate font-mono">
-                {referralLink}
-              </div>
-              <Button onClick={copyLink} size="sm" className="shrink-0 gap-1.5" data-testid="button-copy-link">
-                <Copy size={14} />
-                Copier
-              </Button>
+        {/* Referral link banner */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Votre lien de parrainage</p>
+              <p className="text-sm text-foreground font-mono truncate">{referralLink}</p>
+              <p className="text-xs text-muted-foreground mt-1">Partagez ce lien pour gagner jusqu'à 1 700 FCFA par filleul actif</p>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Code de parrainage : <span className="text-primary font-mono font-semibold">{user?.referralCode}</span>
-            </p>
-          </CardContent>
-        </Card>
+            <button
+              onClick={copyLink}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all flex-shrink-0 ${copied ? "bg-green-500 text-white" : "bg-primary text-primary-foreground hover:opacity-90"}`}
+            >
+              {copied ? <><CheckCheck className="w-4 h-4" /> Copié</> : <><Copy className="w-4 h-4" /> Copier</>}
+            </button>
+          </div>
+        </div>
 
-        {/* Activity */}
-        <Card className="border-card-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Activité récente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!activity || activity.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <TrendingUp size={32} className="mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Aucune activité pour le moment.</p>
-                <p className="text-xs mt-1">Partagez votre lien pour commencer à gagner !</p>
+        {/* Main balances grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Total available — primary card */}
+          <div className="col-span-2 lg:col-span-1 bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-5 text-primary-foreground">
+            <div className="flex items-center gap-2 mb-3 opacity-80">
+              <Wallet className="w-4 h-4" />
+              <span className="text-xs font-semibold uppercase tracking-wide">Solde total disponible</span>
+            </div>
+            <div className="text-3xl font-bold font-mono tabular-nums mb-1">
+              {dashLoading ? "..." : (dashboard?.totalBalance ?? 0).toLocaleString("fr-FR")}
+              <span className="text-sm font-medium ml-1 opacity-70">{currency}</span>
+            </div>
+            <p className="text-xs opacity-60">Parrainage + Missions</p>
+          </div>
+
+          {/* Activation spent */}
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 text-orange-500" />
               </div>
-            ) : (
-              <div>
-                {activity.slice(0, 8).map(item => (
-                  <ActivityItem key={item.id} item={item} />
-                ))}
+              <span className="text-xs text-muted-foreground font-medium">Activation</span>
+            </div>
+            <div className="text-lg font-bold text-foreground font-mono">
+              {(dashboard?.spentAmount ?? 0).toLocaleString("fr-FR")}
+              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Montant investi</p>
+          </div>
+
+          {/* Referral balance */}
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center">
+                <Users className="w-3.5 h-3.5 text-blue-500" />
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <span className="text-xs text-muted-foreground font-medium">Parrainage</span>
+            </div>
+            <div className="text-lg font-bold text-foreground font-mono">
+              {(dashboard?.referralBalance ?? 0).toLocaleString("fr-FR")}
+              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Commissions gagnées</p>
+          </div>
+
+          {/* Withdrawn */}
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-950/40 flex items-center justify-center">
+                <ArrowDownLeft className="w-3.5 h-3.5 text-green-500" />
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">Retiré</span>
+            </div>
+            <div className="text-lg font-bold text-foreground font-mono">
+              {(dashboard?.withdrawnAmount ?? 0).toLocaleString("fr-FR")}
+              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Total encaissé</p>
+          </div>
+
+          {/* Inactive balance */}
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
+                <Clock className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">Inactifs en attente</span>
+            </div>
+            <div className="text-lg font-bold text-foreground font-mono">
+              {(dashboard?.inactiveBalance ?? 0).toLocaleString("fr-FR")}
+              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Débloqué à activation</p>
+          </div>
+
+          {/* Task balance */}
+          <div className="bg-card border border-border rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-950/40 flex items-center justify-center">
+                <Gift className="w-3.5 h-3.5 text-purple-500" />
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">Missions</span>
+            </div>
+            <div className="text-lg font-bold text-foreground font-mono">
+              {(dashboard?.taskBalance ?? 0).toLocaleString("fr-FR")}
+              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Gains missions</p>
+          </div>
+        </div>
+
+        {/* Team summary */}
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-foreground">Mon équipe</h3>
+            <Link href="/team" className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">
+              Voir tout <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Niveau 1", count: dashboard?.level1Count ?? 0, commission: config?.level1Commission ?? 1700, color: "text-primary" },
+              { label: "Niveau 2", count: dashboard?.level2Count ?? 0, commission: config?.level2Commission ?? 700, color: "text-blue-500" },
+              { label: "Niveau 3", count: dashboard?.level3Count ?? 0, commission: config?.level3Commission ?? 300, color: "text-purple-500" },
+            ].map((lvl, i) => (
+              <div key={i} className="text-center p-3 bg-muted/40 rounded-xl">
+                <div className={`text-2xl font-bold ${lvl.color}`}>{dashLoading ? "-" : lvl.count}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{lvl.label}</div>
+                <div className="text-xs font-medium text-foreground mt-1">{lvl.commission.toLocaleString("fr-FR")} {currency}</div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
+            <div className="flex items-center gap-1.5 text-xs text-green-500">
+              <span className="w-2 h-2 bg-green-500 rounded-full" />
+              {dashboard?.activeReferrals ?? 0} actifs
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="w-2 h-2 bg-muted-foreground rounded-full" />
+              {dashboard?.inactiveReferrals ?? 0} inactifs
+            </div>
+            <div className="ml-auto text-xs text-muted-foreground font-medium">
+              {dashboard?.totalReferrals ?? 0} total
+            </div>
+          </div>
+        </div>
+
+        {/* Missions */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-foreground">Types de missions</h3>
+            <Link href="/tasks" className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">
+              Voir les missions <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {MISSION_TYPES.map((m, i) => (
+              <Link
+                key={i}
+                href={m.soon ? "#" : "/tasks"}
+                className={`bg-card border border-border rounded-xl p-4 flex items-start gap-3 transition-all ${m.soon ? "opacity-60 cursor-default" : "hover:border-primary/40 hover:shadow-sm"}`}
+              >
+                <div className={`w-9 h-9 rounded-lg ${m.color} flex items-center justify-center flex-shrink-0`}>
+                  <m.icon className="w-4.5 h-4.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-foreground leading-tight">{m.label}</p>
+                    {m.soon && <span className="text-[10px] font-bold text-amber-500 bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">Bientôt</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{m.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent activity */}
+        {activity && activity.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-foreground mb-3">Activité récente</h3>
+            <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
+              {activity.slice(0, 5).map((item: any) => (
+                <div key={item.id} className="flex items-start gap-3 p-4">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground leading-snug">{item.message}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(item.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  {item.amount && (
+                    <span className={`text-sm font-bold flex-shrink-0 ${item.amount > 0 ? "text-green-500" : "text-destructive"}`}>
+                      {item.amount > 0 ? "+" : ""}{item.amount.toLocaleString("fr-FR")} {currency}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

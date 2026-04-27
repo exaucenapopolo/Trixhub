@@ -2,33 +2,36 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 
 const TOKEN_KEY = "trixhub_token";
 
-interface UserData {
+export interface UserData {
   id: number;
-  firstName: string;
-  lastName: string;
+  displayName: string;
   email: string;
   phone: string;
   country: string;
   referralCode: string;
+  referredByCode: string | null;
   isActivated: boolean;
   preferredCurrency: string;
+  themePreference: string;
+  createdAt: string;
 }
 
 interface AuthContextType {
   token: string | null;
   user: UserData | null;
   isLoading: boolean;
-  login: (token: string) => void;
+  login: (token: string, userData?: UserData) => void;
   logout: () => void;
   refreshUser: () => void;
+  setUserData: (u: UserData) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   token: null, user: null, isLoading: true,
-  login: () => {}, logout: () => {}, refreshUser: () => {},
+  login: () => {}, logout: () => {}, refreshUser: () => {}, setUserData: () => {},
 });
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children, onUserLoaded }: { children: ReactNode; onUserLoaded?: (u: UserData) => void }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${t}` },
       });
       if (res.ok) {
-        const data = await res.json();
+        const data: UserData = await res.json();
         setUser(data);
+        onUserLoaded?.(data);
       } else {
         localStorage.removeItem(TOKEN_KEY);
         setToken(null);
@@ -52,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [onUserLoaded]);
 
   useEffect(() => {
     if (token) {
@@ -62,10 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token, fetchUser]);
 
-  const login = (newToken: string) => {
+  const login = (newToken: string, userData?: UserData) => {
     localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
-    fetchUser(newToken);
+    if (userData) {
+      setUser(userData);
+      onUserLoaded?.(userData);
+      setIsLoading(false);
+    } else {
+      fetchUser(newToken);
+    }
   };
 
   const logout = () => {
@@ -78,8 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) fetchUser(token);
   };
 
+  const setUserData = (u: UserData) => {
+    setUser(u);
+    onUserLoaded?.(u);
+  };
+
   return (
-    <AuthContext.Provider value={{ token, user, isLoading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ token, user, isLoading, login, logout, refreshUser, setUserData }}>
       {children}
     </AuthContext.Provider>
   );
@@ -87,4 +102,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+let tokenGetter: (() => string | null) | null = null;
+export function setAuthTokenGetter(fn: () => string | null) {
+  tokenGetter = fn;
+}
+export function getAuthToken() {
+  return tokenGetter?.() ?? null;
 }

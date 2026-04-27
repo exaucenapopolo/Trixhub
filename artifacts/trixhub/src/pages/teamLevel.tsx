@@ -17,7 +17,7 @@ export default function TeamLevelPage() {
   const { data, isLoading } = useGetReferralsByLevel(level);
 
   const filtered = data?.members?.filter(m => {
-    const matchSearch = !search || `${m.firstName} ${m.lastName} ${m.country}`.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || `${m.displayName} ${m.country}`.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === "all" || (filter === "active" && m.isActivated) || (filter === "inactive" && !m.isActivated);
     return matchSearch && matchFilter;
   }) ?? [];
@@ -94,10 +94,10 @@ export default function TeamLevelPage() {
                 {filtered.map(m => (
                   <div key={m.id} className="flex items-center gap-3 py-3" data-testid={`row-level-member-${m.id}`}>
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-primary text-sm font-bold">{m.firstName.charAt(0)}{m.lastName.charAt(0)}</span>
+                      <span className="text-primary text-sm font-bold">{(m.displayName || "?").charAt(0)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{m.firstName} {m.lastName}</p>
+                      <p className="text-sm font-medium text-foreground">{m.displayName}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <Globe size={11} className="text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">{m.country}</span>

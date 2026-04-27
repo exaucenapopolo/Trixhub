@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * TRIXHUB Affiliation Platform API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface HealthStatus {
   status: string;
@@ -19,8 +19,6 @@ export interface SuccessResponse {
 }
 
 export interface RegisterBody {
-  firstName: string;
-  lastName: string;
   email: string;
   phone: string;
   country: string;
@@ -42,9 +40,7 @@ export interface ActivateBody {
 
 export interface UpdateProfileBody {
   /** @nullable */
-  firstName?: string | null;
-  /** @nullable */
-  lastName?: string | null;
+  displayName?: string | null;
   /** @nullable */
   phone?: string | null;
   /** @nullable */
@@ -55,10 +51,19 @@ export interface UpdateCurrencyBody {
   currency: string;
 }
 
+export interface UpdateThemeBody {
+  theme: string;
+}
+
+export interface ReferrerInfo {
+  displayName: string;
+  referralCode: string;
+  country?: string;
+}
+
 export interface User {
   id: number;
-  firstName: string;
-  lastName: string;
+  displayName: string;
   email: string;
   phone: string;
   country: string;
@@ -67,6 +72,7 @@ export interface User {
   /** @nullable */
   referredByCode?: string | null;
   preferredCurrency: string;
+  themePreference: string;
   createdAt: string;
 }
 
@@ -95,8 +101,7 @@ export interface Dashboard {
 
 export interface ReferralUser {
   id: number;
-  firstName: string;
-  lastName: string;
+  displayName: string;
   country: string;
   isActivated: boolean;
   joinedAt: string;

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -108,7 +108,7 @@
   --sidebar-accent: 217 32% 18%;
   --sidebar-accent-foreground: 210 40% 95%;
   --sidebar-ring: 142 71% 45%;
-  --app-font-sans: 'Inter', sans-serif;
+  --app-font-sans: 'Poppins', sans-serif;
   --app-font-serif: 'Space Grotesk', sans-serif;
   --app-font-mono: 'Courier New', monospace;
   --radius: 0.625rem;

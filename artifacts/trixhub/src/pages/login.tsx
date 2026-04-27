@@ -1,129 +1,137 @@
-import { Link, useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useLogin } from "@workspace/api-client-react";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Shield, TrendingUp, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { Sun, Moon, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 
-const schema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z.string().min(1, "Mot de passe requis"),
-});
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
+const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
 export default function LoginPage() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
-  const loginMutation = useLogin();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: "", password: "" },
-  });
-
-  const onSubmit = async (values: z.infer<typeof schema>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
     try {
-      const result = await loginMutation.mutateAsync({ data: values });
-      login(result.token);
-      toast({ title: "Connexion réussie", description: `Bienvenue, ${result.user.firstName} !` });
-      if (!result.user.isActivated) {
-        setLocation("/activate");
-      } else {
-        setLocation("/dashboard");
+      const res = await fetch(`${BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Connexion échouée", description: data.error || "Vérifiez vos identifiants.", variant: "destructive" });
+        return;
       }
-    } catch (err: unknown) {
-      const msg = (err as { data?: { error?: string } })?.data?.error || "Email ou mot de passe incorrect";
-      toast({ title: "Erreur de connexion", description: msg, variant: "destructive" });
+      login(data.token, data.user);
+      toast({ title: "Connexion réussie", description: `Bon retour !` });
+      navigate(data.user?.isActivated ? "/dashboard" : "/activate");
+    } catch {
+      toast({ title: "Erreur réseau", description: "Impossible de se connecter. Réessayez.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl gradient-green flex items-center justify-center shadow-lg">
-              <TrendingUp size={24} className="text-white" />
+    <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
+      {/* Top bar */}
+      <div className="flex items-center justify-between p-4 lg:p-6">
+        <Link href="/" className="flex items-center gap-2">
+          <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-8 w-8 rounded-lg object-contain" />
+          <span className="font-bold text-foreground">TRIXHUB</span>
+        </Link>
+        <button onClick={toggleTheme} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors" aria-label="Thème">
+          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+              <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-10 w-10 rounded-xl object-contain" />
             </div>
-            <span className="text-2xl font-bold">TRIX<span className="text-primary">HUB</span></span>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Bon retour !</h1>
-          <p className="text-muted-foreground">Connectez-vous à votre espace membre</p>
-        </div>
-
-        <div className="bg-card border border-card-border rounded-2xl p-8 shadow-lg">
-          <div className="flex gap-2 mb-6 justify-center">
-            <Badge variant="secondary" className="text-xs gap-1"><Shield size={10} />Connexion sécurisée</Badge>
-            <Badge variant="secondary" className="text-xs gap-1"><Lock size={10} />Chiffrement SSL</Badge>
+            <h1 className="text-2xl font-bold text-foreground">Bon retour !</h1>
+            <p className="text-muted-foreground text-sm mt-1">Connectez-vous à votre compte TRIXHUB</p>
           </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Adresse email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} placeholder="votre@email.com" autoComplete="email" data-testid="input-email" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+          {/* Card */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Adresse e-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="email" required value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="exemple@email.com"
+                    autoComplete="email"
+                    className="w-full pl-10 pr-4 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
 
-              <FormField control={form.control} name="password" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mot de passe</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        {...field}
-                        placeholder="Votre mot de passe"
-                        autoComplete="current-password"
-                        data-testid="input-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-foreground">Mot de passe</label>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type={showPassword ? "text" : "password"} required value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Votre mot de passe"
+                    autoComplete="current-password"
+                    className="w-full pl-10 pr-11 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  />
+                  <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-              <Button
+              <button
                 type="submit"
-                className="w-full h-11 text-base font-semibold gap-2"
-                disabled={loginMutation.isPending}
-                data-testid="button-submit-login"
+                disabled={isLoading}
+                className="w-full py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98] text-sm flex items-center justify-center gap-2 mt-2"
               >
-                {loginMutation.isPending ? "Connexion..." : <>Se connecter <ArrowRight size={16} /></>}
-              </Button>
+                {isLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                    Connexion...
+                  </>
+                ) : (
+                  <>
+                    Se connecter
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
             </form>
-          </Form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Pas encore membre ?{" "}
-              <Link href="/" className="text-primary font-medium hover:underline">S'inscrire gratuitement</Link>
-            </p>
           </div>
-        </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Vos données sont protégées par un chiffrement de niveau bancaire.
-        </p>
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Pas encore membre ?{" "}
+            <Link href="/" className="text-primary font-semibold hover:underline">
+              Créer un compte
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

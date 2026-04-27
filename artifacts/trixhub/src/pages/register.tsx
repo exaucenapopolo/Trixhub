@@ -1,262 +1,350 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useRegister, useGetPlatformConfig, useGetCurrencyRates } from "@workspace/api-client-react";
-import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Shield, TrendingUp, Users, Lock, CheckCircle, Star } from "lucide-react";
-import { formatDualAmount } from "@/lib/currency";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, ChevronDown } from "lucide-react";
 
-const schema = z.object({
-  firstName: z.string().min(2, "Le prénom doit avoir au moins 2 caractères"),
-  lastName: z.string().min(2, "Le nom doit avoir au moins 2 caractères"),
-  email: z.string().email("Email invalide"),
-  phone: z.string().min(8, "Numéro de téléphone invalide"),
-  country: z.string().min(1, "Choisissez un pays"),
-  password: z.string().min(8, "Le mot de passe doit avoir au moins 8 caractères"),
-  confirmPassword: z.string(),
-  referralCode: z.string().optional(),
-}).refine(d => d.password === d.confirmPassword, {
-  message: "Les mots de passe ne correspondent pas",
-  path: ["confirmPassword"],
-});
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
-const COUNTRIES = [
-  "Sénégal", "Côte d'Ivoire", "Mali", "Burkina Faso", "Niger", "Guinée",
-  "Togo", "Bénin", "Cameroun", "Congo-Brazzaville", "RD Congo", "Gabon",
-  "Tchad", "Centrafrique", "Madagascar", "Mauritanie", "Djibouti",
-  "Comores", "Rwanda", "Burundi", "France", "Belgique", "Canada",
-  "Suisse", "Maroc", "Tunisie", "Algérie", "Autre"
+const AFRICAN_COUNTRIES = [
+  { code: "BJ", name: "Bénin", flag: "🇧🇯" },
+  { code: "BF", name: "Burkina Faso", flag: "🇧🇫" },
+  { code: "CM", name: "Cameroun", flag: "🇨🇲" },
+  { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮" },
+  { code: "CG", name: "Congo-Brazzaville", flag: "🇨🇬" },
+  { code: "CD", name: "RD Congo", flag: "🇨🇩" },
+  { code: "GA", name: "Gabon", flag: "🇬🇦" },
+  { code: "GH", name: "Ghana", flag: "🇬🇭" },
+  { code: "GN", name: "Guinée", flag: "🇬🇳" },
+  { code: "KE", name: "Kenya", flag: "🇰🇪" },
+  { code: "MG", name: "Madagascar", flag: "🇲🇬" },
+  { code: "ML", name: "Mali", flag: "🇲🇱" },
+  { code: "NE", name: "Niger", flag: "🇳🇪" },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
+  { code: "RW", name: "Rwanda", flag: "🇷🇼" },
+  { code: "SN", name: "Sénégal", flag: "🇸🇳" },
+  { code: "TG", name: "Togo", flag: "🇹🇬" },
+  { code: "TZ", name: "Tanzanie", flag: "🇹🇿" },
 ];
 
+const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
+const SSG_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/1776970914770.png";
+const SBH_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/Social-Boost-Horizon-/refs/heads/main/assets/logos/FB_IMG_1761822881081.jpg";
+
+interface ReferrerInfo {
+  displayName: string;
+  referralCode: string;
+  country: string;
+}
+
 export default function RegisterPage() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
-  const registerMutation = useRegister();
-  const { data: config } = useGetPlatformConfig();
-  const { data: rates } = useGetCurrencyRates();
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const refCode = urlParams.get("ref") || "";
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [referrerInfo, setReferrerInfo] = useState<ReferrerInfo | null>(null);
+  const [refCode, setRefCode] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      firstName: "", lastName: "", email: "", phone: "",
-      country: "", password: "", confirmPassword: "", referralCode: refCode,
-    },
-  });
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      setRefCode(ref);
+      fetch(`${BASE}/api/auth/referrer/${ref}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setReferrerInfo(data); })
+        .catch(() => {});
+    }
+  }, []);
 
-  const onSubmit = async (values: z.infer<typeof schema>) => {
+  const selectedCountry = AFRICAN_COUNTRIES.find(c => c.name === country);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acceptedTerms) {
+      toast({ title: "Conditions requises", description: "Veuillez accepter les conditions d'utilisation.", variant: "destructive" });
+      return;
+    }
+    if (!country) {
+      toast({ title: "Pays requis", description: "Veuillez sélectionner votre pays.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const result = await registerMutation.mutateAsync({
-        data: {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          email: values.email,
-          phone: values.phone,
-          country: values.country,
-          password: values.password,
-          referralCode: values.referralCode || null,
-        },
+      const res = await fetch(`${BASE}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, phone, country, password, referralCode: refCode ?? null }),
       });
-      login(result.token);
-      toast({ title: "Compte créé !", description: "Bienvenue sur TRIXHUB. Activez votre compte pour commencer." });
-      setLocation("/activate");
-    } catch (err: unknown) {
-      const msg = (err as { data?: { error?: string } })?.data?.error || "Une erreur est survenue";
-      toast({ title: "Erreur", description: msg, variant: "destructive" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Erreur", description: data.error || "Inscription échouée", variant: "destructive" });
+        return;
+      }
+      login(data.token, data.user);
+      toast({ title: "Bienvenue !", description: "Compte créé avec succès." });
+      navigate("/activate");
+    } catch {
+      toast({ title: "Erreur réseau", description: "Vérifiez votre connexion internet.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const exchangeRate = rates?.rates?.["EUR"] ?? 0.00152;
-  const activationFee = config?.activationFee ?? 3600;
-  const l1 = config?.level1Commission ?? 1700;
-  const l2 = config?.level2Commission ?? 700;
-  const l3 = config?.level3Commission ?? 300;
-
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left panel - branding */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-green flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-56 h-56 rounded-full bg-white blur-2xl" />
+    <div className="min-h-screen flex bg-background transition-colors duration-300">
+      {/* Left panel — visible on lg+ */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex-col justify-between p-10">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-1/2 right-0 w-72 h-72 bg-accent/15 rounded-full blur-3xl animate-pulse" style={{animationDelay:"1s"}} />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{animationDelay:"2s"}} />
         </div>
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <TrendingUp size={20} className="text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">TRIXHUB</span>
+        <div className="relative z-10 flex items-center gap-3">
+          <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-12 w-12 rounded-xl object-contain bg-white/10 p-1" />
+          <div>
+            <h1 className="text-white font-bold text-2xl tracking-tight">TRIXHUB</h1>
+            <p className="text-white/50 text-xs">Plateforme d'Affiliation</p>
+          </div>
+        </div>
+
+        <div className="relative z-10 space-y-8">
+          <div>
+            <h2 className="text-white text-3xl xl:text-4xl font-bold leading-tight">
+              Ton téléphone peut te rendre{" "}
+              <span className="text-yellow-400">riche ou pauvre</span>
+              , ça dépend de comment tu l'utilise
+            </h2>
           </div>
 
-          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-            Construisez votre réseau.<br />Gagnez des commissions.
-          </h1>
-          <p className="text-white/80 text-lg mb-10">
-            La plateforme d'affiliation africaine la plus fiable. Rejoignez des milliers de membres qui génèrent des revenus passifs chaque jour.
-          </p>
-
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[
-              { level: "Niveau 1", amount: l1, desc: "par filleul direct activé" },
-              { level: "Niveau 2", amount: l2, desc: "sur votre réseau de 2e rang" },
-              { level: "Niveau 3", amount: l3, desc: "sur votre réseau de 3e rang" },
-            ].map(({ level, amount, desc }) => (
-              <div key={level} className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                  <span className="text-white font-bold text-lg amount-display">{amount.toLocaleString("fr-FR")}</span>
-                </div>
+              { icon: "💰", title: "Gagne jusqu'à 1 700 FCFA", desc: "Par filleul qui active son compte" },
+              { icon: "🌍", title: "18 pays africains couverts", desc: "Rejoins notre réseau continental" },
+              { icon: "📱", title: "100% sur mobile", desc: "Orange Money, Wave, MTN et plus" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-4 p-3.5 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-2xl">{item.icon}</span>
                 <div>
-                  <p className="text-white font-semibold">{level} — FCFA</p>
-                  <p className="text-white/70 text-sm">{desc}</p>
+                  <p className="text-white font-semibold text-sm">{item.title}</p>
+                  <p className="text-white/55 text-xs mt-0.5">{item.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center gap-2">
-          <Shield size={16} className="text-white/70" />
-          <span className="text-white/70 text-sm">Plateforme sécurisée · Données chiffrées · Anti-fraude intégré</span>
+        <div className="relative z-10 border-t border-white/10 pt-6">
+          <p className="text-white/40 text-xs mb-3 uppercase tracking-wider">Un projet de</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+              <img src={SSG_LOGO} alt="Social Succès Group" className="h-7 w-7 rounded-full object-cover" />
+              <p className="text-white text-xs font-semibold">Social Succès Group</p>
+            </div>
+            <span className="text-white/30 text-sm">×</span>
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+              <img src={SBH_LOGO} alt="Social Boost Horizon" className="h-7 w-7 rounded-full object-cover" />
+              <p className="text-white text-xs font-semibold">Social Boost Horizon</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Right panel - form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 overflow-y-auto">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="w-9 h-9 rounded-lg gradient-green flex items-center justify-center">
-              <TrendingUp size={18} className="text-white" />
+      {/* Right panel */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex items-center justify-between p-4 lg:p-6">
+          <div className="flex lg:hidden items-center gap-2">
+            <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-8 w-8 rounded-lg object-contain" />
+            <span className="font-bold text-foreground text-sm">TRIXHUB</span>
+          </div>
+          <div className="hidden lg:block" />
+          <div className="flex items-center gap-3">
+            <button onClick={toggleTheme} className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors" aria-label="Thème">
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <Link href="/login" className="text-sm text-muted-foreground hover:text-primary font-medium transition-colors">
+              Se connecter
+            </Link>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-4 pb-10">
+          <div className="w-full max-w-md">
+            <div className="mb-7">
+              <h2 className="text-2xl font-bold text-foreground">Créer votre compte</h2>
+              <p className="text-muted-foreground text-sm mt-1.5">Rejoignez des milliers d'africains qui réussissent avec TRIXHUB</p>
+
+              {referrerInfo && (
+                <div className="mt-4 flex items-center gap-3 p-3.5 bg-primary/5 border border-primary/20 rounded-xl">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vous avez été invité par</p>
+                    <p className="font-semibold text-foreground text-sm">{referrerInfo.displayName}</p>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 text-primary ml-auto flex-shrink-0" />
+                </div>
+              )}
             </div>
-            <span className="text-xl font-bold">TRIX<span className="text-primary">HUB</span></span>
-          </div>
 
-          <div className="mb-8">
-            <Badge variant="outline" className="text-primary border-primary/30 mb-4 gap-1.5">
-              <CheckCircle size={12} />
-              Inscription 100% gratuite
-            </Badge>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Créer votre compte</h2>
-            <p className="text-muted-foreground text-sm">
-              Rejoignez TRIXHUB et commencez à gagner des commissions dès aujourd'hui.
-            </p>
-          </div>
-
-          {/* Security badges */}
-          <div className="flex gap-2 mb-6 flex-wrap">
-            <Badge variant="secondary" className="text-xs gap-1"><Shield size={10} />SSL Sécurisé</Badge>
-            <Badge variant="secondary" className="text-xs gap-1"><Lock size={10} />Anti-fraude</Badge>
-            <Badge variant="secondary" className="text-xs gap-1"><Star size={10} />Certifié</Badge>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="firstName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prénom</FormLabel>
-                    <FormControl><Input {...field} placeholder="Kofi" data-testid="input-firstName" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="lastName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom</FormLabel>
-                    <FormControl><Input {...field} placeholder="Mensah" data-testid="input-lastName" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Adresse e-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="email" required value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="exemple@email.com"
+                    className="w-full pl-10 pr-4 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  />
+                </div>
               </div>
 
-              <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Adresse email</FormLabel>
-                  <FormControl><Input type="email" {...field} placeholder="kofi@exemple.com" data-testid="input-email" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Numéro de téléphone
+                  <span className="ml-1.5 text-xs text-muted-foreground font-normal">(de préférence WhatsApp)</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="tel" required value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="+225 07 00 00 00 00"
+                    className="w-full pl-10 pr-4 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  />
+                </div>
+              </div>
 
-              <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Téléphone</FormLabel>
-                  <FormControl><Input {...field} placeholder="+225 07 00 00 00 00" data-testid="input-phone" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* Country dropdown */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-foreground mb-1.5">Pays</label>
+                <button
+                  type="button"
+                  onClick={() => setCountryOpen(o => !o)}
+                  className="w-full flex items-center gap-3 pl-10 pr-4 py-3 bg-muted/40 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-left relative"
+                >
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  {selectedCountry ? (
+                    <span className="flex items-center gap-2 text-foreground">
+                      <span>{selectedCountry.flag}</span>
+                      <span>{selectedCountry.name}</span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Sélectionnez votre pays</span>
+                  )}
+                  <ChevronDown className={`ml-auto w-4 h-4 text-muted-foreground transition-transform duration-200 ${countryOpen ? "rotate-180" : ""}`} />
+                </button>
 
-              <FormField control={form.control} name="country" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pays</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-country"><SelectValue placeholder="Choisissez votre pays" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
+                {countryOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-xl max-h-56 overflow-y-auto">
+                    {AFRICAN_COUNTRIES.map(c => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => { setCountry(c.name); setCountryOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left ${country === c.name ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}
+                      >
+                        <span>{c.flag}</span>
+                        <span>{c.name}</span>
+                        {country === c.name && <CheckCircle2 className="ml-auto w-3.5 h-3.5 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              <FormField control={form.control} name="password" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mot de passe</FormLabel>
-                  <FormControl><Input type="password" {...field} placeholder="Minimum 8 caractères" data-testid="input-password" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Mot de passe</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type={showPassword ? "text" : "password"} required minLength={6}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Minimum 6 caractères"
+                    className="w-full pl-10 pr-11 py-3 bg-muted/40 border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  />
+                  <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-              <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmer le mot de passe</FormLabel>
-                  <FormControl><Input type="password" {...field} placeholder="Répétez votre mot de passe" data-testid="input-confirmPassword" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {/* T&C */}
+              <div className="pt-1">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    onClick={() => setAcceptedTerms(v => !v)}
+                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${acceptedTerms ? "bg-primary border-primary" : "border-border bg-muted/40 group-hover:border-primary/50"}`}
+                  >
+                    {acceptedTerms && <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span className="text-sm text-muted-foreground leading-snug">
+                    J'accepte les{" "}
+                    <Link href="/terms" className="text-primary font-medium hover:underline" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                      Conditions d'utilisation
+                    </Link>{" "}
+                    et la{" "}
+                    <Link href="/privacy" className="text-primary font-medium hover:underline" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                      Politique de confidentialité
+                    </Link>
+                  </span>
+                </label>
+              </div>
 
-              <FormField control={form.control} name="referralCode" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Code de parrainage <span className="text-muted-foreground font-normal">(optionnel)</span></FormLabel>
-                  <FormControl><Input {...field} placeholder="Ex: KOF0001ABC" data-testid="input-referralCode" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <Button
+              <button
                 type="submit"
-                className="w-full h-11 text-base font-semibold"
-                disabled={registerMutation.isPending}
-                data-testid="button-submit-register"
+                disabled={isLoading || !acceptedTerms}
+                className="w-full py-3.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98] text-sm mt-2 shadow-sm"
               >
-                {registerMutation.isPending ? "Création en cours..." : "Créer mon compte gratuitement"}
-              </Button>
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                    Création du compte...
+                  </span>
+                ) : "Créer mon compte gratuitement"}
+              </button>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Déjà membre ?{" "}
+                <Link href="/login" className="text-primary font-semibold hover:underline">
+                  Se connecter
+                </Link>
+              </p>
             </form>
-          </Form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Déjà membre ?{" "}
-              <Link href="/login" className="text-primary font-medium hover:underline">Se connecter</Link>
-            </p>
-          </div>
-
-          <div className="mt-6 p-4 rounded-xl bg-muted/50 border border-border">
-            <p className="text-xs text-muted-foreground text-center leading-relaxed">
-              En vous inscrivant, vous acceptez nos conditions d'utilisation. L'activation de votre compte ({activationFee.toLocaleString("fr-FR")} FCFA) sera requise pour accéder aux fonctionnalités de gains.
-            </p>
+            <div className="lg:hidden mt-8 pt-6 border-t border-border">
+              <p className="text-xs text-muted-foreground text-center mb-3">Un projet de</p>
+              <div className="flex items-center justify-center gap-4 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <img src={SSG_LOGO} alt="SSG" className="h-6 w-6 rounded-full object-cover" />
+                  <span className="text-xs text-muted-foreground font-medium">Social Succès Group</span>
+                </div>
+                <span className="text-muted-foreground/30">×</span>
+                <div className="flex items-center gap-1.5">
+                  <img src={SBH_LOGO} alt="SBH" className="h-6 w-6 rounded-full object-cover" />
+                  <span className="text-xs text-muted-foreground font-medium">Social Boost Horizon</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

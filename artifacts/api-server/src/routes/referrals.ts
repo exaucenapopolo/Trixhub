@@ -8,18 +8,12 @@ const router: IRouter = Router();
 function formatReferralUser(user: typeof usersTable.$inferSelect, level: number) {
   return {
     id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
+    displayName: user.displayName || user.email.split("@")[0],
     country: user.country,
     isActivated: user.isActivated,
     joinedAt: user.createdAt.toISOString(),
     level,
   };
-}
-
-async function getUserByReferralCode(code: string) {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.referralCode, code));
-  return user;
 }
 
 router.get("/referrals/team", authenticate, async (req, res): Promise<void> => {
@@ -53,12 +47,7 @@ router.get("/referrals/team", authenticate, async (req, res): Promise<void> => {
   const active = allFormatted.filter(m => m.isActivated).length;
   const inactive = allFormatted.filter(m => !m.isActivated).length;
 
-  res.json({
-    total: allFormatted.length,
-    active,
-    inactive,
-    members: allFormatted,
-  });
+  res.json({ total: allFormatted.length, active, inactive, members: allFormatted });
 });
 
 router.get("/referrals/level/:level", authenticate, async (req, res): Promise<void> => {
@@ -102,17 +91,7 @@ router.get("/referrals/level/:level", authenticate, async (req, res): Promise<vo
   }
 
   const formatted = members.map(m => formatReferralUser(m, level));
-  const active = formatted.filter(m => m.isActivated).length;
-  const inactive = formatted.filter(m => !m.isActivated).length;
-
-  res.json({
-    level,
-    commission,
-    total: formatted.length,
-    active,
-    inactive,
-    members: formatted,
-  });
+  res.json({ level, commission, total: formatted.length, active: formatted.filter(m => m.isActivated).length, inactive: formatted.filter(m => !m.isActivated).length, members: formatted });
 });
 
 router.get("/referrals/activity", authenticate, async (req, res): Promise<void> => {

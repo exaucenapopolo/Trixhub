@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * TRIXHUB Affiliation Platform API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -28,12 +28,14 @@ import type {
   LoginBody,
   PlatformConfig,
   ReferralLevelResponse,
+  ReferrerInfo,
   RegisterBody,
   SuccessResponse,
   Task,
   TeamResponse,
   UpdateCurrencyBody,
   UpdateProfileBody,
+  UpdateThemeBody,
   User,
   Withdrawal,
   WithdrawalBody,
@@ -396,7 +398,7 @@ export const getGetMeQueryKey = () => {
 
 export const getGetMeQueryOptions = <
   TData = Awaited<ReturnType<typeof getMe>>,
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
   request?: SecondParameter<typeof customFetch>;
@@ -417,7 +419,7 @@ export const getGetMeQueryOptions = <
 };
 
 export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>;
-export type GetMeQueryError = ErrorType<ErrorResponse>;
+export type GetMeQueryError = ErrorType<unknown>;
 
 /**
  * @summary Get current user
@@ -425,7 +427,7 @@ export type GetMeQueryError = ErrorType<ErrorResponse>;
 
 export function useGetMe<
   TData = Awaited<ReturnType<typeof getMe>>,
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
   request?: SecondParameter<typeof customFetch>;
@@ -440,7 +442,7 @@ export function useGetMe<
 }
 
 /**
- * @summary Activate user account (3600 FCFA)
+ * @summary Activate account
  */
 export const getActivateAccountUrl = () => {
   return `/api/auth/activate`;
@@ -459,7 +461,7 @@ export const activateAccount = async (
 };
 
 export const getActivateAccountMutationOptions = <
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -500,13 +502,13 @@ export type ActivateAccountMutationResult = NonNullable<
   Awaited<ReturnType<typeof activateAccount>>
 >;
 export type ActivateAccountMutationBody = BodyType<ActivateBody>;
-export type ActivateAccountMutationError = ErrorType<ErrorResponse>;
+export type ActivateAccountMutationError = ErrorType<unknown>;
 
 /**
- * @summary Activate user account (3600 FCFA)
+ * @summary Activate account
  */
 export const useActivateAccount = <
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -524,6 +526,93 @@ export const useActivateAccount = <
 > => {
   return useMutation(getActivateAccountMutationOptions(options));
 };
+
+/**
+ * @summary Get referrer info by referral code
+ */
+export const getGetReferrerUrl = (code: string) => {
+  return `/api/auth/referrer/${code}`;
+};
+
+export const getReferrer = async (
+  code: string,
+  options?: RequestInit,
+): Promise<ReferrerInfo> => {
+  return customFetch<ReferrerInfo>(getGetReferrerUrl(code), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetReferrerQueryKey = (code: string) => {
+  return [`/api/auth/referrer/${code}`] as const;
+};
+
+export const getGetReferrerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReferrer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReferrer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetReferrerQueryKey(code);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getReferrer>>> = ({
+    signal,
+  }) => getReferrer(code, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!code,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getReferrer>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetReferrerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReferrer>>
+>;
+export type GetReferrerQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get referrer info by referral code
+ */
+
+export function useGetReferrer<
+  TData = Awaited<ReturnType<typeof getReferrer>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  code: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getReferrer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReferrerQueryOptions(code, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update profile
@@ -612,7 +701,7 @@ export const useUpdateProfile = <
 };
 
 /**
- * @summary Get dashboard summary
+ * @summary Get dashboard data
  */
 export const getGetDashboardUrl = () => {
   return `/api/users/me/dashboard`;
@@ -633,7 +722,7 @@ export const getGetDashboardQueryKey = () => {
 
 export const getGetDashboardQueryOptions = <
   TData = Awaited<ReturnType<typeof getDashboard>>,
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<
     Awaited<ReturnType<typeof getDashboard>>,
@@ -660,15 +749,15 @@ export const getGetDashboardQueryOptions = <
 export type GetDashboardQueryResult = NonNullable<
   Awaited<ReturnType<typeof getDashboard>>
 >;
-export type GetDashboardQueryError = ErrorType<ErrorResponse>;
+export type GetDashboardQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get dashboard summary
+ * @summary Get dashboard data
  */
 
 export function useGetDashboard<
   TData = Awaited<ReturnType<typeof getDashboard>>,
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<
     Awaited<ReturnType<typeof getDashboard>>,
@@ -687,7 +776,179 @@ export function useGetDashboard<
 }
 
 /**
- * @summary Get referral team
+ * @summary Update preferred currency
+ */
+export const getUpdatePreferredCurrencyUrl = () => {
+  return `/api/users/me/preferred-currency`;
+};
+
+export const updatePreferredCurrency = async (
+  updateCurrencyBody: UpdateCurrencyBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getUpdatePreferredCurrencyUrl(), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateCurrencyBody),
+  });
+};
+
+export const getUpdatePreferredCurrencyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePreferredCurrency>>,
+    TError,
+    { data: BodyType<UpdateCurrencyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePreferredCurrency>>,
+  TError,
+  { data: BodyType<UpdateCurrencyBody> },
+  TContext
+> => {
+  const mutationKey = ["updatePreferredCurrency"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePreferredCurrency>>,
+    { data: BodyType<UpdateCurrencyBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updatePreferredCurrency(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePreferredCurrencyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePreferredCurrency>>
+>;
+export type UpdatePreferredCurrencyMutationBody = BodyType<UpdateCurrencyBody>;
+export type UpdatePreferredCurrencyMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update preferred currency
+ */
+export const useUpdatePreferredCurrency = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePreferredCurrency>>,
+    TError,
+    { data: BodyType<UpdateCurrencyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePreferredCurrency>>,
+  TError,
+  { data: BodyType<UpdateCurrencyBody> },
+  TContext
+> => {
+  return useMutation(getUpdatePreferredCurrencyMutationOptions(options));
+};
+
+/**
+ * @summary Update theme preference
+ */
+export const getUpdateThemeUrl = () => {
+  return `/api/users/me/theme`;
+};
+
+export const updateTheme = async (
+  updateThemeBody: UpdateThemeBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getUpdateThemeUrl(), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateThemeBody),
+  });
+};
+
+export const getUpdateThemeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTheme>>,
+    TError,
+    { data: BodyType<UpdateThemeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTheme>>,
+  TError,
+  { data: BodyType<UpdateThemeBody> },
+  TContext
+> => {
+  const mutationKey = ["updateTheme"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTheme>>,
+    { data: BodyType<UpdateThemeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateTheme(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateThemeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTheme>>
+>;
+export type UpdateThemeMutationBody = BodyType<UpdateThemeBody>;
+export type UpdateThemeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update theme preference
+ */
+export const useUpdateTheme = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTheme>>,
+    TError,
+    { data: BodyType<UpdateThemeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTheme>>,
+  TError,
+  { data: BodyType<UpdateThemeBody> },
+  TContext
+> => {
+  return useMutation(getUpdateThemeMutationOptions(options));
+};
+
+/**
+ * @summary Get full team (all levels)
  */
 export const getGetTeamUrl = () => {
   return `/api/referrals/team`;
@@ -706,7 +967,7 @@ export const getGetTeamQueryKey = () => {
 
 export const getGetTeamQueryOptions = <
   TData = Awaited<ReturnType<typeof getTeam>>,
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof getTeam>>, TError, TData>;
   request?: SecondParameter<typeof customFetch>;
@@ -729,15 +990,15 @@ export const getGetTeamQueryOptions = <
 export type GetTeamQueryResult = NonNullable<
   Awaited<ReturnType<typeof getTeam>>
 >;
-export type GetTeamQueryError = ErrorType<ErrorResponse>;
+export type GetTeamQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get referral team
+ * @summary Get full team (all levels)
  */
 
 export function useGetTeam<
   TData = Awaited<ReturnType<typeof getTeam>>,
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: UseQueryOptions<Awaited<ReturnType<typeof getTeam>>, TError, TData>;
   request?: SecondParameter<typeof customFetch>;
@@ -831,6 +1092,81 @@ export function useGetReferralsByLevel<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetReferralsByLevelQueryOptions(level, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get recent referral activity feed
+ */
+export const getGetReferralActivityUrl = () => {
+  return `/api/referrals/activity`;
+};
+
+export const getReferralActivity = async (
+  options?: RequestInit,
+): Promise<ActivityItem[]> => {
+  return customFetch<ActivityItem[]>(getGetReferralActivityUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetReferralActivityQueryKey = () => {
+  return [`/api/referrals/activity`] as const;
+};
+
+export const getGetReferralActivityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getReferralActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getReferralActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetReferralActivityQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getReferralActivity>>
+  > = ({ signal }) => getReferralActivity({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getReferralActivity>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetReferralActivityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getReferralActivity>>
+>;
+export type GetReferralActivityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent referral activity feed
+ */
+
+export function useGetReferralActivity<
+  TData = Awaited<ReturnType<typeof getReferralActivity>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getReferralActivity>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetReferralActivityQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -990,7 +1326,7 @@ export function useListWithdrawals<
 }
 
 /**
- * @summary Request withdrawal
+ * @summary Request a withdrawal
  */
 export const getRequestWithdrawalUrl = () => {
   return `/api/withdrawals`;
@@ -1009,7 +1345,7 @@ export const requestWithdrawal = async (
 };
 
 export const getRequestWithdrawalMutationOptions = <
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1050,13 +1386,13 @@ export type RequestWithdrawalMutationResult = NonNullable<
   Awaited<ReturnType<typeof requestWithdrawal>>
 >;
 export type RequestWithdrawalMutationBody = BodyType<WithdrawalBody>;
-export type RequestWithdrawalMutationError = ErrorType<ErrorResponse>;
+export type RequestWithdrawalMutationError = ErrorType<unknown>;
 
 /**
- * @summary Request withdrawal
+ * @summary Request a withdrawal
  */
 export const useRequestWithdrawal = <
-  TError = ErrorType<ErrorResponse>,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1076,7 +1412,7 @@ export const useRequestWithdrawal = <
 };
 
 /**
- * @summary List tasks and missions
+ * @summary List tasks/missions
  */
 export const getListTasksUrl = () => {
   return `/api/tasks`;
@@ -1121,7 +1457,7 @@ export type ListTasksQueryResult = NonNullable<
 export type ListTasksQueryError = ErrorType<unknown>;
 
 /**
- * @summary List tasks and missions
+ * @summary List tasks/missions
  */
 
 export function useListTasks<
@@ -1225,7 +1561,7 @@ export const useCompleteTask = <
 };
 
 /**
- * @summary Get platform config and commission rates
+ * @summary Get platform config
  */
 export const getGetPlatformConfigUrl = () => {
   return `/api/config/platform`;
@@ -1276,7 +1612,7 @@ export type GetPlatformConfigQueryResult = NonNullable<
 export type GetPlatformConfigQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get platform config and commission rates
+ * @summary Get platform config
  */
 
 export function useGetPlatformConfig<
@@ -1300,7 +1636,7 @@ export function useGetPlatformConfig<
 }
 
 /**
- * @summary Get currency exchange rates vs FCFA
+ * @summary Get currency exchange rates
  */
 export const getGetCurrencyRatesUrl = () => {
   return `/api/currency/rates`;
@@ -1351,7 +1687,7 @@ export type GetCurrencyRatesQueryResult = NonNullable<
 export type GetCurrencyRatesQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get currency exchange rates vs FCFA
+ * @summary Get currency exchange rates
  */
 
 export function useGetCurrencyRates<
@@ -1366,167 +1702,6 @@ export function useGetCurrencyRates<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetCurrencyRatesQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * @summary Update preferred currency
- */
-export const getUpdatePreferredCurrencyUrl = () => {
-  return `/api/users/me/preferred-currency`;
-};
-
-export const updatePreferredCurrency = async (
-  updateCurrencyBody: UpdateCurrencyBody,
-  options?: RequestInit,
-): Promise<User> => {
-  return customFetch<User>(getUpdatePreferredCurrencyUrl(), {
-    ...options,
-    method: "PATCH",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(updateCurrencyBody),
-  });
-};
-
-export const getUpdatePreferredCurrencyMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updatePreferredCurrency>>,
-    TError,
-    { data: BodyType<UpdateCurrencyBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof updatePreferredCurrency>>,
-  TError,
-  { data: BodyType<UpdateCurrencyBody> },
-  TContext
-> => {
-  const mutationKey = ["updatePreferredCurrency"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof updatePreferredCurrency>>,
-    { data: BodyType<UpdateCurrencyBody> }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return updatePreferredCurrency(data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UpdatePreferredCurrencyMutationResult = NonNullable<
-  Awaited<ReturnType<typeof updatePreferredCurrency>>
->;
-export type UpdatePreferredCurrencyMutationBody = BodyType<UpdateCurrencyBody>;
-export type UpdatePreferredCurrencyMutationError = ErrorType<unknown>;
-
-/**
- * @summary Update preferred currency
- */
-export const useUpdatePreferredCurrency = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof updatePreferredCurrency>>,
-    TError,
-    { data: BodyType<UpdateCurrencyBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof updatePreferredCurrency>>,
-  TError,
-  { data: BodyType<UpdateCurrencyBody> },
-  TContext
-> => {
-  return useMutation(getUpdatePreferredCurrencyMutationOptions(options));
-};
-
-/**
- * @summary Get recent referral activity feed
- */
-export const getGetReferralActivityUrl = () => {
-  return `/api/referrals/activity`;
-};
-
-export const getReferralActivity = async (
-  options?: RequestInit,
-): Promise<ActivityItem[]> => {
-  return customFetch<ActivityItem[]>(getGetReferralActivityUrl(), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetReferralActivityQueryKey = () => {
-  return [`/api/referrals/activity`] as const;
-};
-
-export const getGetReferralActivityQueryOptions = <
-  TData = Awaited<ReturnType<typeof getReferralActivity>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getReferralActivity>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey = queryOptions?.queryKey ?? getGetReferralActivityQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getReferralActivity>>
-  > = ({ signal }) => getReferralActivity({ signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getReferralActivity>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetReferralActivityQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getReferralActivity>>
->;
-export type GetReferralActivityQueryError = ErrorType<unknown>;
-
-/**
- * @summary Get recent referral activity feed
- */
-
-export function useGetReferralActivity<
-  TData = Awaited<ReturnType<typeof getReferralActivity>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getReferralActivity>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetReferralActivityQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
