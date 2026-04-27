@@ -1,12 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../lib/auth";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, type User } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 declare global {
   namespace Express {
     interface Request {
       userId?: number;
+      // L'utilisateur complet est mis à disposition pour éviter une seconde requête
+      // dans les routes (et permettre au middleware requireActivation de l'utiliser).
+      user?: User;
     }
   }
 }
@@ -38,5 +41,6 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   }
 
   req.userId = user.id;
+  req.user = user;
   next();
 }

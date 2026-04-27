@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, transactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
+import { requireActivation } from "../middlewares/requireActivation";
 
 const router: IRouter = Router();
 
@@ -16,7 +17,7 @@ function formatReferralUser(user: typeof usersTable.$inferSelect, level: number)
   };
 }
 
-router.get("/referrals/team", authenticate, async (req, res): Promise<void> => {
+router.get("/referrals/team", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
@@ -50,7 +51,7 @@ router.get("/referrals/team", authenticate, async (req, res): Promise<void> => {
   res.json({ total: allFormatted.length, active, inactive, members: allFormatted });
 });
 
-router.get("/referrals/level/:level", authenticate, async (req, res): Promise<void> => {
+router.get("/referrals/level/:level", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const rawLevel = Array.isArray(req.params.level) ? req.params.level[0] : req.params.level;
   const level = parseInt(rawLevel, 10);
@@ -94,7 +95,7 @@ router.get("/referrals/level/:level", authenticate, async (req, res): Promise<vo
   res.json({ level, commission, total: formatted.length, active: formatted.filter(m => m.isActivated).length, inactive: formatted.filter(m => !m.isActivated).length, members: formatted });
 });
 
-router.get("/referrals/activity", authenticate, async (req, res): Promise<void> => {
+router.get("/referrals/activity", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const transactions = await db.select().from(transactionsTable)
     .where(eq(transactionsTable.userId, userId))

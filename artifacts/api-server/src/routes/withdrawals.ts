@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
+import { requireActivation } from "../middlewares/requireActivation";
 import { RequestWithdrawalBody } from "@workspace/api-zod";
 
 const MIN_WITHDRAWAL = 3000;
@@ -21,7 +22,7 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
   };
 }
 
-router.get("/withdrawals", authenticate, async (req, res): Promise<void> => {
+router.get("/withdrawals", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const withdrawals = await db.select().from(withdrawalsTable)
     .where(eq(withdrawalsTable.userId, userId))
@@ -30,7 +31,7 @@ router.get("/withdrawals", authenticate, async (req, res): Promise<void> => {
   res.json(withdrawals.map(formatWithdrawal));
 });
 
-router.post("/withdrawals", authenticate, async (req, res): Promise<void> => {
+router.post("/withdrawals", authenticate, requireActivation, async (req, res): Promise<void> => {
   const parsed = RequestWithdrawalBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

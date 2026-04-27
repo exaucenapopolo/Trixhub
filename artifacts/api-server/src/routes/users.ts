@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, balancesTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
+import { requireActivation } from "../middlewares/requireActivation";
 import { getRates } from "../lib/currency";
 
 const router: IRouter = Router();
@@ -48,7 +49,7 @@ async function getLevel3Members(userId: number) {
   return l3;
 }
 
-router.get("/users/me/dashboard", authenticate, async (req, res): Promise<void> => {
+router.get("/users/me/dashboard", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {

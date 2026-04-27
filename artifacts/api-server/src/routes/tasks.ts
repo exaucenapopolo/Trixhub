@@ -2,10 +2,11 @@ import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, usersTable, balancesTable, tasksTable, userTasksTable, transactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
+import { requireActivation } from "../middlewares/requireActivation";
 
 const router: IRouter = Router();
 
-router.get("/tasks", authenticate, async (req, res): Promise<void> => {
+router.get("/tasks", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
 
   const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.isActive, true));
@@ -26,7 +27,7 @@ router.get("/tasks", authenticate, async (req, res): Promise<void> => {
   res.json(result);
 });
 
-router.post("/tasks/:id/complete", authenticate, async (req, res): Promise<void> => {
+router.post("/tasks/:id/complete", authenticate, requireActivation, async (req, res): Promise<void> => {
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const taskId = parseInt(rawId, 10);
   const userId = req.userId!;
