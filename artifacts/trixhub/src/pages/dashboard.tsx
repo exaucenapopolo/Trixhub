@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { useState } from "react";
+import { Link, Redirect } from "wouter";
 import { useGetDashboard, useGetReferralActivity, useGetPlatformConfig } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
@@ -25,15 +25,15 @@ const MISSION_TYPES = [
 ];
 
 export default function DashboardPage() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  // Vérification d'activation depuis le serveur à chaque chargement du tableau de bord.
-  // Si l'utilisateur n'est pas activé, le ProtectedRoute de App.tsx le redirigera automatiquement vers /activate.
-  useEffect(() => {
-    refreshUser();
-  }, []);
+  // Vérification simple d'activation : si user n'est pas activé, on redirige vers /activate.
+  // Le AuthContext recharge déjà l'utilisateur au montage de l'app, donc user.isActivated est à jour.
+  if (user && !user.isActivated) {
+    return <Redirect to="/activate" />;
+  }
 
   const { data: dashboard, isLoading: dashLoading } = useGetDashboard();
   const { data: activity } = useGetReferralActivity();

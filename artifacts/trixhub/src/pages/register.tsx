@@ -7,25 +7,27 @@ import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, 
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
+// Liste des 18 pays africains réellement supportés par AccountPE (Swychr Connect)
+// Vérifiée en direct via leur API /api/payout/payout_methods
 const AFRICAN_COUNTRIES = [
-  { code: "BJ", name: "Bénin", flag: "🇧🇯" },
-  { code: "BF", name: "Burkina Faso", flag: "🇧🇫" },
-  { code: "CM", name: "Cameroun", flag: "🇨🇲" },
-  { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮" },
-  { code: "CG", name: "Congo-Brazzaville", flag: "🇨🇬" },
-  { code: "CD", name: "RD Congo", flag: "🇨🇩" },
-  { code: "GA", name: "Gabon", flag: "🇬🇦" },
-  { code: "GH", name: "Ghana", flag: "🇬🇭" },
-  { code: "GN", name: "Guinée", flag: "🇬🇳" },
-  { code: "KE", name: "Kenya", flag: "🇰🇪" },
-  { code: "MG", name: "Madagascar", flag: "🇲🇬" },
-  { code: "ML", name: "Mali", flag: "🇲🇱" },
-  { code: "NE", name: "Niger", flag: "🇳🇪" },
-  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
-  { code: "RW", name: "Rwanda", flag: "🇷🇼" },
-  { code: "SN", name: "Sénégal", flag: "🇸🇳" },
-  { code: "TG", name: "Togo", flag: "🇹🇬" },
-  { code: "TZ", name: "Tanzanie", flag: "🇹🇿" },
+  { code: "BJ", name: "Bénin", flag: "🇧🇯", dial: "+229" },
+  { code: "BF", name: "Burkina Faso", flag: "🇧🇫", dial: "+226" },
+  { code: "CM", name: "Cameroun", flag: "🇨🇲", dial: "+237" },
+  { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮", dial: "+225" },
+  { code: "CG", name: "Congo-Brazzaville", flag: "🇨🇬", dial: "+242" },
+  { code: "CD", name: "RD Congo", flag: "🇨🇩", dial: "+243" },
+  { code: "GA", name: "Gabon", flag: "🇬🇦", dial: "+241" },
+  { code: "GH", name: "Ghana", flag: "🇬🇭", dial: "+233" },
+  { code: "GN", name: "Guinée", flag: "🇬🇳", dial: "+224" },
+  { code: "KE", name: "Kenya", flag: "🇰🇪", dial: "+254" },
+  { code: "ML", name: "Mali", flag: "🇲🇱", dial: "+223" },
+  { code: "NE", name: "Niger", flag: "🇳🇪", dial: "+227" },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬", dial: "+234" },
+  { code: "RW", name: "Rwanda", flag: "🇷🇼", dial: "+250" },
+  { code: "SN", name: "Sénégal", flag: "🇸🇳", dial: "+221" },
+  { code: "TG", name: "Togo", flag: "🇹🇬", dial: "+228" },
+  { code: "TZ", name: "Tanzanie", flag: "🇹🇿", dial: "+255" },
+  { code: "UG", name: "Ouganda", flag: "🇺🇬", dial: "+256" },
 ];
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
@@ -74,6 +76,28 @@ export default function RegisterPage() {
   }, []);
 
   const selectedCountry = AFRICAN_COUNTRIES.find(c => c.name === country);
+
+  // Quand l'utilisateur change de pays, on remplace automatiquement l'indicatif téléphonique
+  // dans le champ téléphone. Exemple : pays=Cameroun → téléphone commence par "+237 ".
+  const applyDialCode = (currentPhone: string, newDial: string): string => {
+    const trimmed = currentPhone.trim();
+    // Si le téléphone commence déjà par un indicatif connu, on le remplace
+    for (const c of AFRICAN_COUNTRIES) {
+      if (trimmed.startsWith(c.dial)) {
+        return newDial + trimmed.slice(c.dial.length);
+      }
+    }
+    // Si le champ est vide, on met juste l'indicatif suivi d'un espace
+    if (!trimmed) return newDial + " ";
+    // Sinon on préfixe
+    return newDial + " " + trimmed;
+  };
+
+  const handleCountrySelect = (c: typeof AFRICAN_COUNTRIES[number]) => {
+    setCountry(c.name);
+    setPhone(applyDialCode(phone, c.dial));
+    setCountryOpen(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,12 +290,13 @@ export default function RegisterPage() {
                       <button
                         key={c.code}
                         type="button"
-                        onClick={() => { setCountry(c.name); setCountryOpen(false); }}
+                        onClick={() => handleCountrySelect(c)}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors text-left ${country === c.name ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}
                       >
                         <span>{c.flag}</span>
-                        <span>{c.name}</span>
-                        {country === c.name && <CheckCircle2 className="ml-auto w-3.5 h-3.5 text-primary" />}
+                        <span className="flex-1">{c.name}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{c.dial}</span>
+                        {country === c.name && <CheckCircle2 className="ml-1 w-3.5 h-3.5 text-primary" />}
                       </button>
                     ))}
                   </div>

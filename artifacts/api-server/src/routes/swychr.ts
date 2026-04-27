@@ -12,12 +12,15 @@ import {
 
 const router: IRouter = Router();
 
+// Mapping des 18 pays africains supportés par AccountPE (Swychr Connect)
+// Vérifié en direct via leur API /api/payout/payout_methods
 const COUNTRY_CODES: Record<string, string> = {
   "Bénin": "BJ", "Burkina Faso": "BF", "Cameroun": "CM",
   "Côte d'Ivoire": "CI", "Congo-Brazzaville": "CG", "RD Congo": "CD",
   "Gabon": "GA", "Ghana": "GH", "Guinée": "GN", "Kenya": "KE",
-  "Madagascar": "MG", "Mali": "ML", "Niger": "NE", "Nigeria": "NG",
+  "Mali": "ML", "Niger": "NE", "Nigeria": "NG",
   "Rwanda": "RW", "Sénégal": "SN", "Togo": "TG", "Tanzanie": "TZ",
+  "Ouganda": "UG",
 };
 
 function formatUser(user: typeof usersTable.$inferSelect) {

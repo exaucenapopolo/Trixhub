@@ -9,39 +9,50 @@ const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
-const TICKER_ITEMS = [
-  "💰 Gagne jusqu'à 1 700 FCFA par filleul direct activé",
-  "📹 Regarde des vidéos et sois rémunéré immédiatement",
-  "✅ Réalise de petites tâches simples et sois payé",
-  "🌍 Réseau de membres dans 18 pays africains",
-  "📱 Tout depuis ton téléphone, partout et à tout moment",
-  "💳 Retrait via Orange Money, Wave, MTN, M-Pesa et plus",
-  "👥 Commissions sur 3 niveaux de parrainage",
-  "🚀 Activation unique 3 600 FCFA — Accès à vie à la plateforme",
-  "🎯 Missions rémunérées disponibles chaque jour",
-  "🔗 Partage ton lien unique et génère des revenus passifs",
+// Illustrations qui défilent automatiquement au-dessus du logo (carrousel discret)
+const ILLUSTRATIONS = [
+  { emoji: "💸", title: "Gagne de l'argent réel", desc: "Jusqu'à 1 700 FCFA par filleul actif", color: "from-green-500/20 to-emerald-600/20", accent: "text-green-500" },
+  { emoji: "👥", title: "Construis ton équipe", desc: "3 niveaux de commissions automatiques", color: "from-blue-500/20 to-blue-700/20", accent: "text-blue-500" },
+  { emoji: "📱", title: "Missions sur mobile", desc: "Vidéos, partage, lecture rémunérés", color: "from-purple-500/20 to-purple-700/20", accent: "text-purple-500" },
+  { emoji: "🌍", title: "18 pays africains", desc: "Mobile Money disponible partout", color: "from-orange-500/20 to-amber-600/20", accent: "text-orange-500" },
 ];
 
-function Ticker() {
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+function IllustrationCarousel() {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const iv = setInterval(() => setCurrent(s => (s + 1) % ILLUSTRATIONS.length), 3500);
+    return () => clearInterval(iv);
+  }, []);
+
   return (
-    <div className="w-full overflow-hidden bg-primary py-2.5 relative">
-      <div className="flex gap-12 animate-marquee whitespace-nowrap">
-        {items.map((item, i) => (
-          <span key={i} className="text-primary-foreground text-sm font-medium flex-shrink-0">
-            {item} <span className="opacity-40 mx-2">•</span>
-          </span>
+    <div className="mb-6">
+      <div className="relative overflow-hidden rounded-2xl">
+        {ILLUSTRATIONS.map((ill, i) => (
+          <div
+            key={i}
+            className={`bg-gradient-to-br ${ill.color} border border-border rounded-2xl p-5 transition-all duration-500 ${i === current ? "block" : "hidden"}`}
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-4xl flex-shrink-0">{ill.emoji}</div>
+              <div className="min-w-0">
+                <h3 className={`text-base font-bold ${ill.accent} leading-tight`}>{ill.title}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{ill.desc}</p>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
-      <style>{`
-        .animate-marquee {
-          animation: marquee 35s linear infinite;
-        }
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
+      <div className="flex justify-center gap-1.5 mt-3">
+        {ILLUSTRATIONS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            aria-label={`Slide ${i + 1}`}
+            className={`h-1.5 rounded-full transition-all ${i === current ? "bg-primary w-6" : "bg-border w-1.5"}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -60,7 +71,7 @@ export default function LoginPage() {
   const [loggedUser, setLoggedUser] = useState<{ displayName?: string } | null>(null);
 
   useEffect(() => {
-    // If URL has ?activation=pending, show banner directly
+    // Si l'URL contient ?activation=pending, on affiche directement la bannière d'activation
     const params = new URLSearchParams(window.location.search);
     if (params.get("activation") === "pending") setNotActivated(true);
   }, []);
@@ -84,7 +95,7 @@ export default function LoginPage() {
         toast({ title: "Connexion réussie", description: "Bon retour !" });
         navigate("/dashboard");
       } else {
-        // Account not activated → show in-page activation prompt
+        // Compte créé mais pas encore activé : on affiche la carte d'invitation à l'activation
         setLoggedUser(data.user);
         setNotActivated(true);
       }
@@ -97,9 +108,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col transition-colors duration-300">
-      {/* Scrolling ticker */}
-      <Ticker />
-
       {/* Top bar */}
       <div className="flex items-center justify-between p-4 lg:p-6">
         <Link href="/" className="flex items-center gap-2">
@@ -174,6 +182,9 @@ export default function LoginPage() {
 
             /* ── Formulaire de connexion ── */
             <>
+              {/* Carrousel d'illustrations au-dessus du logo */}
+              <IllustrationCarousel />
+
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
                   <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-10 w-10 rounded-xl object-contain" />

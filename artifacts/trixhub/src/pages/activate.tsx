@@ -48,25 +48,27 @@ const PAYMENT_TX_KEY = "trixhub_payment_tx";
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
+// Liste des 18 pays africains réellement supportés par AccountPE (Swychr Connect)
+// Vérifiée en direct via leur API /api/payout/payout_methods
 const AFRICAN_COUNTRIES = [
-  { code: "BJ", name: "Bénin", flag: "🇧🇯", method: "MTN / Moov Money" },
-  { code: "BF", name: "Burkina Faso", flag: "🇧🇫", method: "Orange Money / Moov" },
-  { code: "CM", name: "Cameroun", flag: "🇨🇲", method: "MTN / Orange Money" },
-  { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮", method: "Orange / MTN / Wave" },
-  { code: "CG", name: "Congo-Brazzaville", flag: "🇨🇬", method: "MTN / Airtel" },
-  { code: "CD", name: "RD Congo", flag: "🇨🇩", method: "Airtel / Vodacom" },
-  { code: "GA", name: "Gabon", flag: "🇬🇦", method: "Airtel / Moov" },
-  { code: "GH", name: "Ghana", flag: "🇬🇭", method: "MTN / Vodafone" },
-  { code: "GN", name: "Guinée", flag: "🇬🇳", method: "Orange / MTN" },
-  { code: "KE", name: "Kenya", flag: "🇰🇪", method: "M-Pesa" },
-  { code: "MG", name: "Madagascar", flag: "🇲🇬", method: "MVola / Airtel" },
-  { code: "ML", name: "Mali", flag: "🇲🇱", method: "Orange / Moov" },
-  { code: "NE", name: "Niger", flag: "🇳🇪", method: "Airtel / Moov" },
-  { code: "NG", name: "Nigeria", flag: "🇳🇬", method: "MTN / Airtel / Glo" },
-  { code: "RW", name: "Rwanda", flag: "🇷🇼", method: "MTN / Airtel" },
-  { code: "SN", name: "Sénégal", flag: "🇸🇳", method: "Orange / Wave / Free" },
-  { code: "TG", name: "Togo", flag: "🇹🇬", method: "Moov / Togocel" },
-  { code: "TZ", name: "Tanzanie", flag: "🇹🇿", method: "M-Pesa / Airtel" },
+  { code: "BJ", name: "Bénin", flag: "🇧🇯", method: "MTN / Moov Money", dial: "+229" },
+  { code: "BF", name: "Burkina Faso", flag: "🇧🇫", method: "Orange Money / Moov", dial: "+226" },
+  { code: "CM", name: "Cameroun", flag: "🇨🇲", method: "MTN / Orange Money", dial: "+237" },
+  { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮", method: "Orange / MTN / Moov / Wave", dial: "+225" },
+  { code: "CG", name: "Congo-Brazzaville", flag: "🇨🇬", method: "MTN / Airtel", dial: "+242" },
+  { code: "CD", name: "RD Congo", flag: "🇨🇩", method: "M-Pesa / Orange / Airtel / Afrimoney", dial: "+243" },
+  { code: "GA", name: "Gabon", flag: "🇬🇦", method: "Airtel / Moov", dial: "+241" },
+  { code: "GH", name: "Ghana", flag: "🇬🇭", method: "MTN / Vodafone / Airtel", dial: "+233" },
+  { code: "GN", name: "Guinée", flag: "🇬🇳", method: "Orange / MTN", dial: "+224" },
+  { code: "KE", name: "Kenya", flag: "🇰🇪", method: "M-Pesa / Airtel", dial: "+254" },
+  { code: "ML", name: "Mali", flag: "🇲🇱", method: "Orange / Moov / Wave", dial: "+223" },
+  { code: "NE", name: "Niger", flag: "🇳🇪", method: "Airtel", dial: "+227" },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬", method: "Tous les virements bancaires", dial: "+234" },
+  { code: "RW", name: "Rwanda", flag: "🇷🇼", method: "MTN / Airtel", dial: "+250" },
+  { code: "SN", name: "Sénégal", flag: "🇸🇳", method: "Orange / Wave / Free", dial: "+221" },
+  { code: "TG", name: "Togo", flag: "🇹🇬", method: "Tmoney / Moov", dial: "+228" },
+  { code: "TZ", name: "Tanzanie", flag: "🇹🇿", method: "M-Pesa / Airtel / Tigo", dial: "+255" },
+  { code: "UG", name: "Ouganda", flag: "🇺🇬", method: "MTN / Airtel", dial: "+256" },
 ];
 
 const BENEFITS_WITH = [
