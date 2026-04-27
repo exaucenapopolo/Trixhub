@@ -21,7 +21,7 @@ export async function getSwychrToken(): Promise<string> {
     throw new Error("AccountPE non configuré: SWYCHR_USERNAME manquant");
   }
 
-  const loginUrl = `${SWYCHR_CONFIG.apiUrl}/auth/login`;
+  const loginUrl = `${SWYCHR_CONFIG.apiUrl}/login`;
   console.log("[AccountPE] Login →", loginUrl);
 
   const response = await fetch(loginUrl, {
