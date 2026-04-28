@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
 import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth";
 import { authenticate } from "../middlewares/authenticate";
@@ -78,68 +78,103 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   const passwordHash = await hashPassword(password);
   const displayName = deriveDisplayName(emailLower);
 
-  const tempCode = `TEMP${Date.now()}`;
-  const [user] = await db.insert(usersTable).values({
-    displayName,
-    email: emailLower,
-    phone: phoneClean,
-    country,
-    passwordHash,
-    referralCode: tempCode,
-    referredByCode: referrer?.referralCode ?? null,
-    isActivated: false,
-    preferredCurrency: "FCFA",
-    themePreference: "light",
-  }).returning();
+  // ─── Toute l'écriture se fait en UNE transaction : insert user, generate referralCode,
+  // insert balance, crédits N1/N2/N3 + logs. Si un quelconque step échoue → rollback total.
+  let finalUser: typeof usersTable.$inferSelect;
+  try {
+    finalUser = await db.transaction(async (tx) => {
+      const tempCode = `TEMP${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const [user] = await tx.insert(usersTable).values({
+        displayName,
+        email: emailLower,
+        phone: phoneClean,
+        country,
+        passwordHash,
+        referralCode: tempCode,
+        referredByCode: referrer?.referralCode ?? null,
+        isActivated: false,
+        preferredCurrency: "FCFA",
+        themePreference: "light",
+      }).returning();
 
-  const realCode = generateReferralCode(displayName, user.id);
-  await db.update(usersTable).set({ referralCode: realCode }).where(eq(usersTable.id, user.id));
+      const realCode = generateReferralCode(displayName, user.id);
+      const [withCode] = await tx.update(usersTable)
+        .set({ referralCode: realCode })
+        .where(eq(usersTable.id, user.id))
+        .returning();
 
-  await db.insert(balancesTable).values({
-    userId: user.id,
-    referralBalance: "0",
-    taskBalance: "0",
-    inactiveBalance: "0",
-    withdrawnAmount: "0",
-    spentAmount: "0",
-  });
+      await tx.insert(balancesTable).values({
+        userId: user.id,
+        referralBalance: "0",
+        taskBalance: "0",
+        inactiveBalance: "0",
+        withdrawnAmount: "0",
+        spentAmount: "0",
+      });
 
-  // Credit inactive balance to referrers
-  if (referrer) {
-    await creditInactiveBalance(referrer, user, displayName, 1700, 1);
+      // Crédits parents N1/N2/N3 dans la même tx (atomique).
+      // Si un code parent existe mais le user est introuvable (dérive de données),
+      // on log warn explicite (observabilité) plutôt qu'un skip silencieux.
+      if (referrer) {
+        await creditInactiveBalanceTx(tx, referrer, withCode, displayName, 1700, 1);
 
-    if (referrer.referredByCode) {
-      const [gr] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referrer.referredByCode));
-      if (gr) {
-        await creditInactiveBalance(gr, user, displayName, 700, 2);
-        if (gr.referredByCode) {
-          const [gg] = await db.select().from(usersTable).where(eq(usersTable.referralCode, gr.referredByCode));
-          if (gg) await creditInactiveBalance(gg, user, displayName, 300, 3);
+        if (referrer.referredByCode) {
+          const [gr] = await tx.select().from(usersTable).where(eq(usersTable.referralCode, referrer.referredByCode));
+          if (!gr) {
+            req.log.warn({ code: referrer.referredByCode, level: 2, newUserId: user.id }, "[auth/register] N2 referrer introuvable, commission ignorée (dérive de données)");
+          } else {
+            await creditInactiveBalanceTx(tx, gr, withCode, displayName, 700, 2);
+            if (gr.referredByCode) {
+              const [gg] = await tx.select().from(usersTable).where(eq(usersTable.referralCode, gr.referredByCode));
+              if (!gg) {
+                req.log.warn({ code: gr.referredByCode, level: 3, newUserId: user.id }, "[auth/register] N3 referrer introuvable, commission ignorée (dérive de données)");
+              } else {
+                await creditInactiveBalanceTx(tx, gg, withCode, displayName, 300, 3);
+              }
+            }
+          }
         }
       }
-    }
+
+      return withCode;
+    });
+  } catch (err) {
+    req.log.error({ err, email: emailLower }, "[auth/register] transaction rollbackée");
+    res.status(500).json({ error: "Erreur lors de la création du compte" });
+    return;
   }
 
-  const updatedUser = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
-  const token = generateToken(user.id);
-  req.log.info({ userId: user.id }, "User registered");
-  res.status(201).json({ user: formatUser(updatedUser[0]), token });
+  const token = generateToken(finalUser.id);
+  req.log.info({ userId: finalUser.id }, "User registered");
+  res.status(201).json({ user: formatUser(finalUser), token });
 });
 
-async function creditInactiveBalance(
+// Type local Tx (transaction Drizzle).
+type AuthTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function creditInactiveBalanceTx(
+  tx: AuthTx,
   beneficiary: typeof usersTable.$inferSelect,
   newUser: typeof usersTable.$inferSelect,
   newUserName: string,
   commission: number,
-  level: number
+  level: number,
 ) {
-  const [bal] = await db.select().from(balancesTable).where(eq(balancesTable.userId, beneficiary.id));
-  if (!bal) return;
-  const current = parseFloat(bal.inactiveBalance ?? "0");
-  await db.update(balancesTable)
-    .set({ inactiveBalance: (current + commission).toFixed(2) })
-    .where(eq(balancesTable.userId, beneficiary.id));
-  await db.insert(transactionsTable).values({
+  // Garantit l'invariant "tout user a une balance" via upsert sûr (no-op si présente)
+  // grâce à la contrainte UNIQUE sur balances.user_id. Les colonnes ont default "0".
+  await tx.insert(balancesTable).values({ userId: beneficiary.id }).onConflictDoNothing();
+
+  // UPDATE arithmétique atomique.
+  const updated = await tx.update(balancesTable)
+    .set({ inactiveBalance: sql`${balancesTable.inactiveBalance} + ${commission}` })
+    .where(eq(balancesTable.userId, beneficiary.id))
+    .returning();
+  if (updated.length === 0) {
+    // Ne devrait jamais arriver post-upsert : throw → rollback total de l'inscription.
+    throw new Error(`MISSING_BALANCE_ROW_AFTER_UPSERT user=${beneficiary.id}`);
+  }
+
+  await tx.insert(transactionsTable).values({
     userId: beneficiary.id,
     type: `referral_l${level}_inactive`,
     amount: commission.toFixed(2),

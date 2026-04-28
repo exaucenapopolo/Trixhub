@@ -3,6 +3,8 @@ import { pgTable, text, serial, timestamp, decimal, integer } from "drizzle-orm/
 export const swychrTransactionsTable = pgTable("swychr_transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
+  // Bénéficiaire de l'activation (peut différer de userId quand un parent paie pour un filleul)
+  targetUserId: integer("target_user_id"),
   paymentRef: text("payment_ref").notNull().unique(),
   swychrRef: text("swychr_ref"),
   amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),

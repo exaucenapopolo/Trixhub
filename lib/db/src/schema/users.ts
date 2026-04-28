@@ -22,6 +22,8 @@ export const usersTable = pgTable("users", {
   canvaRequestedAt: timestamp("canva_requested_at", { withTimezone: true }),
   formationRequestedAt: timestamp("formation_requested_at", { withTimezone: true }),
   formationRequestedTitle: text("formation_requested_title"),
+  // Bonus de connexion quotidien : timestamp de la dernière attribution.
+  lastDailyBonusAt: timestamp("last_daily_bonus_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -259,6 +259,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ReferralLevelResponse"
 
+  /referrals/activate-child/{childId}:
+    post:
+      operationId: activateChild
+      tags: [referrals]
+      summary: Active un filleul N1 inactif via solde dépôt ou parrainage
+      parameters:
+        - name: childId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateChildBody"
+      responses:
+        "200":
+          description: Filleul activé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivateChildResponse"
+        "402":
+          description: Solde insuffisant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Pas votre filleul direct
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Filleul introuvable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /referrals/activity:
     get:
       operationId: getReferralActivity
@@ -525,6 +568,10 @@ components:
           type: number
         taskBalance:
           type: number
+        bonusBalance:
+          type: number
+        depositBalance:
+          type: number
         withdrawnAmount:
           type: number
         spentAmount:
@@ -545,11 +592,16 @@ components:
           type: integer
         pendingWithdrawals:
           type: integer
+        dailyBonusClaimed:
+          type: boolean
+          description: "true si le bonus quotidien a été crédité lors de cet appel"
+        dailyBonusAmount:
+          type: number
         currency:
           type: string
         exchangeRate:
           type: number
-      required: [totalBalance, referralBalance, taskBalance, withdrawnAmount, spentAmount, inactiveBalance, totalReferrals, activeReferrals, inactiveReferrals, level1Count, level2Count, level3Count, pendingWithdrawals, currency, exchangeRate]
+      required: [totalBalance, referralBalance, taskBalance, bonusBalance, depositBalance, withdrawnAmount, spentAmount, inactiveBalance, totalReferrals, activeReferrals, inactiveReferrals, level1Count, level2Count, level3Count, pendingWithdrawals, dailyBonusClaimed, dailyBonusAmount, currency, exchangeRate]
 
     ReferralUser:
       type: object
@@ -611,6 +663,10 @@ components:
           type: number
         taskBalance:
           type: number
+        bonusBalance:
+          type: number
+        depositBalance:
+          type: number
         inactiveBalance:
           type: number
         withdrawnAmount:
@@ -623,7 +679,30 @@ components:
           type: string
         exchangeRate:
           type: number
-      required: [totalBalance, referralBalance, taskBalance, inactiveBalance, withdrawnAmount, spentAmount, minimumWithdrawal, currency, exchangeRate]
+      required: [totalBalance, referralBalance, taskBalance, bonusBalance, depositBalance, inactiveBalance, withdrawnAmount, spentAmount, minimumWithdrawal, currency, exchangeRate]
+
+    ActivateChildBody:
+      type: object
+      properties:
+        source:
+          type: string
+          description: "deposit (3600) ou referral (4100=3600+500 frais)"
+      required: [source]
+
+    ActivateChildResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        childId:
+          type: integer
+        cost:
+          type: number
+        source:
+          type: string
+        message:
+          type: string
+      required: [success, childId, cost, source, message]
 
     WithdrawalBody:
       type: object

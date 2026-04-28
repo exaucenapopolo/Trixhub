@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Search, CheckCircle, Clock, Globe, TrendingUp } from "lucide-react";
+import { Users, Search, CheckCircle, Clock, Globe, TrendingUp, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatLocal } from "@/lib/currency";
+import ActivateChildModal from "@/components/ActivateChildModal";
 
 export default function TeamLevelPage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function TeamLevelPage() {
   const level = parseInt(params?.level ?? "1", 10);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [activatingChild, setActivatingChild] = useState<{ id: number; displayName: string; country: string } | null>(null);
 
   const { data, isLoading } = useGetReferralsByLevel(level);
 
@@ -133,15 +135,26 @@ export default function TeamLevelPage() {
                         <span className="text-xs text-muted-foreground">{m.country}</span>
                       </div>
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center gap-2">
                       {m.isActivated ? (
                         <Badge variant="outline" className="text-primary border-primary/30 gap-1 text-xs">
                           <CheckCircle size={10} />Actif
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 text-xs">
-                          <Clock size={10} />Inactif
-                        </Badge>
+                        <>
+                          <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 text-xs">
+                            <Clock size={10} />Inactif
+                          </Badge>
+                          {level === 1 && (
+                            <button
+                              onClick={() => setActivatingChild({ id: m.id, displayName: m.displayName, country: m.country })}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                              data-testid={`button-activate-child-${m.id}`}
+                            >
+                              <Zap size={11} /> Activer
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -150,6 +163,14 @@ export default function TeamLevelPage() {
             )}
           </CardContent>
         </Card>
+
+        {activatingChild && (
+          <ActivateChildModal
+            open={!!activatingChild}
+            onClose={() => setActivatingChild(null)}
+            child={activatingChild}
+          />
+        )}
       </div>
     </Layout>
   );

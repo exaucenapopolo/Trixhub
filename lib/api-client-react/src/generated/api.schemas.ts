@@ -85,6 +85,8 @@ export interface Dashboard {
   totalBalance: number;
   referralBalance: number;
   taskBalance: number;
+  bonusBalance: number;
+  depositBalance: number;
   withdrawnAmount: number;
   spentAmount: number;
   inactiveBalance: number;
@@ -95,6 +97,9 @@ export interface Dashboard {
   level2Count: number;
   level3Count: number;
   pendingWithdrawals: number;
+  /** true si le bonus quotidien a été crédité lors de cet appel */
+  dailyBonusClaimed: boolean;
+  dailyBonusAmount: number;
   currency: string;
   exchangeRate: number;
 }
@@ -128,12 +133,27 @@ export interface BalanceSummary {
   totalBalance: number;
   referralBalance: number;
   taskBalance: number;
+  bonusBalance: number;
+  depositBalance: number;
   inactiveBalance: number;
   withdrawnAmount: number;
   spentAmount: number;
   minimumWithdrawal: number;
   currency: string;
   exchangeRate: number;
+}
+
+export interface ActivateChildBody {
+  /** deposit (3600) ou referral (4100=3600+500 frais) */
+  source: string;
+}
+
+export interface ActivateChildResponse {
+  success: boolean;
+  childId: number;
+  cost: number;
+  source: string;
+  message: string;
 }
 
 export interface WithdrawalBody {

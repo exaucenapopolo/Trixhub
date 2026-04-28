@@ -7,6 +7,8 @@ export const balancesTable = pgTable("balances", {
   userId: integer("user_id").notNull().unique(),
   referralBalance: decimal("referral_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   taskBalance: decimal("task_balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  bonusBalance: decimal("bonus_balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  depositBalance: decimal("deposit_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   inactiveBalance: decimal("inactive_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   withdrawnAmount: decimal("withdrawn_amount", { precision: 15, scale: 2 }).notNull().default("0"),
   spentAmount: decimal("spent_amount", { precision: 15, scale: 2 }).notNull().default("0"),

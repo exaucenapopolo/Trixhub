@@ -17,6 +17,7 @@ import MissionQuizzPage from "@/pages/tasks/quizz";
 import MissionDecouvertePage from "@/pages/tasks/decouverte";
 import MissionSurprisePage from "@/pages/tasks/surprise";
 import WithdrawalsPage from "@/pages/withdrawals";
+import DepotPage from "@/pages/depot";
 import ProfilePage from "@/pages/profile";
 import BonusCanvaPage from "@/pages/bonus/canva";
 import BonusVpnPage from "@/pages/bonus/vpn";
@@ -96,6 +97,7 @@ function InnerApp() {
         <Route path="/tasks/decouverte" component={() => <ProtectedRoute component={MissionDecouvertePage} />} />
         <Route path="/tasks/surprise" component={() => <ProtectedRoute component={MissionSurprisePage} />} />
         <Route path="/withdrawals" component={() => <ProtectedRoute component={WithdrawalsPage} />} />
+        <Route path="/depot" component={() => <ProtectedRoute component={DepotPage} />} />
         <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
         <Route path="/bonus/canva" component={() => <ProtectedRoute component={BonusCanvaPage} />} />
         <Route path="/bonus/vpn" component={() => <ProtectedRoute component={BonusVpnPage} />} />

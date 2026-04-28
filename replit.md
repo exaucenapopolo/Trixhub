@@ -60,9 +60,29 @@ TRIXHUB est une plateforme d'affiliation professionnelle ciblant l'Afrique franc
 - `lib/objectStorage.ts` — wrapper Google Cloud Storage via le sidecar Replit (signed URLs).
 
 ### Database (lib/db/src/schema.ts)
-Tables: users, balances, transactions, withdrawals, tasks, user_tasks, sessions
-- `users` : ajout `is_admin`, `canva_requested_at`, `formation_requested_at`, `formation_requested_title` (anti-fraude demandes uniques).
-- `withdrawals` : ajout `proof_url`, `proof_token`, `proof_uploaded_at` (preuve de paiement avec URL signée par token).
+Tables: users, balances, transactions, withdrawals, tasks, user_tasks, sessions, swychr_transactions
+- `users` : `is_admin`, `canva_requested_at`, `formation_requested_at`, `formation_requested_title` (anti-fraude demandes uniques), `last_daily_bonus_at` (bonus quotidien).
+- `balances` : ajout `bonus_balance`, `deposit_balance` (Vague 2/3) — defaults "0", contrainte UNIQUE sur `user_id`.
+- `user_tasks` : contrainte UNIQUE multi-colonne `(user_id, task_id)` — anti double-claim concurrent.
+- `withdrawals` : `proof_url`, `proof_token`, `proof_uploaded_at`.
+- `swychr_transactions` : tracking paiements AccountPE (purpose: activation|deposit|child_activation, target_user_id, status pending/SUCCESS/FAILED).
+
+### Vague 2/3 — Atomicité financière (PASS architect)
+Tous les flux financiers sont atomiques et observables :
+- `lib/activation.ts` : `activateUserTx` (UPDATE conditionnel `WHERE is_activated=false RETURNING` + crédit bonus +800 + commissions N1/N2/N3 dans une seule tx) ; `creditDepositTx` strict ; `creditCommissionTx` avec upsert balance ON CONFLICT DO NOTHING.
+- `lib/dailyBonus.ts` : `claimDailyBonusIfDue` UPDATE conditionnel sur `last_daily_bonus_at::date < CURRENT_DATE RETURNING` puis crédit +5 bonus dans la même tx.
+- `routes/swychr.ts` : `handlePaymentSuccess` en UNE transaction (UPDATE `WHERE status='pending' RETURNING` pour idempotence + effets métier dans la même tx + refund vers solde dépôt si race sur activation/child_activation). `GET /swychr/status` renvoie la vérité INTERNE (refreshed.status après traitement).
+- `routes/referrals.ts` : `POST /referrals/activate-child/:childId` (source: deposit|referral|swychr) — débit conditionnel `WHERE balance >= cost RETURNING` + activateUserTx + rollback si race.
+- `routes/auth.ts` : `/auth/register` en transaction unique (insert user, generate code, insert balance, commissions inactives N1/N2/N3 + logs). Logs explicites sur dérive de données (referrer N2/N3 introuvable).
+- `routes/tasks.ts` : `/tasks/:id/complete` en tx + UNIQUE(user_id, task_id) catch 23505 + UPDATE balance strict.
+- `scripts/post-merge.sh` : `pnpm --filter db push-force` puis backfill idempotent des balances manquantes.
+
+### Frontend Vague 2/3
+- `pages/dashboard.tsx` : refonte avec HeroBalance animé (count-up) + HeroReferralLink séparé + 4 BalanceCard (parrainage / missions / bonus / dépôt) + activité.
+- `pages/depot.tsx` : page dépôt via Swychr (montant libre + polling status + bouton "Vérifier maintenant").
+- `components/ActivateChildModal.tsx` : modal 3 méthodes pour activer un filleul N1 inactif (solde dépôt 3600, solde parrainage 4100=3600+500 frais, paiement direct Swychr).
+- `pages/teamLevel.tsx` : bouton "Activer" sur N1 inactifs.
+- `hooks/use-count-up.ts` : animation count-up des montants.
 
 ## Key Commands
 

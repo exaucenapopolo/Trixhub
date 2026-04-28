@@ -18,6 +18,8 @@ import type {
 
 import type {
   ActivateBody,
+  ActivateChildBody,
+  ActivateChildResponse,
   ActivityItem,
   AuthResponse,
   BalanceSummary,
@@ -1099,6 +1101,93 @@ export function useGetReferralsByLevel<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Active un filleul N1 inactif via solde dépôt ou parrainage
+ */
+export const getActivateChildUrl = (childId: number) => {
+  return `/api/referrals/activate-child/${childId}`;
+};
+
+export const activateChild = async (
+  childId: number,
+  activateChildBody: ActivateChildBody,
+  options?: RequestInit,
+): Promise<ActivateChildResponse> => {
+  return customFetch<ActivateChildResponse>(getActivateChildUrl(childId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(activateChildBody),
+  });
+};
+
+export const getActivateChildMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateChild>>,
+    TError,
+    { childId: number; data: BodyType<ActivateChildBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof activateChild>>,
+  TError,
+  { childId: number; data: BodyType<ActivateChildBody> },
+  TContext
+> => {
+  const mutationKey = ["activateChild"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof activateChild>>,
+    { childId: number; data: BodyType<ActivateChildBody> }
+  > = (props) => {
+    const { childId, data } = props ?? {};
+
+    return activateChild(childId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActivateChildMutationResult = NonNullable<
+  Awaited<ReturnType<typeof activateChild>>
+>;
+export type ActivateChildMutationBody = BodyType<ActivateChildBody>;
+export type ActivateChildMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Active un filleul N1 inactif via solde dépôt ou parrainage
+ */
+export const useActivateChild = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateChild>>,
+    TError,
+    { childId: number; data: BodyType<ActivateChildBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof activateChild>>,
+  TError,
+  { childId: number; data: BodyType<ActivateChildBody> },
+  TContext
+> => {
+  return useMutation(getActivateChildMutationOptions(options));
+};
 
 /**
  * @summary Get recent referral activity feed

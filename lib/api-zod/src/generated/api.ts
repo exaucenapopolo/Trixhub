@@ -144,6 +144,8 @@ export const GetDashboardResponse = zod.object({
   totalBalance: zod.number(),
   referralBalance: zod.number(),
   taskBalance: zod.number(),
+  bonusBalance: zod.number(),
+  depositBalance: zod.number(),
   withdrawnAmount: zod.number(),
   spentAmount: zod.number(),
   inactiveBalance: zod.number(),
@@ -154,6 +156,10 @@ export const GetDashboardResponse = zod.object({
   level2Count: zod.number(),
   level3Count: zod.number(),
   pendingWithdrawals: zod.number(),
+  dailyBonusClaimed: zod
+    .boolean()
+    .describe("true si le bonus quotidien a été crédité lors de cet appel"),
+  dailyBonusAmount: zod.number(),
   currency: zod.string(),
   exchangeRate: zod.number(),
 });
@@ -245,6 +251,27 @@ export const GetReferralsByLevelResponse = zod.object({
 });
 
 /**
+ * @summary Active un filleul N1 inactif via solde dépôt ou parrainage
+ */
+export const ActivateChildParams = zod.object({
+  childId: zod.coerce.number(),
+});
+
+export const ActivateChildBody = zod.object({
+  source: zod
+    .string()
+    .describe("deposit (3600) ou referral (4100=3600+500 frais)"),
+});
+
+export const ActivateChildResponse = zod.object({
+  success: zod.boolean(),
+  childId: zod.number(),
+  cost: zod.number(),
+  source: zod.string(),
+  message: zod.string(),
+});
+
+/**
  * @summary Get recent referral activity feed
  */
 export const GetReferralActivityResponseItem = zod.object({
@@ -268,6 +295,8 @@ export const GetBalancesResponse = zod.object({
   totalBalance: zod.number(),
   referralBalance: zod.number(),
   taskBalance: zod.number(),
+  bonusBalance: zod.number(),
+  depositBalance: zod.number(),
   inactiveBalance: zod.number(),
   withdrawnAmount: zod.number(),
   spentAmount: zod.number(),

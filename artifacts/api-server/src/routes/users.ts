@@ -4,6 +4,7 @@ import { db, usersTable, balancesTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
 import { getRates } from "../lib/currency";
+import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus";
 
 const router: IRouter = Router();
 
@@ -55,6 +56,10 @@ async function getLevel3Members(userId: number) {
 
 router.get("/users/me/dashboard", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
+
+  // Bonus de connexion quotidien : crédite +5 FCFA si pas déjà attribué aujourd'hui (atomique)
+  const dailyBonusClaimed = await claimDailyBonusIfDue(userId, req.log);
+
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
     res.status(401).json({ error: "Utilisateur introuvable" });
@@ -64,10 +69,12 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
   const [balance] = await db.select().from(balancesTable).where(eq(balancesTable.userId, userId));
   const referralBalance = parseFloat(balance?.referralBalance ?? "0");
   const taskBalance = parseFloat(balance?.taskBalance ?? "0");
+  const bonusBalance = parseFloat(balance?.bonusBalance ?? "0");
+  const depositBalance = parseFloat(balance?.depositBalance ?? "0");
   const inactiveBalance = parseFloat(balance?.inactiveBalance ?? "0");
   const withdrawnAmount = parseFloat(balance?.withdrawnAmount ?? "0");
   const spentAmount = parseFloat(balance?.spentAmount ?? "0");
-  const totalBalance = referralBalance + taskBalance;
+  const totalBalance = referralBalance + taskBalance + bonusBalance + depositBalance;
 
   const l1 = await getLevel1Members(userId);
   const l2 = await getLevel2Members(userId);
@@ -79,7 +86,7 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
   const exchangeRate = rates[currency] ?? 1;
 
   res.json({
-    totalBalance, referralBalance, taskBalance,
+    totalBalance, referralBalance, taskBalance, bonusBalance, depositBalance,
     withdrawnAmount, spentAmount, inactiveBalance,
     totalReferrals: all.length,
     activeReferrals: all.filter(m => m.isActivated).length,
@@ -88,6 +95,8 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
     level2Count: l2.length,
     level3Count: l3.length,
     pendingWithdrawals: 0,
+    dailyBonusClaimed,
+    dailyBonusAmount: DAILY_BONUS,
     currency,
     exchangeRate,
   });
