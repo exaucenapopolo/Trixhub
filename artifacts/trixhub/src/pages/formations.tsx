@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Send, Sparkles, Briefcase, Heart, TrendingUp, Loader2, CheckCircle2 } from "lucide-react";
+import { GraduationCap, Send, Sparkles, Briefcase, Heart, TrendingUp, Loader2, CheckCircle2, ShieldCheck, Lock } from "lucide-react";
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -30,15 +30,23 @@ const VENTES_BUSINESS: Formation[] = [
   { title: "Construire un business rentable en Afrique", tagline: "Adaptez votre modèle aux réalités du marché africain." },
 ];
 
-function FormationCard({ formation, accentColor, onRequest, sending, requested }: {
+function FormationCard({ formation, accentColor, onRequest, sending, requested, locked, isMine }: {
   formation: Formation;
   accentColor: string;
   onRequest: (title: string) => void;
   sending: boolean;
   requested: boolean;
+  locked: boolean;
+  isMine: boolean;
 }) {
+  const disabled = sending || locked;
+  const showAsRequested = requested || isMine;
+
   return (
-    <Card className="border-card-border hover:border-primary/40 hover:shadow-sm transition-all" data-testid={`card-formation-${formation.title.slice(0, 20)}`}>
+    <Card
+      className={`border-card-border transition-all ${isMine ? "border-primary/40 bg-primary/5" : "hover:border-primary/40 hover:shadow-sm"}`}
+      data-testid={`card-formation-${formation.title.slice(0, 20)}`}
+    >
       <CardContent className="p-5">
         <div className="flex items-start gap-3 mb-3">
           <div className={`w-9 h-9 rounded-lg ${accentColor} flex items-center justify-center shrink-0`}>
@@ -50,15 +58,24 @@ function FormationCard({ formation, accentColor, onRequest, sending, requested }
           </div>
         </div>
         <Button
-          variant={requested ? "secondary" : "outline"}
+          variant={showAsRequested ? "secondary" : "outline"}
           size="sm"
           className="w-full gap-2 hover:border-primary/50 hover:bg-primary/5"
-          disabled={sending || requested}
+          disabled={disabled}
           onClick={() => onRequest(formation.title)}
           data-testid={`button-request-formation-${formation.title.slice(0, 20)}`}
         >
-          {requested ? <CheckCircle2 size={14} className="text-primary" /> : sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-          {requested ? "Demande envoyée" : sending ? "Envoi..." : "Demander cette formation"}
+          {isMine ? (
+            <><CheckCircle2 size={14} className="text-primary" /> Vous avez choisi celle-ci</>
+          ) : showAsRequested ? (
+            <><CheckCircle2 size={14} className="text-primary" /> Demande envoyée</>
+          ) : locked ? (
+            <><Lock size={14} /> Verrouillé</>
+          ) : sending ? (
+            <><Loader2 size={14} className="animate-spin" /> Envoi...</>
+          ) : (
+            <><Send size={14} /> Demander cette formation</>
+          )}
         </Button>
       </CardContent>
     </Card>
@@ -66,12 +83,26 @@ function FormationCard({ formation, accentColor, onRequest, sending, requested }
 }
 
 export default function FormationsPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const [sendingTitle, setSendingTitle] = useState<string | null>(null);
   const [requested, setRequested] = useState<Set<string>>(new Set());
 
+  // Anti-fraude : 1 seule formation par membre. Verrouillage global.
+  const alreadyRequestedTitle = user?.formationRequestedTitle ?? null;
+  const formationsLocked = Boolean(user?.formationRequestedAt);
+
   const requestFormation = async (title: string) => {
+    if (formationsLocked) {
+      toast({
+        title: "Demande déjà enregistrée",
+        description: alreadyRequestedTitle
+          ? `Vous avez déjà demandé « ${alreadyRequestedTitle} ». Une seule demande est autorisée par membre.`
+          : "Vous avez déjà demandé une formation.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSendingTitle(title);
     try {
       const token = localStorage.getItem(TOKEN_KEY);
@@ -97,9 +128,11 @@ export default function FormationsPage() {
           description: data.error || "Impossible d'envoyer la demande. Réessayez plus tard.",
           variant: "destructive",
         });
+        if (res.status === 409) refreshUser();
         return;
       }
       setRequested((prev) => new Set(prev).add(title));
+      refreshUser();
       toast({
         title: "Demande envoyée !",
         description: `L'équipe vous contactera concernant « ${title} ».`,
@@ -119,10 +152,28 @@ export default function FormationsPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Formations TRIXHUB</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Développez vos compétences avec nos formations exclusives. Cliquez sur « Demander » pour échanger directement avec l'équipe.
+              Développez vos compétences avec nos formations exclusives.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2 inline-flex items-center gap-1.5">
+              <ShieldCheck size={12} className="text-primary" />
+              <span><strong>1 seule formation</strong> peut être demandée par membre.</span>
             </p>
           </div>
         </div>
+
+        {formationsLocked && alreadyRequestedTitle && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-4 flex items-start gap-3">
+              <CheckCircle2 size={18} className="text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold text-primary">Vous avez choisi : « {alreadyRequestedTitle} »</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Notre équipe vous contactera prochainement par WhatsApp pour vous donner accès à cette formation.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Section Développement personnel */}
         <section>
@@ -144,6 +195,8 @@ export default function FormationsPage() {
                 onRequest={requestFormation}
                 sending={sendingTitle === f.title}
                 requested={requested.has(f.title)}
+                locked={formationsLocked}
+                isMine={alreadyRequestedTitle === f.title}
               />
             ))}
           </div>
@@ -169,6 +222,8 @@ export default function FormationsPage() {
                 onRequest={requestFormation}
                 sending={sendingTitle === f.title}
                 requested={requested.has(f.title)}
+                locked={formationsLocked}
+                isMine={alreadyRequestedTitle === f.title}
               />
             ))}
           </div>
@@ -181,7 +236,7 @@ export default function FormationsPage() {
             <div className="text-sm">
               <p className="font-semibold text-foreground">Investissez dans vos compétences pour multiplier vos revenus.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Chaque formation est conçue pour vous donner des résultats concrets en quelques semaines. L'équipe vous répondra rapidement après votre demande.
+                Chaque formation est conçue pour vous donner des résultats concrets en quelques semaines.
               </p>
             </div>
           </CardContent>

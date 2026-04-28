@@ -10,14 +10,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle, Users, Gift, ChevronRight, Sparkles } from "lucide-react";
+import { Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle, Users, Gift, ChevronRight, Sparkles, Upload, ImageIcon, Loader2, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+
+const TOKEN_KEY = "trixhub_token";
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+const MAX_PROOF_SIZE = 5 * 1024 * 1024;
 
 type Source = "referral" | "task";
 
@@ -46,6 +50,9 @@ const SOURCE_CONFIG: Record<Source, { label: string; min: number; icon: typeof U
 export default function WithdrawalsPage() {
   const { user } = useAuth();
   const [activeSource, setActiveSource] = useState<Source | null>(null);
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const proofTargetRef = useRef<number | null>(null);
   const { data: withdrawals, isLoading } = useListWithdrawals({ query: { queryKey: getListWithdrawalsQueryKey() } });
   const { data: balances } = useGetBalances({ query: { queryKey: getGetBalancesQueryKey() } });
   const requestWithdrawal = useRequestWithdrawal();
@@ -115,6 +122,59 @@ export default function WithdrawalsPage() {
       } else {
         toast({ title: "Erreur", description: errData?.error || "Erreur lors de la demande", variant: "destructive" });
       }
+    }
+  };
+
+  // ── Upload de la preuve de paiement ──
+  const triggerProofUpload = (withdrawalId: number) => {
+    proofTargetRef.current = withdrawalId;
+    fileInputRef.current?.click();
+  };
+
+  const handleProofFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const wid = proofTargetRef.current;
+    proofTargetRef.current = null;
+    if (!file || !wid) return;
+
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+      toast({ title: "Format invalide", description: "Image PNG, JPG ou WEBP uniquement.", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_PROOF_SIZE) {
+      toast({ title: "Fichier trop lourd", description: "Maximum 5 Mo.", variant: "destructive" });
+      return;
+    }
+
+    setUploadingId(wid);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${BASE}/api/withdrawals/${wid}/proof`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({
+          title: "Échec de l'envoi de la preuve",
+          description: data.error || "Réessayez plus tard.",
+          variant: "destructive",
+        });
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
+      toast({
+        title: "Preuve envoyée !",
+        description: "Votre capture d'écran a bien été transmise à l'assistance.",
+      });
+    } catch {
+      toast({ title: "Connexion impossible", description: "Vérifiez votre internet.", variant: "destructive" });
+    } finally {
+      setUploadingId(null);
     }
   };
 
@@ -215,38 +275,75 @@ export default function WithdrawalsPage() {
                   const status = STATUS_CONFIG[w.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
                   const Icon = status.icon;
                   const sourceLabel = w.source === "task" ? "Missions" : "Parrainage";
+                  const wAny = w as typeof w & { proofUrl?: string | null; proofUploadedAt?: string | null };
+                  const hasProof = Boolean(wAny.proofUrl);
+                  const isUploading = uploadingId === w.id;
+                  const canUploadProof = !hasProof && (w.status === "completed" || w.status === "processing" || w.status === "pending");
                   return (
-                    <div key={w.id} className="flex items-center gap-4 p-4 hover:bg-muted/40 transition-colors" data-testid={`row-withdrawal-${w.id}`}>
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                        w.source === "task" ? "bg-purple-500/10" : "bg-blue-500/10"
-                      )}>
-                        {w.source === "task" ? (
-                          <Gift className={cn("w-5 h-5 text-purple-500")} />
-                        ) : (
-                          <Users className={cn("w-5 h-5 text-blue-500")} />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium text-foreground">
-                            {METHODS.find(m => m.value === w.method)?.label ?? w.method}
-                          </p>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                            {sourceLabel}
-                          </span>
+                    <div key={w.id} className="p-4 hover:bg-muted/40 transition-colors" data-testid={`row-withdrawal-${w.id}`}>
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                          w.source === "task" ? "bg-purple-500/10" : "bg-blue-500/10"
+                        )}>
+                          {w.source === "task" ? (
+                            <Gift className={cn("w-5 h-5 text-purple-500")} />
+                          ) : (
+                            <Users className={cn("w-5 h-5 text-blue-500")} />
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{w.accountName} · {w.accountNumber}</p>
-                        <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                          {new Date(w.requestedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-foreground">
+                              {METHODS.find(m => m.value === w.method)?.label ?? w.method}
+                            </p>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {sourceLabel}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{w.accountName} · {w.accountNumber}</p>
+                          <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                            {new Date(w.requestedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-base font-bold text-foreground tabular-nums amount-display">{formatLocal(w.amount, user)}</p>
+                          <Badge variant="outline" className={cn("text-xs gap-1 mt-1", status.color)}>
+                            <Icon size={10} />{status.label}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-base font-bold text-foreground tabular-nums amount-display">{formatLocal(w.amount, user)}</p>
-                        <Badge variant="outline" className={cn("text-xs gap-1 mt-1", status.color)}>
-                          <Icon size={10} />{status.label}
-                        </Badge>
-                      </div>
+                      {/* Bandeau preuve de paiement */}
+                      {canUploadProof && (
+                        <div className="mt-3 ml-14 p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 flex items-center justify-between gap-3">
+                          <div className="flex items-start gap-2 text-xs">
+                            <ImageIcon size={14} className="text-primary mt-0.5 shrink-0" />
+                            <div>
+                              <p className="font-semibold text-foreground">Avez-vous reçu votre paiement ?</p>
+                              <p className="text-muted-foreground mt-0.5">
+                                Envoyez la capture d'écran du SMS de confirmation pour valider.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            disabled={isUploading}
+                            onClick={() => triggerProofUpload(w.id)}
+                            data-testid={`button-upload-proof-${w.id}`}
+                            className="shrink-0 gap-1.5"
+                          >
+                            {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            {isUploading ? "Envoi..." : "Envoyer preuve"}
+                          </Button>
+                        </div>
+                      )}
+                      {hasProof && (
+                        <div className="mt-3 ml-14 p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-xs flex items-center gap-2 text-green-700 dark:text-green-400">
+                          <ShieldCheck size={14} />
+                          <span>Preuve de paiement envoyée à l'assistance{wAny.proofUploadedAt ? ` le ${new Date(wAny.proofUploadedAt).toLocaleDateString("fr-FR")}` : ""}.</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -255,6 +352,16 @@ export default function WithdrawalsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Input fichier caché pour upload preuve */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={handleProofFileChange}
+        data-testid="input-proof-file"
+      />
 
       {/* MODAL DEMANDE DE RETRAIT */}
       <Dialog open={activeSource !== null} onOpenChange={(o) => !o && setActiveSource(null)}>

@@ -15,8 +15,13 @@ export const usersTable = pgTable("users", {
   preferredCurrency: text("preferred_currency").notNull().default("FCFA"),
   themePreference: text("theme_preference").notNull().default("light"),
   isBanned: boolean("is_banned").notNull().default(false),
+  isAdmin: boolean("is_admin").notNull().default(false),
   loginAttempts: serial("login_attempts"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  // Anti-fraude : un utilisateur ne peut faire qu'une seule demande de chaque type.
+  canvaRequestedAt: timestamp("canva_requested_at", { withTimezone: true }),
+  formationRequestedAt: timestamp("formation_requested_at", { withTimezone: true }),
+  formationRequestedTitle: text("formation_requested_title"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

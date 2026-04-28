@@ -1,13 +1,13 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { sendWhatsAppToAssistance } from "../lib/twilio";
 
 const router: IRouter = Router();
 
-// Anti-spam : 1 envoi toutes les 30 secondes par utilisateur, par type
-const lastSentByUser = new Map<string, number>(); // key = `${userId}:${type}` → timestamp
+// Anti-spam : 1 envoi toutes les 30 secondes par utilisateur, par type (sécurité d'appoint)
+const lastSentByUser = new Map<string, number>();
 const COOLDOWN_MS = 30 * 1000;
 
 function rateLimited(userId: number, type: string): boolean {
@@ -33,8 +33,23 @@ function sanitize(text: string, maxLen: number): string {
 // ─────────────────────────────────────────────
 router.post("/contact/canva", authenticate, async (req, res): Promise<void> => {
   const userId = req.userId!;
+  const user = await getUser(userId);
+  if (!user) {
+    res.status(401).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  // Pré-check rapide pour message d'erreur clair (race-safe via UPDATE conditionnel ci-dessous).
+  if (user.canvaRequestedAt) {
+    res.status(409).json({
+      error: "Vous avez déjà demandé votre compte Canva Pro. Une seule demande est autorisée par membre.",
+      requestedAt: user.canvaRequestedAt.toISOString(),
+    });
+    return;
+  }
+
   if (rateLimited(userId, "canva")) {
-    res.status(429).json({ error: "Vous venez d'envoyer une demande. Patientez 30 secondes." });
+    res.status(429).json({ error: "Patientez 30 secondes avant de réessayer." });
     return;
   }
 
@@ -51,17 +66,35 @@ router.post("/contact/canva", authenticate, async (req, res): Promise<void> => {
     return;
   }
 
-  const user = await getUser(userId);
+  // ATOMIC : on stampe d'abord (UPDATE conditionnel). Si 0 ligne → quelqu'un l'a fait avant nous.
+  // Cela ferme la fenêtre de course entre check et envoi Twilio.
+  const stamped = await db.update(usersTable)
+    .set({ canvaRequestedAt: new Date() })
+    .where(and(eq(usersTable.id, userId), isNull(usersTable.canvaRequestedAt)))
+    .returning({ id: usersTable.id });
+
+  if (stamped.length === 0) {
+    res.status(409).json({
+      error: "Vous avez déjà demandé votre compte Canva Pro. Une seule demande est autorisée par membre.",
+    });
+    return;
+  }
+
   const message =
     `🎨 Nouvelle demande Canva Pro\n\n` +
     `👤 Nom : ${fullName}\n` +
     `📧 Email Canva : ${canvaEmail}\n` +
-    `🌍 Pays : ${user?.country ?? "—"}\n` +
-    `🔗 Code parrainage : ${user?.referralCode ?? "—"}\n` +
-    `📱 Compte TRIXHUB : ${user?.email ?? "—"}`;
+    `🌍 Pays : ${user.country}\n` +
+    `📱 Téléphone : ${user.phone}\n` +
+    `🔗 Code parrainage : ${user.referralCode}\n` +
+    `📧 Compte TRIXHUB : ${user.email}`;
 
   const result = await sendWhatsAppToAssistance(message);
   if (!result.ok) {
+    // Rollback du stamp si Twilio échoue, pour ne pas pénaliser le membre.
+    await db.update(usersTable)
+      .set({ canvaRequestedAt: null })
+      .where(eq(usersTable.id, userId));
     res.status(503).json({ error: "Impossible d'envoyer la demande pour le moment. Réessayez plus tard." });
     return;
   }
@@ -76,8 +109,24 @@ router.post("/contact/canva", authenticate, async (req, res): Promise<void> => {
 // ─────────────────────────────────────────────
 router.post("/contact/formation", authenticate, async (req, res): Promise<void> => {
   const userId = req.userId!;
+  const user = await getUser(userId);
+  if (!user) {
+    res.status(401).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  // Pré-check rapide pour message d'erreur clair.
+  if (user.formationRequestedAt) {
+    res.status(409).json({
+      error: `Vous avez déjà demandé une formation${user.formationRequestedTitle ? ` (« ${user.formationRequestedTitle} »)` : ""}. Une seule demande est autorisée par membre.`,
+      requestedAt: user.formationRequestedAt.toISOString(),
+      title: user.formationRequestedTitle,
+    });
+    return;
+  }
+
   if (rateLimited(userId, "formation")) {
-    res.status(429).json({ error: "Vous venez d'envoyer une demande. Patientez 30 secondes." });
+    res.status(429).json({ error: "Patientez 30 secondes avant de réessayer." });
     return;
   }
 
@@ -88,17 +137,34 @@ router.post("/contact/formation", authenticate, async (req, res): Promise<void> 
     return;
   }
 
-  const user = await getUser(userId);
+  // ATOMIC : stamp d'abord avec UPDATE conditionnel.
+  const stamped = await db.update(usersTable)
+    .set({ formationRequestedAt: new Date(), formationRequestedTitle: title })
+    .where(and(eq(usersTable.id, userId), isNull(usersTable.formationRequestedAt)))
+    .returning({ id: usersTable.id });
+
+  if (stamped.length === 0) {
+    res.status(409).json({
+      error: "Vous avez déjà demandé une formation. Une seule demande est autorisée par membre.",
+    });
+    return;
+  }
+
   const message =
     `📚 Nouvelle demande de formation\n\n` +
     `🎯 Formation : ${title}\n` +
-    `👤 Membre : ${user?.displayName ?? "—"}\n` +
-    `🌍 Pays : ${user?.country ?? "—"}\n` +
-    `📱 Email : ${user?.email ?? "—"}\n` +
-    `🔗 Code parrainage : ${user?.referralCode ?? "—"}`;
+    `👤 Membre : ${user.displayName}\n` +
+    `📧 Email : ${user.email}\n` +
+    `📱 Téléphone : ${user.phone}\n` +
+    `🌍 Pays : ${user.country}\n` +
+    `🔗 Code parrainage : ${user.referralCode}`;
 
   const result = await sendWhatsAppToAssistance(message);
   if (!result.ok) {
+    // Rollback du stamp si Twilio échoue.
+    await db.update(usersTable)
+      .set({ formationRequestedAt: null, formationRequestedTitle: null })
+      .where(eq(usersTable.id, userId));
     res.status(503).json({ error: "Impossible d'envoyer la demande pour le moment. Réessayez plus tard." });
     return;
   }

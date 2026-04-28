@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Palette, Send, CheckCircle2, Sparkles, AlertCircle, Loader2 } from "lucide-react";
+import { Palette, Send, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-const STORAGE_KEY = "trixhub_canva_claimed";
 
 const schema = z.object({
   fullName: z.string().min(2, "Votre nom complet est requis"),
@@ -21,16 +20,14 @@ const schema = z.object({
 });
 
 export default function BonusCanvaPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    const claimed = localStorage.getItem(STORAGE_KEY);
-    if (claimed) setAlreadyClaimed(true);
-  }, []);
+  // Source de vérité : le serveur. Anti-fraude : 1 seule demande par membre, à vie.
+  const alreadyRequested = Boolean(user?.canvaRequestedAt);
+  const formLocked = alreadyRequested || submitted;
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -63,11 +60,14 @@ export default function BonusCanvaPage() {
           description: data.error || "Impossible d'envoyer la demande. Réessayez plus tard.",
           variant: "destructive",
         });
+        if (res.status === 409) {
+          // Déjà demandé : rafraîchir le user pour verrouiller le formulaire
+          refreshUser();
+        }
         return;
       }
-      localStorage.setItem(STORAGE_KEY, new Date().toISOString());
       setSubmitted(true);
-      setAlreadyClaimed(true);
+      refreshUser();
       toast({
         title: "Demande envoyée !",
         description: "L'assistance a bien reçu votre demande Canva Pro et vous répondra rapidement.",
@@ -76,6 +76,10 @@ export default function BonusCanvaPage() {
       setSending(false);
     }
   };
+
+  const requestedDate = user?.canvaRequestedAt
+    ? new Date(user.canvaRequestedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    : null;
 
   return (
     <Layout>
@@ -92,28 +96,15 @@ export default function BonusCanvaPage() {
           </div>
         </div>
 
-        {alreadyClaimed && !submitted && (
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="p-4 flex items-start gap-3">
-              <AlertCircle size={18} className="text-amber-500 mt-0.5 shrink-0" />
-              <div className="text-sm">
-                <p className="font-semibold text-amber-700 dark:text-amber-400">Vous avez déjà demandé votre Canva Pro.</p>
-                <p className="text-muted-foreground text-xs mt-1">
-                  Si vous n'avez pas reçu votre compte, vous pouvez renvoyer une demande ci-dessous.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {submitted && (
+        {(alreadyRequested || submitted) && (
           <Card className="border-primary/30 bg-primary/5">
             <CardContent className="p-4 flex items-start gap-3">
               <CheckCircle2 size={18} className="text-primary mt-0.5 shrink-0" />
               <div className="text-sm">
-                <p className="font-semibold text-primary">Demande envoyée !</p>
+                <p className="font-semibold text-primary">Demande déjà envoyée{requestedDate ? ` le ${requestedDate}` : ""}</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  L'assistance a bien reçu votre demande. Vous recevrez votre compte Canva Pro sous peu.
+                  Une seule demande Canva Pro est autorisée par membre. Notre équipe vous répondra par WhatsApp.
+                  Si vous n'avez pas reçu votre compte, contactez l'assistance.
                 </p>
               </div>
             </CardContent>
@@ -137,38 +128,52 @@ export default function BonusCanvaPage() {
 
         <Card className="border-card-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Demander mon compte</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              Demander mon compte
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                <ShieldCheck size={10} /> 1 seule demande
+              </span>
+            </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Remplissez ce formulaire. Votre demande est envoyée directement à l'assistance.
+              {formLocked
+                ? "Votre demande a déjà été envoyée à l'assistance."
+                : "Remplissez ce formulaire. Votre demande est envoyée directement à l'assistance."}
             </p>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField control={form.control} name="fullName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Votre nom complet</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Jean Kouassi" data-testid="input-canva-name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="canvaEmail" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email associé à votre compte Canva</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" placeholder="vous@example.com" data-testid="input-canva-email" />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Si vous n'avez pas encore de compte Canva, créez-le d'abord sur canva.com puis revenez ici.
-                    </p>
-                  </FormItem>
-                )} />
-                <Button type="submit" className="w-full gap-2" disabled={sending} data-testid="button-canva-submit">
-                  {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  {sending ? "Envoi en cours..." : "Envoyer ma demande"}
+                <fieldset disabled={formLocked} className="space-y-4 disabled:opacity-60">
+                  <FormField control={form.control} name="fullName" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Votre nom complet</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Jean Kouassi" data-testid="input-canva-name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="canvaEmail" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email associé à votre compte Canva</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" placeholder="vous@example.com" data-testid="input-canva-email" />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Si vous n'avez pas encore de compte Canva, créez-le d'abord sur canva.com puis revenez ici.
+                      </p>
+                    </FormItem>
+                  )} />
+                </fieldset>
+                <Button
+                  type="submit"
+                  className="w-full gap-2"
+                  disabled={sending || formLocked}
+                  data-testid="button-canva-submit"
+                >
+                  {formLocked ? <CheckCircle2 size={16} /> : sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  {formLocked ? "Demande déjà envoyée" : sending ? "Envoi en cours..." : "Envoyer ma demande"}
                 </Button>
               </form>
             </Form>

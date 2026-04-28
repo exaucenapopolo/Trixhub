@@ -11,8 +11,12 @@ export interface UserData {
   referralCode: string;
   referredByCode: string | null;
   isActivated: boolean;
+  isAdmin?: boolean;
   preferredCurrency: string;
   themePreference: string;
+  canvaRequestedAt?: string | null;
+  formationRequestedAt?: string | null;
+  formationRequestedTitle?: string | null;
   createdAt: string;
 }
 

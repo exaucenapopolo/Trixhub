@@ -15,10 +15,14 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     phone: user.phone,
     country: user.country,
     isActivated: user.isActivated,
+    isAdmin: user.isAdmin,
     referralCode: user.referralCode,
     referredByCode: user.referredByCode ?? null,
     preferredCurrency: user.preferredCurrency,
     themePreference: user.themePreference,
+    canvaRequestedAt: user.canvaRequestedAt ? user.canvaRequestedAt.toISOString() : null,
+    formationRequestedAt: user.formationRequestedAt ? user.formationRequestedAt.toISOString() : null,
+    formationRequestedTitle: user.formationRequestedTitle ?? null,
     createdAt: user.createdAt.toISOString(),
   };
 }

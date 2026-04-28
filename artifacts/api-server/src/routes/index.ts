@@ -10,6 +10,7 @@ import configRouter from "./config";
 import swychrRouter from "./swychr";
 import missionsRouter from "./missions";
 import contactRouter from "./contact";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(configRouter);
 router.use(swychrRouter);
 router.use(missionsRouter);
 router.use(contactRouter);
+router.use(storageRouter);
 
 export default router;
