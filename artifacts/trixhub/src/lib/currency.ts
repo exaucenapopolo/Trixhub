@@ -81,9 +81,34 @@ export function getCurrencyForCountry(country?: string | null): CurrencyInfo {
   return CURRENCIES[code] ?? FALLBACK;
 }
 
-/** Convertit un montant FCFA en devise locale, arrondi à un multiple "propre". */
-export function convertFromFcfa(amountFcfa: number, country?: string | null): { amount: number; currency: CurrencyInfo } {
-  const currency = getCurrencyForCountry(country);
+/**
+ * Type accepté pour résoudre la devise : un nom de pays (string), un objet utilisateur
+ * (avec `country` et/ou `preferredCurrency`), ou null/undefined (fallback FCFA).
+ *
+ * Règle de priorité :
+ *  1. Si `preferredCurrency` est défini ET correspond à une devise supportée non-FCFA → on l'utilise.
+ *  2. Sinon on retombe sur la devise locale du `country`.
+ *  3. Sinon FCFA.
+ */
+export type CurrencyTarget =
+  | string
+  | { country?: string | null; preferredCurrency?: string | null }
+  | null
+  | undefined;
+
+export function resolveCurrency(target: CurrencyTarget): CurrencyInfo {
+  if (!target) return FALLBACK;
+  if (typeof target === "string") return getCurrencyForCountry(target);
+  const pref = target.preferredCurrency;
+  if (pref && pref !== "FCFA" && CURRENCIES[pref]) {
+    return CURRENCIES[pref];
+  }
+  return getCurrencyForCountry(target.country);
+}
+
+/** Convertit un montant FCFA en devise cible, arrondi à un multiple "propre". */
+export function convertFromFcfa(amountFcfa: number, target: CurrencyTarget): { amount: number; currency: CurrencyInfo } {
+  const currency = resolveCurrency(target);
   const raw = amountFcfa * currency.rate;
   const rounded = Math.round(raw / currency.roundTo) * currency.roundTo;
   return { amount: rounded, currency };
@@ -97,9 +122,10 @@ export function formatNumber(n: number): string {
 /**
  * Affichage standard : "14 900 CDF" (devise locale).
  * Si la devise est XOF/XAF, affiche directement "3 600 FCFA".
+ * Accepte un nom de pays (legacy) OU un utilisateur (qui supportera `preferredCurrency`).
  */
-export function formatLocal(amountFcfa: number, country?: string | null): string {
-  const { amount, currency } = convertFromFcfa(amountFcfa, country);
+export function formatLocal(amountFcfa: number, target: CurrencyTarget): string {
+  const { amount, currency } = convertFromFcfa(amountFcfa, target);
   return `${formatNumber(amount)} ${currency.symbol}`;
 }
 
@@ -108,8 +134,8 @@ export function formatLocal(amountFcfa: number, country?: string | null): string
  * Exemple : "14 900 CDF (≈ 3 600 FCFA)" pour un Congolais.
  * Pour XOF/XAF on n'affiche que le montant principal.
  */
-export function formatLocalWithFcfa(amountFcfa: number, country?: string | null): { primary: string; secondary: string | null } {
-  const { amount, currency } = convertFromFcfa(amountFcfa, country);
+export function formatLocalWithFcfa(amountFcfa: number, target: CurrencyTarget): { primary: string; secondary: string | null } {
+  const { amount, currency } = convertFromFcfa(amountFcfa, target);
   const primary = `${formatNumber(amount)} ${currency.symbol}`;
   if (currency.code === "XOF" || currency.code === "XAF") {
     return { primary, secondary: null };

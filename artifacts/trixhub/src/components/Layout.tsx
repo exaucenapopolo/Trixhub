@@ -6,11 +6,12 @@ import { useLogout } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard, Users, CheckSquare, Wallet, User, LogOut,
-  Menu, X, Sun, Moon, ChevronDown, TrendingUp, PlayCircle, BookOpen, Share2, Compass
+  Menu, Sun, Moon, ChevronDown, PlayCircle, BookOpen, Share2, Compass,
+  Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import PartnersFooter from "@/components/PartnersFooter";
-import { formatLocal } from "@/lib/currency";
+import { formatLocal, type CurrencyTarget } from "@/lib/currency";
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -31,20 +32,27 @@ const missionItems = [
   { label: "Mission Découverte", href: "/tasks", icon: Compass, color: "text-purple-500" },
 ];
 
-function buildLevelItems(country: string | undefined) {
+function buildLevelItems(target: CurrencyTarget) {
   return [
     { label: "Toute l'équipe", href: "/team" },
-    { label: `Niveau 1 — ${formatLocal(1700, country)}`, href: "/team/level/1" },
-    { label: `Niveau 2 — ${formatLocal(700, country)}`, href: "/team/level/2" },
-    { label: `Niveau 3 — ${formatLocal(300, country)}`, href: "/team/level/3" },
+    { label: `Niveau 1 — ${formatLocal(1700, target)}`, href: "/team/level/1" },
+    { label: `Niveau 2 — ${formatLocal(700, target)}`, href: "/team/level/2" },
+    { label: `Niveau 3 — ${formatLocal(300, target)}`, href: "/team/level/3" },
   ];
 }
+
+const bonusItems = [
+  { label: "Compte Canva Pro", href: "/bonus/canva", icon: Palette, color: "text-purple-500", external: false },
+  { label: "VPN gratuit (groupe)", href: "/bonus/vpn", icon: Shield, color: "text-blue-500", external: false },
+  { label: "Outils visibilité", href: "https://socialboosthorizon.com", icon: Sparkles, color: "text-amber-500", external: true },
+];
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [levelOpen, setLevelOpen] = useState(false);
   const [missionsOpen, setMissionsOpen] = useState(false);
+  const [bonusOpen, setBonusOpen] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -52,7 +60,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const displayName = user?.displayName || user?.email?.split("@")[0] || "Membre";
   const initials = displayName.charAt(0).toUpperCase();
-  const levelItems = buildLevelItems(user?.country);
+  const levelItems = buildLevelItems(user);
 
   const handleThemeToggle = useCallback(async () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -161,6 +169,61 @@ export default function Layout({ children }: { children: ReactNode }) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Bonus section */}
+        <div className="mt-2 pt-2 border-t border-sidebar-border/50">
+          <button
+            onClick={() => setBonusOpen(!bonusOpen)}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+              location.startsWith("/bonus") ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
+            )}
+            data-testid="button-bonus-menu"
+          >
+            <Gift size={17} />
+            <span className="flex-1 text-left">Bonus</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">NEW</span>
+            <ChevronDown size={14} className={cn("transition-transform", bonusOpen ? "rotate-180" : "")} />
+          </button>
+          {bonusOpen && (
+            <div className="ml-4 mt-1 mb-1 border-l border-sidebar-border pl-3 space-y-0.5">
+              {bonusItems.map(bi => (
+                bi.external ? (
+                  <a key={bi.label} href={bi.href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-sidebar-foreground transition-all"
+                    data-testid={`link-bonus-${bi.label.toLowerCase().replace(/\s/g, '-')}`}>
+                    <bi.icon size={12} className={bi.color} />
+                    <span className="flex-1">{bi.label}</span>
+                    <ExternalLink size={10} className="opacity-60" />
+                  </a>
+                ) : (
+                  <Link key={bi.label} href={bi.href}
+                    className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                      location === bi.href ? "text-primary" : "text-muted-foreground hover:text-sidebar-foreground"
+                    )}
+                    data-testid={`link-bonus-${bi.label.toLowerCase().replace(/\s/g, '-')}`}>
+                    <bi.icon size={12} className={bi.color} />
+                    {bi.label}
+                  </Link>
+                )
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Formations link */}
+        <div className="mt-2 pt-2 border-t border-sidebar-border/50">
+          <Link href="/formations"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+              location === "/formations" ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
+            )}
+            data-testid="link-formations">
+            <GraduationCap size={17} />
+            <span className="flex-1">Formations</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">NEW</span>
+          </Link>
         </div>
       </div>
 

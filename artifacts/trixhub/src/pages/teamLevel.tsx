@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
 import { useGetReferralsByLevel } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Search, CheckCircle, Clock, Globe } from "lucide-react";
+import { Users, Search, CheckCircle, Clock, Globe, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatLocal } from "@/lib/currency";
 
 export default function TeamLevelPage() {
+  const { user } = useAuth();
   const [, params] = useRoute("/team/level/:level");
   const level = parseInt(params?.level ?? "1", 10);
   const [search, setSearch] = useState("");
@@ -25,14 +29,40 @@ export default function TeamLevelPage() {
   const levelColors: Record<number, string> = { 1: "text-primary", 2: "text-blue-500", 3: "text-purple-500" };
   const color = levelColors[level] ?? "text-primary";
 
+  // Gain potentiel = commission * filleuls inactifs (ceux qui pourraient encore activer)
+  const potentialGain = (data?.inactive ?? 0) * (data?.commission ?? 0);
+  const earnedGain = (data?.active ?? 0) * (data?.commission ?? 0);
+
   return (
     <Layout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Niveau {level}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Commission : <span className={cn("font-semibold", color)}>{(data?.commission ?? 0).toLocaleString("fr-FR")} FCFA</span> par activation
+            Commission : <span className={cn("font-semibold", color)}>{formatLocal(data?.commission ?? 0, user)}</span> par activation
           </p>
+        </div>
+
+        {/* Gain réalisé / potentiel */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="border-card-border bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle size={14} className="text-primary" />
+                <p className="text-xs text-muted-foreground font-medium">Déjà gagné à ce niveau</p>
+              </div>
+              <p className="text-xl font-bold text-primary amount-display">{formatLocal(earnedGain, user)}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-card-border bg-amber-500/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp size={14} className="text-amber-500" />
+                <p className="text-xs text-muted-foreground font-medium">Potentiel à débloquer</p>
+              </div>
+              <p className="text-xl font-bold text-amber-600 dark:text-amber-400 amount-display">{formatLocal(potentialGain, user)}</p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-3 gap-4">

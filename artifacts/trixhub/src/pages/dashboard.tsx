@@ -5,17 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
 import { Copy, CheckCheck, TrendingUp, Users, Wallet, ArrowDownLeft, Zap, Gift, PlayCircle, BookOpen, Share2, Compass, ChevronRight, Clock, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatLocal } from "@/lib/currency";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-
-function AmountDisplay({ amount, currency, size = "md" }: { amount: number; currency: string; size?: "sm" | "md" | "lg" }) {
-  const sizeClass = size === "lg" ? "text-3xl" : size === "md" ? "text-xl" : "text-base";
-  return (
-    <span className={`${sizeClass} font-bold font-mono tabular-nums`}>
-      {amount.toLocaleString("fr-FR")} <span className="text-xs font-medium opacity-70">{currency}</span>
-    </span>
-  );
-}
 
 const MISSION_TYPES = [
   { icon: PlayCircle, label: "Mission Vidéo", color: "text-red-500 bg-red-50 dark:bg-red-950/30", desc: "Regarde des vidéos et gagne des FCFA", soon: false },
@@ -40,7 +32,6 @@ export default function DashboardPage() {
   const { data: config } = useGetPlatformConfig();
 
   const referralLink = `${window.location.origin}${BASE}/?ref=${user?.referralCode}`;
-  const currency = dashboard?.currency || user?.preferredCurrency || "FCFA";
 
   const copyLink = () => {
     navigator.clipboard.writeText(referralLink).then(() => {
@@ -75,7 +66,7 @@ export default function DashboardPage() {
             <div className="flex-1 min-w-0">
               <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Votre lien de parrainage</p>
               <p className="text-sm text-foreground font-mono truncate">{referralLink}</p>
-              <p className="text-xs text-muted-foreground mt-1">Partagez ce lien pour gagner jusqu'à 1 700 FCFA par filleul actif</p>
+              <p className="text-xs text-muted-foreground mt-1">Partagez ce lien pour gagner jusqu'à {formatLocal(1700, user)} par filleul actif</p>
             </div>
             <button
               onClick={copyLink}
@@ -94,9 +85,8 @@ export default function DashboardPage() {
               <Wallet className="w-4 h-4" />
               <span className="text-xs font-semibold uppercase tracking-wide">Solde total disponible</span>
             </div>
-            <div className="text-3xl font-bold font-mono tabular-nums mb-1">
-              {dashLoading ? "..." : (dashboard?.totalBalance ?? 0).toLocaleString("fr-FR")}
-              <span className="text-sm font-medium ml-1 opacity-70">{currency}</span>
+            <div className="text-3xl font-bold font-mono tabular-nums mb-1 amount-display">
+              {dashLoading ? "..." : formatLocal(dashboard?.totalBalance ?? 0, user)}
             </div>
             <p className="text-xs opacity-60">Parrainage + Missions</p>
           </div>
@@ -109,9 +99,8 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs text-muted-foreground font-medium">Activation</span>
             </div>
-            <div className="text-lg font-bold text-foreground font-mono">
-              {(dashboard?.spentAmount ?? 0).toLocaleString("fr-FR")}
-              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            <div className="text-lg font-bold text-foreground font-mono amount-display">
+              {formatLocal(dashboard?.spentAmount ?? 0, user)}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Montant investi</p>
           </div>
@@ -124,9 +113,8 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs text-muted-foreground font-medium">Parrainage</span>
             </div>
-            <div className="text-lg font-bold text-foreground font-mono">
-              {(dashboard?.referralBalance ?? 0).toLocaleString("fr-FR")}
-              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            <div className="text-lg font-bold text-foreground font-mono amount-display">
+              {formatLocal(dashboard?.referralBalance ?? 0, user)}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Commissions gagnées</p>
           </div>
@@ -139,9 +127,8 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs text-muted-foreground font-medium">Retiré</span>
             </div>
-            <div className="text-lg font-bold text-foreground font-mono">
-              {(dashboard?.withdrawnAmount ?? 0).toLocaleString("fr-FR")}
-              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            <div className="text-lg font-bold text-foreground font-mono amount-display">
+              {formatLocal(dashboard?.withdrawnAmount ?? 0, user)}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Total encaissé</p>
           </div>
@@ -154,9 +141,8 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs text-muted-foreground font-medium">Inactifs en attente</span>
             </div>
-            <div className="text-lg font-bold text-foreground font-mono">
-              {(dashboard?.inactiveBalance ?? 0).toLocaleString("fr-FR")}
-              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            <div className="text-lg font-bold text-foreground font-mono amount-display">
+              {formatLocal(dashboard?.inactiveBalance ?? 0, user)}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Débloqué à activation</p>
           </div>
@@ -169,9 +155,8 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs text-muted-foreground font-medium">Missions</span>
             </div>
-            <div className="text-lg font-bold text-foreground font-mono">
-              {(dashboard?.taskBalance ?? 0).toLocaleString("fr-FR")}
-              <span className="text-xs text-muted-foreground ml-1">{currency}</span>
+            <div className="text-lg font-bold text-foreground font-mono amount-display">
+              {formatLocal(dashboard?.taskBalance ?? 0, user)}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Gains missions</p>
           </div>
@@ -194,7 +179,7 @@ export default function DashboardPage() {
               <div key={i} className="text-center p-3 bg-muted/40 rounded-xl">
                 <div className={`text-2xl font-bold ${lvl.color}`}>{dashLoading ? "-" : lvl.count}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{lvl.label}</div>
-                <div className="text-xs font-medium text-foreground mt-1">{lvl.commission.toLocaleString("fr-FR")} {currency}</div>
+                <div className="text-xs font-medium text-foreground mt-1">{formatLocal(lvl.commission, user)}</div>
               </div>
             ))}
           </div>
@@ -260,8 +245,8 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   {item.amount && (
-                    <span className={`text-sm font-bold flex-shrink-0 ${item.amount > 0 ? "text-green-500" : "text-destructive"}`}>
-                      {item.amount > 0 ? "+" : ""}{item.amount.toLocaleString("fr-FR")} {currency}
+                    <span className={`text-sm font-bold flex-shrink-0 amount-display ${item.amount > 0 ? "text-green-500" : "text-destructive"}`}>
+                      {item.amount > 0 ? "+" : ""}{formatLocal(Math.abs(item.amount), user)}
                     </span>
                   )}
                 </div>

@@ -1,4 +1,6 @@
 import { useListTasks, useCompleteTask, getListTasksQueryKey } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
+import { formatLocal } from "@/lib/currency";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TasksPage() {
+  const { user } = useAuth();
   const { data: tasks, isLoading } = useListTasks({ query: { queryKey: getListTasksQueryKey() } });
   const completeTask = useCompleteTask();
   const queryClient = useQueryClient();
@@ -48,7 +51,7 @@ export default function TasksPage() {
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Total gagné</p>
-            <p className="text-xl font-bold text-primary amount-display">{totalEarned.toLocaleString("fr-FR")} FCFA</p>
+            <p className="text-xl font-bold text-primary amount-display">{formatLocal(totalEarned, user)}</p>
           </div>
         </div>
 
@@ -99,7 +102,7 @@ export default function TasksPage() {
                                   <Badge variant="secondary" className="text-xs mt-1">{TYPE_LABELS[task.type] ?? task.type}</Badge>
                                 </div>
                                 <p className="text-lg font-bold text-primary amount-display shrink-0">
-                                  +{task.reward.toLocaleString("fr-FR")} FCFA
+                                  +{formatLocal(task.reward, user)}
                                 </p>
                               </div>
                               <p className="text-sm text-muted-foreground mt-2">{task.description}</p>
@@ -149,7 +152,7 @@ export default function TasksPage() {
                               </p>
                             )}
                           </div>
-                          <p className="text-sm font-bold text-primary amount-display">+{task.reward.toLocaleString("fr-FR")} FCFA</p>
+                          <p className="text-sm font-bold text-primary amount-display">+{formatLocal(task.reward, user)}</p>
                         </div>
                       </CardContent>
                     </Card>

@@ -1,4 +1,6 @@
 import { useListWithdrawals, useRequestWithdrawal, useGetBalances, getListWithdrawalsQueryKey, getGetBalancesQueryKey } from "@workspace/api-client-react";
+import { useAuth } from "@/context/AuthContext";
+import { formatLocal } from "@/lib/currency";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +44,7 @@ const STATUS_CONFIG = {
 };
 
 export default function WithdrawalsPage() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const { data: withdrawals, isLoading } = useListWithdrawals({ query: { queryKey: getListWithdrawalsQueryKey() } });
   const { data: balances } = useGetBalances({ query: { queryKey: getGetBalancesQueryKey() } });
@@ -68,8 +71,6 @@ export default function WithdrawalsPage() {
     }
   };
 
-  const currency = balances?.currency ?? "FCFA";
-  const exchangeRate = balances?.exchangeRate ?? 1;
   const available = balances?.totalBalance ?? 0;
 
   return (
@@ -94,11 +95,11 @@ export default function WithdrawalsPage() {
                 <div className="flex gap-4 mb-6">
                   <div className="flex-1 p-3 bg-muted rounded-lg text-center">
                     <p className="text-xs text-muted-foreground">Solde disponible</p>
-                    <p className="text-lg font-bold text-primary amount-display">{available.toLocaleString("fr-FR")} FCFA</p>
+                    <p className="text-lg font-bold text-primary amount-display">{formatLocal(available, user)}</p>
                   </div>
                   <div className="flex-1 p-3 bg-muted rounded-lg text-center">
                     <p className="text-xs text-muted-foreground">Minimum</p>
-                    <p className="text-lg font-bold amount-display">3 000 FCFA</p>
+                    <p className="text-lg font-bold amount-display">{formatLocal(3000, user)}</p>
                   </div>
                 </div>
                 <Form {...form}>
@@ -148,10 +149,10 @@ export default function WithdrawalsPage() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <div className="flex items-start gap-2 p-3 bg-amber-500/10 rounded-lg">
-                      <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
-                        Les retraits sont traités sous 24 à 72 heures ouvrables. Assurez-vous que vos informations sont correctes.
+                    <div className="flex items-start gap-2 p-3 bg-primary/10 rounded-lg">
+                      <AlertCircle size={14} className="text-primary mt-0.5 shrink-0" />
+                      <p className="text-xs text-foreground">
+                        Les retraits sont traités <strong>automatiquement en 1 minute maximum</strong>. Si vous n'avez rien reçu après 5 minutes, contactez l'assistance.
                       </p>
                     </div>
                     <Button type="submit" className="w-full" disabled={requestWithdrawal.isPending} data-testid="button-submit-withdrawal">
@@ -175,8 +176,7 @@ export default function WithdrawalsPage() {
             <Card key={label} className="border-card-border">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground mb-1">{label}</p>
-                <p className={cn("text-xl font-bold amount-display", color)}>{amount.toLocaleString("fr-FR")}</p>
-                <p className="text-xs text-muted-foreground">FCFA</p>
+                <p className={cn("text-xl font-bold amount-display", color)}>{formatLocal(amount, user)}</p>
               </CardContent>
             </Card>
           ))}
@@ -213,7 +213,7 @@ export default function WithdrawalsPage() {
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-base font-bold text-foreground amount-display">{w.amount.toLocaleString("fr-FR")} FCFA</p>
+                        <p className="text-base font-bold text-foreground amount-display">{formatLocal(w.amount, user)}</p>
                         <Badge variant="outline" className={cn("text-xs gap-1 mt-1", status.color)}>
                           <Icon size={10} />{status.label}
                         </Badge>

@@ -37,8 +37,8 @@ TRIXHUB est une plateforme d'affiliation professionnelle ciblant l'Afrique franc
 - `context/AuthContext.tsx` — gestion JWT, fetchUser, login/logout
 - `context/ThemeContext.tsx` — dark/light mode
 - `components/Layout.tsx` — sidebar navigation
-- `pages/` — register, login, activate, dashboard, team, teamLevel, tasks, withdrawals, profile
-- `lib/currency.ts` — formatDualAmount(), formatCurrency()
+- `pages/` — register, login, activate, dashboard, team, teamLevel, tasks, withdrawals, profile, formations, bonus/canva, bonus/vpn
+- `lib/currency.ts` — `formatLocal(amount, target)`, `resolveCurrency(target)`, `convertFromFcfa(amount, target)`, `formatLocalWithFcfa(amount, target)`. `target` peut être un nom de pays OU un objet user `{ country, preferredCurrency }`. Priorité : `preferredCurrency` (si ≠ "FCFA" et supportée) → mapping pays → fallback FCFA.
 
 ### Backend (artifacts/api-server/src)
 - `routes/auth.ts` — register, login, logout, me, activate

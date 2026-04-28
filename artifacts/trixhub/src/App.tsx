@@ -14,6 +14,9 @@ import TeamLevelPage from "@/pages/teamLevel";
 import TasksPage from "@/pages/tasks";
 import WithdrawalsPage from "@/pages/withdrawals";
 import ProfilePage from "@/pages/profile";
+import BonusCanvaPage from "@/pages/bonus/canva";
+import BonusVpnPage from "@/pages/bonus/vpn";
+import FormationsPage from "@/pages/formations";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
@@ -86,6 +89,9 @@ function InnerApp() {
         <Route path="/tasks" component={() => <ProtectedRoute component={TasksPage} />} />
         <Route path="/withdrawals" component={() => <ProtectedRoute component={WithdrawalsPage} />} />
         <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
+        <Route path="/bonus/canva" component={() => <ProtectedRoute component={BonusCanvaPage} />} />
+        <Route path="/bonus/vpn" component={() => <ProtectedRoute component={BonusVpnPage} />} />
+        <Route path="/formations" component={() => <ProtectedRoute component={FormationsPage} />} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route component={NotFound} />
