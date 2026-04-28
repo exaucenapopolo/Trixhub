@@ -6,7 +6,7 @@ import { useLogout } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard, Users, CheckSquare, Wallet, User, LogOut,
-  Menu, Sun, Moon, ChevronDown, PlayCircle, BookOpen, Share2, Compass,
+  Menu, Sun, Moon, ChevronDown, PlayCircle, HelpCircle, Compass,
   Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,10 +26,10 @@ const mainNavItems = [
 ];
 
 const missionItems = [
-  { label: "Mission Vidéo", href: "/tasks", icon: PlayCircle, color: "text-red-500" },
-  { label: "Mission Lecture", href: "/tasks", icon: BookOpen, color: "text-blue-500" },
-  { label: "Mission Partage", href: "/tasks", icon: Share2, color: "text-green-500" },
-  { label: "Mission Découverte", href: "/tasks", icon: Compass, color: "text-purple-500" },
+  { label: "Mission Vidéo", href: "/tasks/video", icon: PlayCircle, color: "text-red-500" },
+  { label: "Mission Quizz", href: "/tasks/quizz", icon: HelpCircle, color: "text-blue-500" },
+  { label: "Mission Découverte", href: "/tasks/decouverte", icon: Compass, color: "text-purple-500" },
+  { label: "Mission Surprise", href: "/tasks/surprise", icon: Sparkles, color: "text-amber-500" },
 ];
 
 function buildLevelItems(target: CurrencyTarget) {

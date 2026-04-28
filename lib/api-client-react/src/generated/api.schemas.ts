@@ -141,6 +141,8 @@ export interface WithdrawalBody {
   method: string;
   accountNumber: string;
   accountName: string;
+  /** referral or task */
+  source: string;
 }
 
 export interface Withdrawal {
@@ -149,6 +151,7 @@ export interface Withdrawal {
   method: string;
   accountNumber: string;
   accountName: string;
+  source: string;
   status: string;
   requestedAt: string;
   /** @nullable */
@@ -191,5 +194,21 @@ export interface ActivityItem {
   message: string;
   /** @nullable */
   amount?: number | null;
+  /** pending | completed | cancelled | failed | rejected */
+  status: string;
   createdAt: string;
+}
+
+export interface MissionStatus {
+  available: boolean;
+  reward?: number;
+  rewardPerCorrect?: number;
+  /** @nullable */
+  nextAvailableAt?: string | null;
+}
+
+export interface MissionResult {
+  score?: number;
+  reward: number;
+  nextAvailableAt: string;
 }

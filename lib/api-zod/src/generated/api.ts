@@ -252,6 +252,9 @@ export const GetReferralActivityResponseItem = zod.object({
   type: zod.string(),
   message: zod.string(),
   amount: zod.number().nullish(),
+  status: zod
+    .string()
+    .describe("pending | completed | cancelled | failed | rejected"),
   createdAt: zod.string(),
 });
 export const GetReferralActivityResponse = zod.array(
@@ -282,6 +285,7 @@ export const ListWithdrawalsResponseItem = zod.object({
   method: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  source: zod.string(),
   status: zod.string(),
   requestedAt: zod.string(),
   processedAt: zod.string().nullish(),
@@ -296,6 +300,7 @@ export const RequestWithdrawalBody = zod.object({
   method: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  source: zod.string().describe("referral or task"),
 });
 
 /**

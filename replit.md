@@ -45,7 +45,8 @@ TRIXHUB est une plateforme d'affiliation professionnelle ciblant l'Afrique franc
 - `routes/users.ts` — dashboard, updateProfile, updateCurrency
 - `routes/referrals.ts` — team, referralsByLevel, activity
 - `routes/balances.ts` — balances summary
-- `routes/withdrawals.ts` — list, request withdrawal
+- `routes/withdrawals.ts` — list, request withdrawal (atomic conditional UPDATE par source de solde — anti race condition)
+- `routes/missions.ts` — quizz (questions tirées et notées côté serveur, banque privée), vidéo (session start + complete avec vérification 30s côté serveur). Réservation atomique via INSERT ... WHERE NOT EXISTS pour empêcher double-credit.
 - `routes/tasks.ts` — list, complete task
 - `routes/config.ts` — platform config, currency rates
 - `lib/auth.ts` — hashPassword, comparePassword, generateToken, generateReferralCode

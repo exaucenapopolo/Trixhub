@@ -9,6 +9,7 @@ export const withdrawalsTable = pgTable("withdrawals", {
   method: text("method").notNull(), // "orange_money", "mtn_money", "wave", "moov"
   accountNumber: text("account_number").notNull(),
   accountName: text("account_name").notNull(),
+  source: text("source").notNull().default("referral"), // "referral" | "task"
   status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "rejected"
   rejectionReason: text("rejection_reason"),
   processedAt: timestamp("processed_at", { withTimezone: true }),

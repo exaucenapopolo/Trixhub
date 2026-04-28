@@ -8,6 +8,7 @@ import withdrawalsRouter from "./withdrawals";
 import tasksRouter from "./tasks";
 import configRouter from "./config";
 import swychrRouter from "./swychr";
+import missionsRouter from "./missions";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(withdrawalsRouter);
 router.use(tasksRouter);
 router.use(configRouter);
 router.use(swychrRouter);
+router.use(missionsRouter);
 
 export default router;

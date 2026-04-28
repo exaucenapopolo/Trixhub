@@ -107,7 +107,7 @@ router.post("/swychr/initiate", authenticate, async (req, res): Promise<void> =>
 // GET /api/swychr/status/:txId — Vérifier le statut du paiement
 // ─────────────────────────────────────────────────────────────────
 router.get("/swychr/status/:txId", authenticate, async (req, res): Promise<void> => {
-  const { txId } = req.params;
+  const txId = req.params.txId as string;
 
   const [tx] = await db
     .select()

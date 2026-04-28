@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, usersTable, transactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
@@ -99,14 +99,15 @@ router.get("/referrals/activity", authenticate, requireActivation, async (req, r
   const userId = req.userId!;
   const transactions = await db.select().from(transactionsTable)
     .where(eq(transactionsTable.userId, userId))
-    .orderBy(transactionsTable.createdAt)
+    .orderBy(desc(transactionsTable.createdAt))
     .limit(20);
 
-  const activity = transactions.reverse().map(t => ({
+  const activity = transactions.map(t => ({
     id: t.id,
     type: t.type,
     message: t.description,
     amount: t.amount ? parseFloat(t.amount) : null,
+    status: t.status ?? "completed",
     createdAt: t.createdAt.toISOString(),
   }));
 

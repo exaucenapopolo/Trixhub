@@ -11,7 +11,11 @@ import ActivatePage from "@/pages/activate";
 import DashboardPage from "@/pages/dashboard";
 import TeamPage from "@/pages/team";
 import TeamLevelPage from "@/pages/teamLevel";
-import TasksPage from "@/pages/tasks";
+import TasksHub from "@/pages/tasks/index";
+import MissionVideoPage from "@/pages/tasks/video";
+import MissionQuizzPage from "@/pages/tasks/quizz";
+import MissionDecouvertePage from "@/pages/tasks/decouverte";
+import MissionSurprisePage from "@/pages/tasks/surprise";
 import WithdrawalsPage from "@/pages/withdrawals";
 import ProfilePage from "@/pages/profile";
 import BonusCanvaPage from "@/pages/bonus/canva";
@@ -86,7 +90,11 @@ function InnerApp() {
         <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
         <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
         <Route path="/team/level/:level" component={() => <ProtectedRoute component={TeamLevelPage} />} />
-        <Route path="/tasks" component={() => <ProtectedRoute component={TasksPage} />} />
+        <Route path="/tasks" component={() => <ProtectedRoute component={TasksHub} />} />
+        <Route path="/tasks/video" component={() => <ProtectedRoute component={MissionVideoPage} />} />
+        <Route path="/tasks/quizz" component={() => <ProtectedRoute component={MissionQuizzPage} />} />
+        <Route path="/tasks/decouverte" component={() => <ProtectedRoute component={MissionDecouvertePage} />} />
+        <Route path="/tasks/surprise" component={() => <ProtectedRoute component={MissionSurprisePage} />} />
         <Route path="/withdrawals" component={() => <ProtectedRoute component={WithdrawalsPage} />} />
         <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
         <Route path="/bonus/canva" component={() => <ProtectedRoute component={BonusCanvaPage} />} />

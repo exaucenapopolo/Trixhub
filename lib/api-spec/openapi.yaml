@@ -636,7 +636,10 @@ components:
           type: string
         accountName:
           type: string
-      required: [amount, method, accountNumber, accountName]
+        source:
+          type: string
+          description: "referral or task"
+      required: [amount, method, accountNumber, accountName, source]
 
     Withdrawal:
       type: object
@@ -651,13 +654,15 @@ components:
           type: string
         accountName:
           type: string
+        source:
+          type: string
         status:
           type: string
         requestedAt:
           type: string
         processedAt:
           type: ["string", "null"]
-      required: [id, amount, method, accountNumber, accountName, status, requestedAt]
+      required: [id, amount, method, accountNumber, accountName, source, status, requestedAt]
 
     Task:
       type: object
@@ -721,6 +726,33 @@ components:
           type: string
         amount:
           type: ["number", "null"]
+        status:
+          type: string
+          description: "pending | completed | cancelled | failed | rejected"
         createdAt:
           type: string
-      required: [id, type, message, createdAt]
+      required: [id, type, message, status, createdAt]
+
+    MissionStatus:
+      type: object
+      properties:
+        available:
+          type: boolean
+        reward:
+          type: number
+        rewardPerCorrect:
+          type: number
+        nextAvailableAt:
+          type: ["string", "null"]
+      required: [available]
+
+    MissionResult:
+      type: object
+      properties:
+        score:
+          type: integer
+        reward:
+          type: number
+        nextAvailableAt:
+          type: string
+      required: [reward, nextAvailableAt]
