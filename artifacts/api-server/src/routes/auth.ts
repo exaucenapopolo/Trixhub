@@ -26,6 +26,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     canvaRequestedAt: user.canvaRequestedAt ? user.canvaRequestedAt.toISOString() : null,
     formationRequestedAt: user.formationRequestedAt ? user.formationRequestedAt.toISOString() : null,
     formationRequestedTitle: user.formationRequestedTitle ?? null,
+    avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
   };
 }

@@ -12,9 +12,14 @@ import { z } from "zod";
 import { useUpdateProfile, useUpdatePreferredCurrency, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User, Globe, Copy, CheckCircle, Link as LinkIcon } from "lucide-react";
+import { Shield, User, Globe, Copy, CheckCircle, Link as LinkIcon, Camera, Trash2, Loader2 } from "lucide-react";
 import { CURRENCY_LABELS } from "@/lib/currency";
-import { useState } from "react";
+import { resolveAvatarUrl } from "@/lib/utils";
+import { useRef, useState } from "react";
+
+const TOKEN_KEY = "trixhub_token";
+const ACCEPTED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
 
 const profileSchema = z.object({
   displayName: z.string().min(2, "Nom d'affichage requis (min. 2 caractères)"),
@@ -37,6 +42,78 @@ export default function ProfilePage() {
   const updateProfile = useUpdateProfile();
   const updateCurrency = useUpdatePreferredCurrency();
   const [linkCopied, setLinkCopied] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState<"upload" | "delete" | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const avatarSrc = resolveAvatarUrl(user?.avatarUrl);
+
+  const triggerAvatarPicker = () => {
+    if (avatarBusy) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permet de réuploader le même fichier
+    if (!file) return;
+
+    if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
+      toast({ title: "Format non supporté", description: "Utilise PNG, JPG ou WEBP.", variant: "destructive" });
+      return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      toast({ title: "Fichier trop volumineux", description: "Taille maximale : 3 Mo.", variant: "destructive" });
+      return;
+    }
+
+    setAvatarBusy("upload");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem(TOKEN_KEY);
+      const res = await fetch(`${BASE}/api/users/me/avatar`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Échec du téléversement");
+      }
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      refreshUser();
+      toast({ title: "Photo de profil mise à jour", description: "Ta nouvelle photo est en ligne." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Échec du téléversement";
+      toast({ title: "Erreur", description: message, variant: "destructive" });
+    } finally {
+      setAvatarBusy(null);
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (avatarBusy || !user?.avatarUrl) return;
+    setAvatarBusy("delete");
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const res = await fetch(`${BASE}/api/users/me/avatar`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Échec de la suppression");
+      }
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      refreshUser();
+      toast({ title: "Photo supprimée", description: "Ta photo de profil a été retirée." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Échec de la suppression";
+      toast({ title: "Erreur", description: message, variant: "destructive" });
+    } finally {
+      setAvatarBusy(null);
+    }
+  };
 
   const referralLink = `${window.location.origin}${BASE}/?ref=${user?.referralCode}`;
 
@@ -91,13 +168,53 @@ export default function ProfilePage() {
         {/* Profile header */}
         <Card className="border-card-border">
           <CardContent className="p-6">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              className="hidden"
+              onChange={handleAvatarFileChange}
+              data-testid="input-avatar-file"
+            />
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full gradient-green flex items-center justify-center shrink-0">
-                <span className="text-white text-2xl font-bold">{initials}</span>
+              {/* Avatar avec overlay caméra */}
+              <div className="relative shrink-0 group">
+                <button
+                  type="button"
+                  onClick={triggerAvatarPicker}
+                  disabled={avatarBusy !== null}
+                  className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-primary/30 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  aria-label="Changer la photo de profil"
+                  data-testid="button-avatar-change"
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt={user?.displayName ?? "Avatar"}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full gradient-green flex items-center justify-center">
+                      <span className="text-white text-3xl font-bold">{initials}</span>
+                    </div>
+                  )}
+                  {/* Overlay au hover/click */}
+                  <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    {avatarBusy === "upload" ? (
+                      <Loader2 size={18} className="text-white animate-spin" />
+                    ) : (
+                      <Camera size={18} className="text-white" />
+                    )}
+                  </span>
+                </button>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">{user?.displayName}</h2>
-                <p className="text-muted-foreground text-sm">{user?.email}</p>
+
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-foreground truncate">{user?.displayName}</h2>
+                <p className="text-muted-foreground text-sm truncate">{user?.email}</p>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {user?.isActivated ? (
                     <Badge className="gap-1 bg-primary/10 text-primary border-primary/30 text-xs">
@@ -111,6 +228,35 @@ export default function ProfilePage() {
                   </Badge>
                 </div>
               </div>
+            </div>
+
+            {/* Boutons avatar */}
+            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60">
+              <Button
+                onClick={triggerAvatarPicker}
+                disabled={avatarBusy !== null}
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                data-testid="button-avatar-upload"
+              >
+                {avatarBusy === "upload" ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                {avatarSrc ? "Changer la photo" : "Ajouter une photo"}
+              </Button>
+              {avatarSrc && (
+                <Button
+                  onClick={handleAvatarDelete}
+                  disabled={avatarBusy !== null}
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  data-testid="button-avatar-delete"
+                >
+                  {avatarBusy === "delete" ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  Supprimer
+                </Button>
+              )}
+              <span className="text-[11px] text-muted-foreground ml-auto">PNG, JPG ou WEBP — max 3 Mo</span>
             </div>
           </CardContent>
         </Card>

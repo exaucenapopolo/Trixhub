@@ -45,6 +45,12 @@ export const LoginResponse = zod.object({
     referredByCode: zod.string().nullish(),
     preferredCurrency: zod.string(),
     themePreference: zod.string(),
+    avatarUrl: zod
+      .string()
+      .nullish()
+      .describe(
+        "Chemin Object Storage de la photo de profil (null si non définie)",
+      ),
     createdAt: zod.string(),
   }),
   token: zod.string(),
@@ -72,6 +78,12 @@ export const GetMeResponse = zod.object({
   referredByCode: zod.string().nullish(),
   preferredCurrency: zod.string(),
   themePreference: zod.string(),
+  avatarUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Chemin Object Storage de la photo de profil (null si non définie)",
+    ),
   createdAt: zod.string(),
 });
 
@@ -96,6 +108,12 @@ export const ActivateAccountResponse = zod.object({
     referredByCode: zod.string().nullish(),
     preferredCurrency: zod.string(),
     themePreference: zod.string(),
+    avatarUrl: zod
+      .string()
+      .nullish()
+      .describe(
+        "Chemin Object Storage de la photo de profil (null si non définie)",
+      ),
     createdAt: zod.string(),
   }),
   token: zod.string(),
@@ -134,6 +152,12 @@ export const UpdateProfileResponse = zod.object({
   referredByCode: zod.string().nullish(),
   preferredCurrency: zod.string(),
   themePreference: zod.string(),
+  avatarUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Chemin Object Storage de la photo de profil (null si non définie)",
+    ),
   createdAt: zod.string(),
 });
 
@@ -182,6 +206,12 @@ export const UpdatePreferredCurrencyResponse = zod.object({
   referredByCode: zod.string().nullish(),
   preferredCurrency: zod.string(),
   themePreference: zod.string(),
+  avatarUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Chemin Object Storage de la photo de profil (null si non définie)",
+    ),
   createdAt: zod.string(),
 });
 
@@ -203,6 +233,12 @@ export const UpdateThemeResponse = zod.object({
   referredByCode: zod.string().nullish(),
   preferredCurrency: zod.string(),
   themePreference: zod.string(),
+  avatarUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Chemin Object Storage de la photo de profil (null si non définie)",
+    ),
   createdAt: zod.string(),
 });
 

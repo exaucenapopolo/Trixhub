@@ -546,6 +546,9 @@ components:
           type: string
         themePreference:
           type: string
+        avatarUrl:
+          type: ["string", "null"]
+          description: Chemin Object Storage de la photo de profil (null si non définie)
         createdAt:
           type: string
       required: [id, displayName, email, phone, country, isActivated, referralCode, preferredCurrency, themePreference, createdAt]

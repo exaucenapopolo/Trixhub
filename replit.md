@@ -61,7 +61,7 @@ TRIXHUB est une plateforme d'affiliation professionnelle ciblant l'Afrique franc
 
 ### Database (lib/db/src/schema.ts)
 Tables: users, balances, transactions, withdrawals, tasks, user_tasks, sessions, swychr_transactions
-- `users` : `is_admin`, `canva_requested_at`, `formation_requested_at`, `formation_requested_title` (anti-fraude demandes uniques), `last_daily_bonus_at` (bonus quotidien).
+- `users` : `is_admin`, `canva_requested_at`, `formation_requested_at`, `formation_requested_title` (anti-fraude demandes uniques), `last_daily_bonus_at` (bonus quotidien), `avatar_url` (photo de profil, chemin Object Storage).
 - `balances` : ajout `bonus_balance`, `deposit_balance` (Vague 2/3) — defaults "0", contrainte UNIQUE sur `user_id`.
 - `user_tasks` : contrainte UNIQUE multi-colonne `(user_id, task_id)` — anti double-claim concurrent.
 - `withdrawals` : `proof_url`, `proof_token`, `proof_uploaded_at`.

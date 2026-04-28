@@ -3,10 +3,62 @@ import { Readable } from "stream";
 import { timingSafeEqual } from "crypto";
 import { eq } from "drizzle-orm";
 import { db, withdrawalsTable } from "@workspace/db";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
+
+function getPrivateObjectDir(): string {
+  const dir = process.env.PRIVATE_OBJECT_DIR || "";
+  if (!dir) throw new Error("PRIVATE_OBJECT_DIR non configuré");
+  return dir;
+}
+
+function parsePrivatePath(path: string): { bucketName: string; objectName: string } {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  const parts = p.split("/");
+  if (parts.length < 3) throw new Error("Chemin invalide");
+  return { bucketName: parts[1], objectName: parts.slice(2).join("/") };
+}
+
+/**
+ * GET /storage/avatars/:filename
+ * Sert une photo de profil utilisateur depuis le bucket privé. La photo est
+ * publique par nature (lecture sans auth) mais le filename contient un suffixe
+ * aléatoire 256 bits qui rend l'URL non devinable.
+ */
+router.get("/storage/avatars/:filename", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const filename = String(req.params.filename ?? "");
+    // Garde-fou: filename autorisé uniquement = lettres/chiffres/-/._
+    if (!/^[A-Za-z0-9._-]{8,256}$/.test(filename)) {
+      res.status(404).json({ error: "Avatar introuvable" });
+      return;
+    }
+    const fullPath = `${getPrivateObjectDir().replace(/\/$/, "")}/avatars/${filename}`;
+    const { bucketName, objectName } = parsePrivatePath(fullPath);
+    const file = objectStorageClient.bucket(bucketName).file(objectName);
+    const [exists] = await file.exists();
+    if (!exists) {
+      res.status(404).json({ error: "Avatar introuvable" });
+      return;
+    }
+    const response = await objectStorageService.downloadObject(file, 86400);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    res.setHeader("Cache-Control", "public, max-age=86400");
+
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (error) {
+    req.log.error({ err: error }, "Error serving avatar");
+    res.status(500).json({ error: "Échec du chargement de l'avatar" });
+  }
+});
 
 /**
  * GET /storage/public-objects/*

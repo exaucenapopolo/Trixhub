@@ -24,6 +24,8 @@ export const usersTable = pgTable("users", {
   formationRequestedTitle: text("formation_requested_title"),
   // Bonus de connexion quotidien : timestamp de la dernière attribution.
   lastDailyBonusAt: timestamp("last_daily_bonus_at", { withTimezone: true }),
+  // Photo de profil : chemin Object Storage type "/objects/avatars/u{id}-{rand}.{ext}".
+  avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

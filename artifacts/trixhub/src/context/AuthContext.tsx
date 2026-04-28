@@ -17,6 +17,7 @@ export interface UserData {
   canvaRequestedAt?: string | null;
   formationRequestedAt?: string | null;
   formationRequestedTitle?: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 

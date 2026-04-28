@@ -73,6 +73,11 @@ export interface User {
   referredByCode?: string | null;
   preferredCurrency: string;
   themePreference: string;
+  /**
+   * Chemin Object Storage de la photo de profil (null si non définie)
+   * @nullable
+   */
+  avatarUrl?: string | null;
   createdAt: string;
 }
 

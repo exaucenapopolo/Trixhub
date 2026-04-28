@@ -9,7 +9,7 @@ import {
   Menu, Sun, Moon, ChevronDown, PlayCircle, HelpCircle, Compass,
   Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, resolveAvatarUrl } from "@/lib/utils";
 import PartnersFooter from "@/components/PartnersFooter";
 import { formatLocal, type CurrencyTarget } from "@/lib/currency";
 
@@ -60,6 +60,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const displayName = user?.displayName || user?.email?.split("@")[0] || "Membre";
   const initials = displayName.charAt(0).toUpperCase();
+  const avatarSrc = resolveAvatarUrl(user?.avatarUrl);
   const levelItems = buildLevelItems(user);
 
   const handleThemeToggle = useCallback(async () => {
@@ -229,15 +230,30 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* User area */}
       <div className="p-4 border-t border-sidebar-border space-y-1">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-sidebar-accent/50">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-primary text-sm font-bold">{initials}</span>
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors"
+          data-testid="link-profile-shortcut"
+        >
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center flex-shrink-0">
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={displayName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <span className="text-primary text-sm font-bold">{initials}</span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-sidebar-foreground truncate">{displayName}</p>
             <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
           </div>
-        </div>
+        </Link>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors font-medium"

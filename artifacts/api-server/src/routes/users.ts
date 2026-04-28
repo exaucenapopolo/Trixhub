@@ -1,12 +1,24 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
+import multer from "multer";
 import { eq } from "drizzle-orm";
 import { db, usersTable, balancesTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
 import { getRates } from "../lib/currency";
 import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus";
+import {
+  uploadAvatarImage,
+  deleteAvatarObject,
+  ALLOWED_AVATAR_TYPES,
+  AVATAR_MAX_SIZE,
+} from "../lib/uploadAvatar";
 
 const router: IRouter = Router();
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: AVATAR_MAX_SIZE, files: 1 },
+});
 
 function formatUser(user: typeof usersTable.$inferSelect) {
   return {
@@ -24,6 +36,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     canvaRequestedAt: user.canvaRequestedAt ? user.canvaRequestedAt.toISOString() : null,
     formationRequestedAt: user.formationRequestedAt ? user.formationRequestedAt.toISOString() : null,
     formationRequestedTitle: user.formationRequestedTitle ?? null,
+    avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -148,6 +161,111 @@ router.patch("/users/me/theme", authenticate, async (req, res): Promise<void> =>
     .set({ themePreference: theme })
     .where(eq(usersTable.id, req.userId!))
     .returning();
+
+  res.json(formatUser(updated));
+});
+
+/**
+ * POST /users/me/avatar (multipart, field "file")
+ * Upload une nouvelle photo de profil. Limite 3 Mo, formats png/jpg/webp.
+ * L'ancien avatar est supprimé en best-effort après mise à jour réussie.
+ */
+router.post("/users/me/avatar", authenticate, (req: Request, res: Response): void => {
+  avatarUpload.single("file")(req, res, (uploadErr: unknown) => {
+    void (async () => {
+      if (uploadErr) {
+        const msg =
+          (uploadErr as { code?: string }).code === "LIMIT_FILE_SIZE"
+            ? "Fichier trop volumineux (max 3 Mo)"
+            : "Échec du téléversement";
+        res.status(400).json({ error: msg });
+        return;
+      }
+      const file = (req as Request & { file?: Express.Multer.File }).file;
+      if (!file || !file.buffer || file.buffer.length === 0) {
+        res.status(400).json({ error: "Aucun fichier fourni" });
+        return;
+      }
+      if (!ALLOWED_AVATAR_TYPES.includes(file.mimetype)) {
+        res.status(400).json({ error: "Format non supporté (png, jpg ou webp uniquement)" });
+        return;
+      }
+
+      const userId = req.userId!;
+      let uploadedPath: string | null = null;
+      try {
+        // Upload du nouvel avatar
+        const { objectPath } = await uploadAvatarImage({
+          buffer: file.buffer,
+          contentType: file.mimetype,
+          userId,
+        });
+        uploadedPath = objectPath;
+
+        // Récupère l'ancien avatar pour suppression best-effort APRÈS update OK
+        const [previous] = await db
+          .select({ avatarUrl: usersTable.avatarUrl })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId));
+
+        const [updated] = await db
+          .update(usersTable)
+          .set({ avatarUrl: objectPath })
+          .where(eq(usersTable.id, userId))
+          .returning();
+
+        if (!updated) {
+          // Rollback: l'utilisateur n'existe plus, on supprime l'objet uploadé
+          void deleteAvatarObject(objectPath, req.log);
+          uploadedPath = null;
+          res.status(404).json({ error: "Utilisateur introuvable" });
+          return;
+        }
+
+        // Best-effort: supprime l'ancien avatar (si différent)
+        if (previous?.avatarUrl && previous.avatarUrl !== objectPath) {
+          void deleteAvatarObject(previous.avatarUrl, req.log);
+        }
+
+        res.json(formatUser(updated));
+      } catch (err) {
+        // Rollback global: si on a uploadé l'objet mais que la DB a planté,
+        // supprimer l'objet orphelin pour éviter une fuite de stockage.
+        if (uploadedPath) {
+          void deleteAvatarObject(uploadedPath, req.log);
+        }
+        req.log.error({ err, uploadedPath }, "Avatar upload failed");
+        res.status(500).json({ error: "Échec du téléversement de l'avatar" });
+      }
+    })();
+  });
+});
+
+/**
+ * DELETE /users/me/avatar
+ * Supprime la photo de profil de l'utilisateur (DB + Object Storage best-effort).
+ */
+router.delete("/users/me/avatar", authenticate, async (req, res): Promise<void> => {
+  const userId = req.userId!;
+  const [previous] = await db
+    .select({ avatarUrl: usersTable.avatarUrl })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ avatarUrl: null })
+    .where(eq(usersTable.id, userId))
+    .returning();
+
+  if (!updated) {
+    res.status(404).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  if (previous?.avatarUrl) {
+    void deleteAvatarObject(previous.avatarUrl);
+  }
 
   res.json(formatUser(updated));
 });
