@@ -8,9 +8,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
-import { Palette, MessageCircle, CheckCircle2, Sparkles, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Palette, Send, CheckCircle2, Sparkles, AlertCircle, Loader2 } from "lucide-react";
 
-const ASSISTANCE_PHONE = "237652205768";
+const TOKEN_KEY = "trixhub_token";
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const STORAGE_KEY = "trixhub_canva_claimed";
 
 const schema = z.object({
@@ -20,8 +22,10 @@ const schema = z.object({
 
 export default function BonusCanvaPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const claimed = localStorage.getItem(STORAGE_KEY);
@@ -33,18 +37,44 @@ export default function BonusCanvaPage() {
     defaultValues: { fullName: user?.displayName ?? "", canvaEmail: "" },
   });
 
-  const onSubmit = (values: z.infer<typeof schema>) => {
-    const message = encodeURIComponent(
-      `Bonjour, je suis ${values.fullName} (membre TRIXHUB) et je souhaite recevoir mon compte Canva Pro gratuit.\n\n` +
-      `Email Canva : ${values.canvaEmail}\n` +
-      `Pays : ${user?.country ?? "—"}\n` +
-      `Code parrainage : ${user?.referralCode ?? "—"}`
-    );
-    const url = `https://wa.me/${ASSISTANCE_PHONE}?text=${message}`;
-    localStorage.setItem(STORAGE_KEY, new Date().toISOString());
-    setSubmitted(true);
-    setAlreadyClaimed(true);
-    window.open(url, "_blank", "noopener");
+  const onSubmit = async (values: z.infer<typeof schema>) => {
+    setSending(true);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      let res: Response;
+      try {
+        res = await fetch(`${BASE}/api/contact/canva`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ fullName: values.fullName, canvaEmail: values.canvaEmail }),
+        });
+      } catch {
+        toast({
+          title: "Connexion impossible",
+          description: "Vérifiez votre connexion internet et réessayez.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({
+          title: "Échec de l'envoi",
+          description: data.error || "Impossible d'envoyer la demande. Réessayez plus tard.",
+          variant: "destructive",
+        });
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, new Date().toISOString());
+      setSubmitted(true);
+      setAlreadyClaimed(true);
+      toast({
+        title: "Demande envoyée !",
+        description: "L'assistance a bien reçu votre demande Canva Pro et vous répondra rapidement.",
+      });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -69,7 +99,7 @@ export default function BonusCanvaPage() {
               <div className="text-sm">
                 <p className="font-semibold text-amber-700 dark:text-amber-400">Vous avez déjà demandé votre Canva Pro.</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  Si vous n'avez pas reçu votre compte, contactez à nouveau l'assistance via WhatsApp.
+                  Si vous n'avez pas reçu votre compte, vous pouvez renvoyer une demande ci-dessous.
                 </p>
               </div>
             </CardContent>
@@ -83,7 +113,7 @@ export default function BonusCanvaPage() {
               <div className="text-sm">
                 <p className="font-semibold text-primary">Demande envoyée !</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  Une conversation WhatsApp s'est ouverte avec l'assistance. Si rien ne s'est ouvert, vérifiez les pop-ups de votre navigateur.
+                  L'assistance a bien reçu votre demande. Vous recevrez votre compte Canva Pro sous peu.
                 </p>
               </div>
             </CardContent>
@@ -109,7 +139,7 @@ export default function BonusCanvaPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Demander mon compte</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Remplissez ce formulaire. Une discussion WhatsApp s'ouvrira automatiquement avec l'assistance.
+              Remplissez ce formulaire. Votre demande est envoyée directement à l'assistance.
             </p>
           </CardHeader>
           <CardContent>
@@ -136,9 +166,9 @@ export default function BonusCanvaPage() {
                     </p>
                   </FormItem>
                 )} />
-                <Button type="submit" className="w-full gap-2" data-testid="button-canva-submit">
-                  <MessageCircle size={16} />
-                  Envoyer ma demande sur WhatsApp
+                <Button type="submit" className="w-full gap-2" disabled={sending} data-testid="button-canva-submit">
+                  {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  {sending ? "Envoi en cours..." : "Envoyer ma demande"}
                 </Button>
               </form>
             </Form>

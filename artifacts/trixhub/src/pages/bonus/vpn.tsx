@@ -1,12 +1,60 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Globe2, Users, ExternalLink, MessageCircle, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Shield, Globe2, Users, ExternalLink, MessageCircle, CheckCircle2, Send, Loader2 } from "lucide-react";
 
 const VPN_GROUP_URL = "https://chat.whatsapp.com/I9uoCsp8Wgz3ZRPclsP9Av";
-const ASSISTANCE_PHONE = "237652205768";
+const TOKEN_KEY = "trixhub_token";
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 export default function BonusVpnPage() {
+  const { toast } = useToast();
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const askAssistance = async () => {
+    setSending(true);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      let res: Response;
+      try {
+        res = await fetch(`${BASE}/api/contact/assistance`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            subject: "Question VPN bonus",
+            message: "Bonjour, j'ai une question concernant le VPN bonus TRIXHUB.",
+          }),
+        });
+      } catch {
+        toast({
+          title: "Connexion impossible",
+          description: "Vérifiez votre connexion internet et réessayez.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({
+          title: "Échec de l'envoi",
+          description: data.error || "Impossible d'envoyer le message. Réessayez plus tard.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSent(true);
+      toast({
+        title: "Message envoyé !",
+        description: "L'assistance vous répondra rapidement.",
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6 max-w-2xl">
@@ -74,20 +122,21 @@ export default function BonusVpnPage() {
         </Card>
 
         <Card className="border-card-border">
-          <CardContent className="p-4 text-sm text-muted-foreground">
-            <p>
-              Une question ? Contactez l'assistance directement sur{" "}
-              <a
-                href={`https://wa.me/${ASSISTANCE_PHONE}?text=${encodeURIComponent("Bonjour, j'ai une question concernant le VPN bonus TRIXHUB.")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary font-medium hover:underline inline-flex items-center gap-1"
-                data-testid="link-vpn-assistance"
-              >
-                WhatsApp <ExternalLink size={11} />
-              </a>
-              .
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Une question sur le VPN ? Envoyez un message à l'assistance.
             </p>
+            <Button
+              variant={sent ? "secondary" : "outline"}
+              size="sm"
+              className="gap-2"
+              disabled={sending || sent}
+              onClick={askAssistance}
+              data-testid="button-vpn-assistance"
+            >
+              {sent ? <CheckCircle2 size={14} className="text-primary" /> : sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              {sent ? "Message envoyé" : sending ? "Envoi..." : "Contacter l'assistance"}
+            </Button>
           </CardContent>
         </Card>
       </div>

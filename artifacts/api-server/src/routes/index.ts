@@ -9,6 +9,7 @@ import tasksRouter from "./tasks";
 import configRouter from "./config";
 import swychrRouter from "./swychr";
 import missionsRouter from "./missions";
+import contactRouter from "./contact";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(tasksRouter);
 router.use(configRouter);
 router.use(swychrRouter);
 router.use(missionsRouter);
+router.use(contactRouter);
 
 export default router;
