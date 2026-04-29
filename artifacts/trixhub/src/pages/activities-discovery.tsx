@@ -206,17 +206,26 @@ export default function ActivitiesDiscoveryPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(VISIT_DURATION);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Refs pour la détection de retour (closures stables dans les event listeners)
+  const phaseRef = useRef<Phase>("select");
+  const hasLeftRef = useRef(false);
 
   const startMut = useStartDiscoverySession();
   const claimMut = useClaimDiscoveryPoints();
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  // Synchronise phaseRef à chaque changement de phase
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
   const isAlreadyDone = useMemo(() => {
     const today = schedule?.days.find((d) => d.isToday);
     return today?.activities.find((a) => a.type === "discovery")?.isCompleted ?? false;
   }, [schedule]);
 
+  // Timer de décompte
   useEffect(() => {
     if (phase !== "visiting") return;
     setTimeLeft(VISIT_DURATION);
@@ -235,6 +244,43 @@ export default function ActivitiesDiscoveryPage() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [phase]);
+
+  // ── Détection de retour anticipé (anti-triche) ────────────────
+  // Si l'utilisateur revient sur l'onglet TRIXHUB avant la fin des 60s
+  // → annulation immédiate + message d'échec
+  useEffect(() => {
+    if (phase !== "visiting") return;
+    hasLeftRef.current = false;
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        // L'utilisateur a quitté l'onglet — c'est ce qu'on attend
+        hasLeftRef.current = true;
+      } else if (document.visibilityState === "visible" && hasLeftRef.current) {
+        // L'utilisateur est REVENU sur l'onglet
+        if (phaseRef.current === "visiting") {
+          // Timer pas encore fini → échec
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          setPhase("select");
+          setSelected(null);
+          setSessionId(null);
+          setTimeLeft(VISIT_DURATION);
+          toast({
+            title: "❌ Mission échouée !",
+            description:
+              "Tu es revenu sur l'application avant la fin des 60 secondes. L'activité n'a pas été réalisée correctement. Recommence et reste sur le site partenaire.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [phase, toast]);
 
   const handleSelectOffer = async (offer: Offer) => {
     setSelected(offer);
