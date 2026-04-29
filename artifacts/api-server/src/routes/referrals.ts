@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
-import { db, usersTable, transactionsTable, balancesTable } from "@workspace/db";
+import { db, usersTable, transactionsTable, balancesTable, activityCompletionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
 import { activateUserTx, ACTIVATION_AMOUNT, REFERRAL_PAYMENT_FEE } from "../lib/activation";
@@ -213,14 +213,28 @@ router.post("/referrals/activate-child/:childId", authenticate, requireActivatio
   });
 });
 
+const ACTIVITY_LABELS: Record<string, string> = {
+  video: "Vidéo",
+  quiz: "Quiz IA",
+  discovery: "Découverte",
+  surprise: "Surprise",
+};
+
 router.get("/referrals/activity", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
-  const transactions = await db.select().from(transactionsTable)
-    .where(eq(transactionsTable.userId, userId))
-    .orderBy(desc(transactionsTable.createdAt))
-    .limit(20);
 
-  const activity = transactions.map(t => ({
+  const [transactions, completions] = await Promise.all([
+    db.select().from(transactionsTable)
+      .where(eq(transactionsTable.userId, userId))
+      .orderBy(desc(transactionsTable.createdAt))
+      .limit(20),
+    db.select().from(activityCompletionsTable)
+      .where(eq(activityCompletionsTable.userId, userId))
+      .orderBy(desc(activityCompletionsTable.createdAt))
+      .limit(20),
+  ]);
+
+  const txItems = transactions.map((t) => ({
     id: t.id,
     type: t.type,
     message: t.description,
@@ -229,7 +243,23 @@ router.get("/referrals/activity", authenticate, requireActivation, async (req, r
     createdAt: t.createdAt.toISOString(),
   }));
 
-  res.json(activity);
+  const actItems = completions.map((c) => ({
+    id: c.id + 1_000_000,
+    type: `activity_${c.activityType}` as string,
+    message:
+      (c.pointsAwarded ?? 0) > 0
+        ? `Activité ${ACTIVITY_LABELS[c.activityType] ?? c.activityType} — +${c.pointsAwarded} pts gagnés`
+        : `Activité ${ACTIVITY_LABELS[c.activityType] ?? c.activityType} — 0 pt (score insuffisant)`,
+    amount: c.pointsAwarded ?? 0,
+    status: "completed" as string,
+    createdAt: c.createdAt ? c.createdAt.toISOString() : new Date().toISOString(),
+  }));
+
+  const merged = [...txItems, ...actItems]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 20);
+
+  res.json(merged);
 });
 
 export default router;

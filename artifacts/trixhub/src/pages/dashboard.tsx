@@ -16,12 +16,6 @@ import { cn } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
-const MISSION_TYPES = [
-  { icon: PlayCircle, label: "Mission Vidéo", href: "/tasks/video", color: "text-red-500", bg: "from-red-500/15 to-red-500/5", border: "border-red-500/20", desc: "Regarde des vidéos courtes et gagne" },
-  { icon: HelpCircle, label: "Mission Quizz", href: "/tasks/quizz", color: "text-blue-500", bg: "from-blue-500/15 to-blue-500/5", border: "border-blue-500/20", desc: "Réponds à 5 questions de culture" },
-  { icon: Compass, label: "Mission Découverte", href: "/tasks/decouverte", color: "text-purple-500", bg: "from-purple-500/15 to-purple-500/5", border: "border-purple-500/20", desc: "Découvre des produits africains" },
-  { icon: Sparkles, label: "Mission Surprise", href: "/tasks/surprise", color: "text-amber-500", bg: "from-amber-500/15 to-amber-500/5", border: "border-amber-500/20", desc: "Une surprise différente chaque jour" },
-];
 
 function activityVisuals(type: string) {
   if (type.startsWith("referral")) return { Icon: UserPlus, color: "text-blue-500", bg: "bg-blue-500/10" };
@@ -31,6 +25,11 @@ function activityVisuals(type: string) {
   if (type === "deposit") return { Icon: PiggyBank, color: "text-emerald-500", bg: "bg-emerald-500/10" };
   if (type === "bonus_activation" || type === "bonus_daily") return { Icon: Gift, color: "text-pink-500", bg: "bg-pink-500/10" };
   if (type.startsWith("child_activation")) return { Icon: UserPlus, color: "text-cyan-500", bg: "bg-cyan-500/10" };
+  if (type === "activity_video") return { Icon: PlayCircle, color: "text-red-500", bg: "bg-red-500/10" };
+  if (type === "activity_quiz") return { Icon: HelpCircle, color: "text-blue-500", bg: "bg-blue-500/10" };
+  if (type === "activity_discovery") return { Icon: Compass, color: "text-teal-500", bg: "bg-teal-500/10" };
+  if (type === "activity_surprise") return { Icon: Sparkles, color: "text-purple-500", bg: "bg-purple-500/10" };
+  if (type.startsWith("activity_")) return { Icon: Star, color: "text-amber-500", bg: "bg-amber-500/10" };
   return { Icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" };
 }
 
@@ -388,37 +387,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* MES MISSIONS */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-foreground">Mes missions</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Choisis une mission et commence à gagner</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {MISSION_TYPES.map((m, i) => (
-              <Link
-                key={i}
-                href={m.href}
-                className={cn(
-                  "relative overflow-hidden rounded-2xl p-4 border transition-all duration-200",
-                  "bg-gradient-to-br hover:scale-[1.02] hover:shadow-md",
-                  m.bg, m.border
-                )}
-                data-testid={`card-mission-${m.label.split(" ")[1].toLowerCase()}`}
-              >
-                <div className="w-10 h-10 rounded-xl bg-card flex items-center justify-center mb-3 shadow-sm">
-                  <m.icon className={cn("w-5 h-5", m.color)} />
-                </div>
-                <p className="text-sm font-semibold text-foreground leading-tight">{m.label}</p>
-                <p className="text-xs text-muted-foreground mt-1 leading-snug">{m.desc}</p>
-                <ChevronRight className={cn("w-4 h-4 absolute top-4 right-4 opacity-40", m.color)} />
-              </Link>
-            ))}
-          </div>
-        </div>
-
         {/* TABLEAU D'ACTIVITÉ */}
         <div className="bg-card border border-card-border rounded-2xl overflow-hidden">
           <div className="p-5 pb-3 flex items-center justify-between border-b border-border">
@@ -445,7 +413,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-sm font-medium text-foreground">Aucune activité pour le moment</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Commence à parrainer ou complète une mission pour voir ton activité ici.
+                Commence à parrainer ou effectue une activité pour voir ton historique ici.
               </p>
             </div>
           ) : (
