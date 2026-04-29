@@ -10,7 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle, Users, Gift, ChevronRight, Sparkles, Upload, ImageIcon, Loader2, ShieldCheck } from "lucide-react";
+import {
+  Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle,
+  Users, ChevronRight, Upload, ImageIcon, Loader2, ShieldCheck, Zap,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,8 +25,7 @@ import { cn } from "@/lib/utils";
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const MAX_PROOF_SIZE = 5 * 1024 * 1024;
-
-type Source = "referral" | "task";
+const MIN_REFERRAL = 3000;
 
 const METHODS = [
   { value: "orange_money", label: "Orange Money" },
@@ -42,14 +44,16 @@ const STATUS_CONFIG = {
   rejected: { label: "Rejeté", color: "text-destructive border-destructive/30 bg-destructive/10", icon: XCircle },
 };
 
-const SOURCE_CONFIG: Record<Source, { label: string; min: number; icon: typeof Users; color: string; bg: string; border: string }> = {
-  referral: { label: "Solde parrainage", min: 3000, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/30" },
-  task: { label: "Solde missions", min: 3500, icon: Gift, color: "text-purple-500", bg: "bg-purple-500/10", border: "border-purple-500/30" },
-};
+const schema = z.object({
+  amount: z.number({ coerce: true }).min(MIN_REFERRAL, `Minimum ${MIN_REFERRAL.toLocaleString("fr-FR")} FCFA`),
+  method: z.string().min(1, "Choisissez une méthode"),
+  accountNumber: z.string().min(8, "Numéro de compte requis"),
+  accountName: z.string().min(3, "Nom du titulaire requis"),
+});
 
 export default function WithdrawalsPage() {
   const { user } = useAuth();
-  const [activeSource, setActiveSource] = useState<Source | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const proofTargetRef = useRef<number | null>(null);
@@ -60,48 +64,35 @@ export default function WithdrawalsPage() {
   const { toast } = useToast();
 
   const referralBalance = balances?.referralBalance ?? 0;
-  const taskBalance = balances?.taskBalance ?? 0;
-
-  const sourceMin = activeSource ? SOURCE_CONFIG[activeSource].min : 3000;
-  const sourceBalance = activeSource === "task" ? taskBalance : referralBalance;
-
-  const schema = z.object({
-    amount: z.number({ coerce: true }).min(sourceMin, `Minimum ${formatLocal(sourceMin, user)}`),
-    method: z.string().min(1, "Choisissez une méthode"),
-    accountNumber: z.string().min(8, "Numéro de compte requis"),
-    accountName: z.string().min(3, "Nom du compte requis"),
-  });
+  const canWithdraw = referralBalance >= MIN_REFERRAL;
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { amount: sourceMin, method: "", accountNumber: "", accountName: user?.displayName ?? "" },
+    defaultValues: { amount: MIN_REFERRAL, method: "", accountNumber: "", accountName: user?.displayName ?? "" },
   });
 
-  const openSource = (s: Source) => {
-    const cfg = SOURCE_CONFIG[s];
-    setActiveSource(s);
+  const openDialog = () => {
     form.reset({
-      amount: cfg.min,
+      amount: MIN_REFERRAL,
       method: "",
       accountNumber: user?.phone ?? "",
       accountName: user?.displayName ?? "",
     });
+    setDialogOpen(true);
   };
 
   const onSubmit = async (values: z.infer<typeof schema>) => {
-    if (!activeSource) return;
-
-    if (values.amount > sourceBalance) {
+    if (values.amount > referralBalance) {
       toast({
         title: "Solde insuffisant",
-        description: `Votre ${SOURCE_CONFIG[activeSource].label.toLowerCase()} est de ${formatLocal(sourceBalance, user)}. Vous avez demandé ${formatLocal(values.amount, user)}.`,
+        description: `Votre solde parrainage est de ${formatLocal(referralBalance, user)}. Vous avez demandé ${formatLocal(values.amount, user)}.`,
         variant: "destructive",
       });
       return;
     }
 
     try {
-      await requestWithdrawal.mutateAsync({ data: { ...values, source: activeSource } });
+      await requestWithdrawal.mutateAsync({ data: { ...values, source: "referral" } });
       queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetBalancesQueryKey() });
       toast({
@@ -109,14 +100,13 @@ export default function WithdrawalsPage() {
         description: "Votre retrait sera traité dans la minute. Si rien après 5 minutes, contactez l'assistance.",
       });
       form.reset();
-      setActiveSource(null);
+      setDialogOpen(false);
     } catch (err: unknown) {
-      const errData = (err as { data?: { error?: string; available?: number; source?: string } })?.data;
-      // Si le serveur renvoie le solde dispo + source → message converti dans la devise utilisateur
+      const errData = (err as { data?: { error?: string; available?: number } })?.data;
       if (errData?.available !== undefined) {
         toast({
           title: "Solde insuffisant",
-          description: `Votre solde est de ${formatLocal(errData.available, user)}. Vous avez demandé ${formatLocal(values.amount, user)}.`,
+          description: `Votre solde est de ${formatLocal(errData.available, user)}.`,
           variant: "destructive",
         });
       } else {
@@ -125,7 +115,6 @@ export default function WithdrawalsPage() {
     }
   };
 
-  // ── Upload de la preuve de paiement ──
   const triggerProofUpload = (withdrawalId: number) => {
     proofTargetRef.current = withdrawalId;
     fileInputRef.current?.click();
@@ -159,18 +148,11 @@ export default function WithdrawalsPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast({
-          title: "Échec de l'envoi de la preuve",
-          description: data.error || "Réessayez plus tard.",
-          variant: "destructive",
-        });
+        toast({ title: "Échec de l'envoi", description: data.error || "Réessayez plus tard.", variant: "destructive" });
         return;
       }
       queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
-      toast({
-        title: "Preuve envoyée !",
-        description: "Votre capture d'écran a bien été transmise à l'assistance.",
-      });
+      toast({ title: "Preuve envoyée !", description: "Votre capture d'écran a bien été transmise à l'assistance." });
     } catch {
       toast({ title: "Connexion impossible", description: "Vérifiez votre internet.", variant: "destructive" });
     } finally {
@@ -181,69 +163,66 @@ export default function WithdrawalsPage() {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Retraits</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Choisissez quel solde vous voulez retirer.
-          </p>
-        </div>
 
-        {/* DEUX CARTES SOLDE → DEUX CHEMINS DE RETRAIT */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(Object.keys(SOURCE_CONFIG) as Source[]).map((src) => {
-            const cfg = SOURCE_CONFIG[src];
-            const balance = src === "task" ? taskBalance : referralBalance;
-            const enough = balance >= cfg.min;
-            const Icon = cfg.icon;
-            return (
-              <button
-                key={src}
-                onClick={() => openSource(src)}
-                disabled={!enough}
-                className={cn(
-                  "relative overflow-hidden text-left p-5 rounded-2xl border-2 transition-all",
-                  "bg-card hover:shadow-lg hover:scale-[1.01]",
-                  enough ? cfg.border : "border-border opacity-60 cursor-not-allowed"
-                )}
-                data-testid={`button-withdraw-${src}`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", cfg.bg)}>
-                    <Icon className={cn("w-6 h-6", cfg.color)} />
-                  </div>
-                  <ChevronRight className={cn("w-5 h-5", enough ? cfg.color : "text-muted-foreground")} />
+        {/* HERO SOLDE */}
+        <div className="relative overflow-hidden rounded-3xl shadow-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600" />
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: "5s" }} />
+          <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+          <div className="relative p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">{cfg.label}</p>
-                <p className="text-2xl md:text-3xl font-bold text-foreground tabular-nums amount-display">
-                  {formatLocal(balance, user)}
-                </p>
-                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Min. retrait</span>
-                  <span className={cn("font-semibold", enough ? "text-foreground" : "text-amber-500")}>
-                    {formatLocal(cfg.min, user)}
+                <div>
+                  <p className="text-xs text-white/70 uppercase tracking-widest font-bold">Solde parrainage</p>
+                  <div
+                    className="text-4xl md:text-5xl font-black text-white mt-1 tabular-nums amount-display"
+                    data-testid="text-referral-balance"
+                  >
+                    {formatLocal(referralBalance, user)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold",
+                  canWithdraw ? "bg-white/20 text-white" : "bg-white/10 text-white/60"
+                )}>
+                  <AlertCircle className="w-3 h-3" />
+                  Min. {formatLocal(MIN_REFERRAL, user)} pour retirer
+                </div>
+                {!canWithdraw && (
+                  <span className="text-xs text-white/60">
+                    — Il manque {formatLocal(Math.max(0, MIN_REFERRAL - referralBalance), user)}
                   </span>
-                </div>
-                {!enough && (
-                  <div className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    Il manque {formatLocal(Math.max(0, cfg.min - balance), user)}
-                  </div>
                 )}
-              </button>
-            );
-          })}
+              </div>
+            </div>
+            <Button
+              size="lg"
+              onClick={openDialog}
+              disabled={!canWithdraw}
+              className="bg-white text-blue-700 hover:bg-white/90 font-bold px-8 rounded-2xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              data-testid="button-withdraw-referral"
+            >
+              <Wallet className="w-5 h-5 mr-2" />
+              Demander un retrait
+            </Button>
+          </div>
         </div>
 
-        {/* INFO PAIEMENT AUTOMATIQUE */}
-        <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-4 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-4 h-4 text-primary" />
+        {/* BADGE PAIEMENT AUTO */}
+        <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-emerald-500" />
           </div>
-          <div className="text-sm">
-            <p className="font-semibold text-foreground">Paiement automatique en 1 minute</p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Les retraits sont envoyés automatiquement sur votre Mobile Money. Si vous n'avez rien reçu après 5 minutes,
-              contactez l'assistance via WhatsApp.
+          <div>
+            <p className="text-sm font-semibold text-foreground">Paiement automatique en 1 minute</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Dès que votre demande est envoyée, le transfert Mobile Money est déclenché automatiquement.
+              Si vous n'avez rien reçu après 5 minutes, contactez l'assistance via WhatsApp.
             </p>
           </div>
         </div>
@@ -267,14 +246,13 @@ export default function WithdrawalsPage() {
               <div className="text-center py-12 text-muted-foreground">
                 <Wallet size={40} className="mx-auto mb-4 opacity-30" />
                 <p className="text-sm">Aucun retrait pour le moment</p>
-                <p className="text-xs mt-1">Choisissez un solde ci-dessus pour faire votre premier retrait.</p>
+                <p className="text-xs mt-1">Appuyez sur "Demander un retrait" pour commencer.</p>
               </div>
             ) : (
               <div className="divide-y divide-border">
                 {withdrawals.map(w => {
                   const status = STATUS_CONFIG[w.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
                   const Icon = status.icon;
-                  const sourceLabel = w.source === "task" ? "Missions" : "Parrainage";
                   const wAny = w as typeof w & { proofUrl?: string | null; proofUploadedAt?: string | null };
                   const hasProof = Boolean(wAny.proofUrl);
                   const isUploading = uploadingId === w.id;
@@ -282,23 +260,16 @@ export default function WithdrawalsPage() {
                   return (
                     <div key={w.id} className="p-4 hover:bg-muted/40 transition-colors" data-testid={`row-withdrawal-${w.id}`}>
                       <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                          w.source === "task" ? "bg-purple-500/10" : "bg-blue-500/10"
-                        )}>
-                          {w.source === "task" ? (
-                            <Gift className={cn("w-5 h-5 text-purple-500")} />
-                          ) : (
-                            <Users className={cn("w-5 h-5 text-blue-500")} />
-                          )}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/10">
+                          <Users className="w-5 h-5 text-blue-500" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium text-foreground">
                               {METHODS.find(m => m.value === w.method)?.label ?? w.method}
                             </p>
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                              {sourceLabel}
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                              Parrainage
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground">{w.accountName} · {w.accountNumber}</p>
@@ -313,7 +284,6 @@ export default function WithdrawalsPage() {
                           </Badge>
                         </div>
                       </div>
-                      {/* Bandeau preuve de paiement */}
                       {canUploadProof && (
                         <div className="mt-3 ml-14 p-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 flex items-center justify-between gap-3">
                           <div className="flex items-start gap-2 text-xs">
@@ -341,7 +311,7 @@ export default function WithdrawalsPage() {
                       {hasProof && (
                         <div className="mt-3 ml-14 p-2 rounded-lg bg-green-500/10 border border-green-500/30 text-xs flex items-center gap-2 text-green-700 dark:text-green-400">
                           <ShieldCheck size={14} />
-                          <span>Preuve de paiement envoyée à l'assistance{wAny.proofUploadedAt ? ` le ${new Date(wAny.proofUploadedAt).toLocaleDateString("fr-FR")}` : ""}.</span>
+                          <span>Preuve de paiement envoyée{wAny.proofUploadedAt ? ` le ${new Date(wAny.proofUploadedAt).toLocaleDateString("fr-FR")}` : ""}.</span>
                         </div>
                       )}
                     </div>
@@ -353,7 +323,6 @@ export default function WithdrawalsPage() {
         </Card>
       </div>
 
-      {/* Input fichier caché pour upload preuve */}
       <input
         ref={fileInputRef}
         type="file"
@@ -363,33 +332,26 @@ export default function WithdrawalsPage() {
         data-testid="input-proof-file"
       />
 
-      {/* MODAL DEMANDE DE RETRAIT */}
-      <Dialog open={activeSource !== null} onOpenChange={(o) => !o && setActiveSource(null)}>
+      {/* MODAL RETRAIT PARRAINAGE */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {activeSource && (
-                <>
-                  <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", SOURCE_CONFIG[activeSource].bg)}>
-                    {(() => {
-                      const Icon = SOURCE_CONFIG[activeSource].icon;
-                      return <Icon className={cn("w-4 h-4", SOURCE_CONFIG[activeSource].color)} />;
-                    })()}
-                  </div>
-                  Retrait — {SOURCE_CONFIG[activeSource].label}
-                </>
-              )}
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500/10">
+                <Users className="w-4 h-4 text-blue-500" />
+              </div>
+              Retrait — Solde parrainage
             </DialogTitle>
           </DialogHeader>
           <div className="p-1">
             <div className="grid grid-cols-2 gap-3 mb-5">
               <div className="p-3 bg-muted/50 rounded-xl text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Solde dispo</p>
-                <p className="text-base font-bold text-primary tabular-nums amount-display mt-1">{formatLocal(sourceBalance, user)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Solde disponible</p>
+                <p className="text-base font-bold text-primary tabular-nums amount-display mt-1">{formatLocal(referralBalance, user)}</p>
               </div>
               <div className="p-3 bg-muted/50 rounded-xl text-center">
                 <p className="text-[10px] text-muted-foreground uppercase font-semibold">Minimum</p>
-                <p className="text-base font-bold tabular-nums amount-display mt-1">{formatLocal(sourceMin, user)}</p>
+                <p className="text-base font-bold tabular-nums amount-display mt-1">{formatLocal(MIN_REFERRAL, user)}</p>
               </div>
             </div>
             <Form {...form}>
@@ -402,7 +364,7 @@ export default function WithdrawalsPage() {
                         type="number"
                         {...field}
                         onChange={e => field.onChange(parseFloat(e.target.value))}
-                        placeholder={String(sourceMin)}
+                        placeholder={String(MIN_REFERRAL)}
                         data-testid="input-withdrawal-amount"
                       />
                     </FormControl>
@@ -427,7 +389,7 @@ export default function WithdrawalsPage() {
                 )} />
                 <FormField control={form.control} name="accountNumber" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Numéro de téléphone</FormLabel>
+                    <FormLabel>Numéro Mobile Money</FormLabel>
                     <FormControl><Input {...field} placeholder="+237 6XX XX XX XX" data-testid="input-withdrawal-account" /></FormControl>
                     <FormMessage />
                   </FormItem>
@@ -435,23 +397,27 @@ export default function WithdrawalsPage() {
                 <FormField control={form.control} name="accountName" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nom du titulaire</FormLabel>
-                    <FormControl><Input {...field} placeholder="Nom complet" data-testid="input-withdrawal-name" /></FormControl>
+                    <FormControl><Input {...field} placeholder="Prénom Nom" data-testid="input-withdrawal-name" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <div className="flex items-start gap-2 p-3 bg-primary/10 rounded-lg">
-                  <AlertCircle size={14} className="text-primary mt-0.5 shrink-0" />
+                <div className="flex items-start gap-2 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                  <Zap size={14} className="text-emerald-500 mt-0.5 shrink-0" />
                   <p className="text-xs text-foreground">
-                    Traitement <strong>automatique en 1 minute maximum</strong>. Si rien reçu après 5 minutes, contactez l'assistance.
+                    Paiement <strong>automatique en 1 minute maximum</strong>. Si rien après 5 minutes, contactez l'assistance via WhatsApp.
                   </p>
                 </div>
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full font-bold"
                   disabled={requestWithdrawal.isPending}
                   data-testid="button-submit-withdrawal"
                 >
-                  {requestWithdrawal.isPending ? "Envoi en cours..." : "Confirmer la demande"}
+                  {requestWithdrawal.isPending ? (
+                    <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Envoi en cours...</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><ChevronRight size={16} />Confirmer la demande</span>
+                  )}
                 </Button>
               </form>
             </Form>

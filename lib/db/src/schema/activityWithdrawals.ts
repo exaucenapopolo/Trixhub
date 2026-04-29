@@ -17,6 +17,9 @@ export const activityWithdrawalsTable = pgTable(
     method: text("method").notNull(), // 'orange_money'|'mtn_money'|'wave'|'moov'
     accountNumber: text("account_number").notNull(),
     accountName: text("account_name").notNull(),
+    whatsappNumber: text("whatsapp_number"),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
     country: text("country"),
     status: text("status").notNull().default("pending"),
     adminNote: text("admin_note"),

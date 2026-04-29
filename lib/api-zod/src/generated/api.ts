@@ -586,6 +586,9 @@ export const ListActivityWithdrawalsResponseItem = zod.object({
   method: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  whatsappNumber: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
   country: zod.string().nullish(),
   status: zod.string().describe("pending | approved | paid | rejected"),
   adminNote: zod.string().nullish(),
@@ -607,6 +610,11 @@ export const RequestActivityWithdrawalBody = zod.object({
   method: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  whatsappNumber: zod
+    .string()
+    .describe("Numéro WhatsApp pour recevoir la confirmation de paiement"),
+  firstName: zod.string().describe("Prénom du bénéficiaire"),
+  lastName: zod.string().describe("Nom de famille du bénéficiaire"),
   country: zod.string().nullish(),
 });
 
@@ -617,6 +625,9 @@ export const RequestActivityWithdrawalResponse = zod.object({
   method: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  whatsappNumber: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
   country: zod.string().nullish(),
   status: zod.string().describe("pending | approved | paid | rejected"),
   adminNote: zod.string().nullish(),

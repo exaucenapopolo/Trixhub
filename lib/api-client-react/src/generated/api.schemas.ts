@@ -323,6 +323,12 @@ export interface ActivityWithdrawalBody {
   method: string;
   accountNumber: string;
   accountName: string;
+  /** Numéro WhatsApp pour recevoir la confirmation de paiement */
+  whatsappNumber: string;
+  /** Prénom du bénéficiaire */
+  firstName: string;
+  /** Nom de famille du bénéficiaire */
+  lastName: string;
   /** @nullable */
   country?: string | null;
 }
@@ -334,6 +340,12 @@ export interface ActivityWithdrawal {
   method: string;
   accountNumber: string;
   accountName: string;
+  /** @nullable */
+  whatsappNumber?: string | null;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
   /** @nullable */
   country?: string | null;
   /** pending | approved | paid | rejected */

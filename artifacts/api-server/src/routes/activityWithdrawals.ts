@@ -1,8 +1,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, asc, sql } from "drizzle-orm";
 import {
   db,
   activityWithdrawalsTable,
+  activityCompletionsTable,
   balancesTable,
   usersTable,
 } from "@workspace/db";
@@ -42,6 +43,9 @@ router.post(
           method?: unknown;
           accountNumber?: unknown;
           accountName?: unknown;
+          whatsappNumber?: unknown;
+          firstName?: unknown;
+          lastName?: unknown;
           country?: unknown;
         };
 
@@ -49,6 +53,9 @@ router.post(
         const method = String(body.method ?? "");
         const accountNumber = String(body.accountNumber ?? "").trim();
         const accountName = String(body.accountName ?? "").trim();
+        const whatsappNumber = body.whatsappNumber ? String(body.whatsappNumber).trim() : null;
+        const firstName = body.firstName ? String(body.firstName).trim() : null;
+        const lastName = body.lastName ? String(body.lastName).trim() : null;
         const country = body.country ? String(body.country).trim() : null;
 
         if (!Number.isFinite(amount) || amount < ACTIVITY_WITHDRAWAL_MIN) {
@@ -120,6 +127,9 @@ router.post(
               method,
               accountNumber,
               accountName,
+              whatsappNumber,
+              firstName,
+              lastName,
               country,
               status: "pending",
             })
@@ -130,9 +140,18 @@ router.post(
 
         // Notif Twilio admin (best-effort, hors transaction)
         try {
-          const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+          const [[user], firstActivityRow] = await Promise.all([
+            db.select().from(usersTable).where(eq(usersTable.id, userId)),
+            db
+              .select({ createdAt: activityCompletionsTable.createdAt })
+              .from(activityCompletionsTable)
+              .where(eq(activityCompletionsTable.userId, userId))
+              .orderBy(asc(activityCompletionsTable.createdAt))
+              .limit(1),
+          ]);
+          const firstActivityAt = firstActivityRow[0]?.createdAt ?? null;
           if (user) {
-            const result = await reportActivityWithdrawalCreated(created, user);
+            const result = await reportActivityWithdrawalCreated(created, user, firstActivityAt);
             if (result.ok) {
               await db
                 .update(activityWithdrawalsTable)

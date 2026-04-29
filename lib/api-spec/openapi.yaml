@@ -1338,9 +1338,18 @@ components:
           type: string
         accountName:
           type: string
+        whatsappNumber:
+          type: string
+          description: "Numéro WhatsApp pour recevoir la confirmation de paiement"
+        firstName:
+          type: string
+          description: "Prénom du bénéficiaire"
+        lastName:
+          type: string
+          description: "Nom de famille du bénéficiaire"
         country:
           type: ["string", "null"]
-      required: [amount, method, accountNumber, accountName]
+      required: [amount, method, accountNumber, accountName, whatsappNumber, firstName, lastName]
 
     ActivityWithdrawal:
       type: object
@@ -1357,6 +1366,12 @@ components:
           type: string
         accountName:
           type: string
+        whatsappNumber:
+          type: ["string", "null"]
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
         country:
           type: ["string", "null"]
         status:
