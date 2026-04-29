@@ -28,10 +28,12 @@ import type {
   AdminUpdateActivityScheduleBody,
   AuthResponse,
   BalanceSummary,
+  ClaimDiscoveryPointsBody,
   ClaimVideoPointsBody,
   ConvertResult,
   CurrencyRates,
   Dashboard,
+  DiscoveryClaimResult,
   ErrorResponse,
   HealthStatus,
   LoginBody,
@@ -43,6 +45,8 @@ import type {
   ReferrerInfo,
   RegisterBody,
   ScheduleResponse,
+  StartDiscoverySession200,
+  StartDiscoverySessionBody,
   StartVideoSession200,
   StartVideoSessionBody,
   SuccessResponse,
@@ -2055,6 +2059,180 @@ export const useSubmitQuiz = <
   TContext
 > => {
   return useMutation(getSubmitQuizMutationOptions(options));
+};
+
+/**
+ * @summary Start a discovery offer session
+ */
+export const getStartDiscoverySessionUrl = () => {
+  return `/api/activities/discovery/start`;
+};
+
+export const startDiscoverySession = async (
+  startDiscoverySessionBody: StartDiscoverySessionBody,
+  options?: RequestInit,
+): Promise<StartDiscoverySession200> => {
+  return customFetch<StartDiscoverySession200>(getStartDiscoverySessionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(startDiscoverySessionBody),
+  });
+};
+
+export const getStartDiscoverySessionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startDiscoverySession>>,
+    TError,
+    { data: BodyType<StartDiscoverySessionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof startDiscoverySession>>,
+  TError,
+  { data: BodyType<StartDiscoverySessionBody> },
+  TContext
+> => {
+  const mutationKey = ["startDiscoverySession"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof startDiscoverySession>>,
+    { data: BodyType<StartDiscoverySessionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return startDiscoverySession(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StartDiscoverySessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof startDiscoverySession>>
+>;
+export type StartDiscoverySessionMutationBody =
+  BodyType<StartDiscoverySessionBody>;
+export type StartDiscoverySessionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Start a discovery offer session
+ */
+export const useStartDiscoverySession = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startDiscoverySession>>,
+    TError,
+    { data: BodyType<StartDiscoverySessionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof startDiscoverySession>>,
+  TError,
+  { data: BodyType<StartDiscoverySessionBody> },
+  TContext
+> => {
+  return useMutation(getStartDiscoverySessionMutationOptions(options));
+};
+
+/**
+ * @summary Claim 30 pts after 60s discovery
+ */
+export const getClaimDiscoveryPointsUrl = () => {
+  return `/api/activities/discovery/claim`;
+};
+
+export const claimDiscoveryPoints = async (
+  claimDiscoveryPointsBody: ClaimDiscoveryPointsBody,
+  options?: RequestInit,
+): Promise<DiscoveryClaimResult> => {
+  return customFetch<DiscoveryClaimResult>(getClaimDiscoveryPointsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(claimDiscoveryPointsBody),
+  });
+};
+
+export const getClaimDiscoveryPointsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimDiscoveryPoints>>,
+    TError,
+    { data: BodyType<ClaimDiscoveryPointsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof claimDiscoveryPoints>>,
+  TError,
+  { data: BodyType<ClaimDiscoveryPointsBody> },
+  TContext
+> => {
+  const mutationKey = ["claimDiscoveryPoints"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof claimDiscoveryPoints>>,
+    { data: BodyType<ClaimDiscoveryPointsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return claimDiscoveryPoints(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClaimDiscoveryPointsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof claimDiscoveryPoints>>
+>;
+export type ClaimDiscoveryPointsMutationBody =
+  BodyType<ClaimDiscoveryPointsBody>;
+export type ClaimDiscoveryPointsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Claim 30 pts after 60s discovery
+ */
+export const useClaimDiscoveryPoints = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimDiscoveryPoints>>,
+    TError,
+    { data: BodyType<ClaimDiscoveryPointsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof claimDiscoveryPoints>>,
+  TError,
+  { data: BodyType<ClaimDiscoveryPointsBody> },
+  TContext
+> => {
+  return useMutation(getClaimDiscoveryPointsMutationOptions(options));
 };
 
 /**

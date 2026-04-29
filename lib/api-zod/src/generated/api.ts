@@ -502,6 +502,31 @@ export const SubmitQuizResponse = zod.object({
 });
 
 /**
+ * @summary Start a discovery offer session
+ */
+export const StartDiscoverySessionBody = zod.object({
+  offerId: zod.string(),
+});
+
+export const StartDiscoverySessionResponse = zod.object({
+  sessionId: zod.string(),
+});
+
+/**
+ * @summary Claim 30 pts after 60s discovery
+ */
+export const ClaimDiscoveryPointsBody = zod.object({
+  sessionId: zod.string(),
+});
+
+export const ClaimDiscoveryPointsResponse = zod.object({
+  success: zod.boolean(),
+  points: zod.number(),
+  totalToday: zod.number(),
+  totalWeek: zod.number(),
+});
+
+/**
  * @summary Start a video watch session
  */
 export const StartVideoSessionBody = zod.object({

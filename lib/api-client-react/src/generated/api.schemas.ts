@@ -405,6 +405,25 @@ export interface VideoClaimResult {
   totalWeek: number;
 }
 
+export interface DiscoveryClaimResult {
+  success: boolean;
+  points: number;
+  totalToday: number;
+  totalWeek: number;
+}
+
+export type StartDiscoverySessionBody = {
+  offerId: string;
+};
+
+export type StartDiscoverySession200 = {
+  sessionId: string;
+};
+
+export type ClaimDiscoveryPointsBody = {
+  sessionId: string;
+};
+
 export type StartVideoSessionBody = {
   videoId: string;
 };

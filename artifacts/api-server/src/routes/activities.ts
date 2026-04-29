@@ -489,6 +489,125 @@ router.post(
 );
 
 // ─────────────────────────────────────────────────────────────────
+// Activité Découverte — sessions en mémoire (même pattern que vidéo)
+// ─────────────────────────────────────────────────────────────────
+type DiscoverSession = { sessionId: string; startedAt: number; offerId: string };
+const discoverSessions = new Map<number, DiscoverSession>();
+const DISCOVER_MIN_MS = 60_000; // 60 secondes
+
+// POST /activities/discovery/start
+router.post(
+  "/activities/discovery/start",
+  authenticate,
+  requireActivation,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const userId = req.userId!;
+        const { offerId } = req.body as { offerId?: string };
+
+        if (!offerId || typeof offerId !== "string") {
+          res.status(400).json({ error: "offerId requis." });
+          return;
+        }
+
+        // Vérifie si déjà complété aujourd'hui
+        const weekStart = getCurrentWeekStart();
+        const dayOfWeek = getDayOfWeek();
+        const existing = await db
+          .select({ id: activityCompletionsTable.id })
+          .from(activityCompletionsTable)
+          .where(
+            and(
+              eq(activityCompletionsTable.userId, userId),
+              eq(activityCompletionsTable.activityType, "discovery"),
+              eq(activityCompletionsTable.weekStart, weekStart),
+              eq(activityCompletionsTable.dayOfWeek, dayOfWeek),
+            ),
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          res.status(400).json({ error: "Tu as déjà fait ta découverte aujourd'hui." });
+          return;
+        }
+
+        const sessionId = crypto.randomUUID();
+        discoverSessions.set(userId, { sessionId, startedAt: Date.now(), offerId });
+        res.json({ sessionId });
+      } catch (err) {
+        req.log.error({ err }, "activities/discovery/start failed");
+        res.status(500).json({ error: "Erreur" });
+      }
+    })();
+  },
+);
+
+// POST /activities/discovery/claim — réclame 30 pts après 60s
+router.post(
+  "/activities/discovery/claim",
+  authenticate,
+  requireActivation,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const userId = req.userId!;
+        const { sessionId } = req.body as { sessionId?: string };
+
+        const session = discoverSessions.get(userId);
+        if (!session || session.sessionId !== sessionId) {
+          res.status(400).json({ error: "Session découverte invalide ou expirée." });
+          return;
+        }
+
+        const elapsed = Date.now() - session.startedAt;
+        if (elapsed < DISCOVER_MIN_MS) {
+          const remaining = Math.ceil((DISCOVER_MIN_MS - elapsed) / 1000);
+          res.status(400).json({
+            error: `Encore ${remaining}s avant de pouvoir réclamer.`,
+          });
+          return;
+        }
+
+        discoverSessions.delete(userId);
+
+        const result = await awardActivityPoints({
+          userId,
+          activityType: "discovery",
+          points: ACTIVITY_POINTS.discovery,
+          payloadProof: { offerId: session.offerId },
+          log: req.log,
+        });
+
+        if (!result.success) {
+          const messages: Record<string, string> = {
+            daily_cap_reached: "Tu as atteint le maximum de points pour aujourd'hui.",
+            weekly_cap_reached: "Tu as atteint le maximum de points pour cette semaine.",
+            already_completed: "Tu as déjà fait ta découverte aujourd'hui.",
+            week_not_accumulating: "Impossible d'ajouter des points cette semaine.",
+            invalid_points: "Points invalides.",
+          };
+          res.status(400).json({
+            error: messages[result.reason ?? ""] ?? "Impossible d'attribuer les points.",
+          });
+          return;
+        }
+
+        res.json({
+          success: true,
+          points: ACTIVITY_POINTS.discovery,
+          totalToday: result.newDailyTotal,
+          totalWeek: result.newWeeklyTotal,
+        });
+      } catch (err) {
+        req.log.error({ err }, "activities/discovery/claim failed");
+        res.status(500).json({ error: "Erreur" });
+      }
+    })();
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────
 // POST /activities/convert — conversion dimanche 700pts → 700 FCFA
 // ─────────────────────────────────────────────────────────────────
 router.post(

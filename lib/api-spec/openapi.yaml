@@ -485,6 +485,72 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuizResult"
 
+  /activities/discovery/start:
+    post:
+      tags: [activities]
+      summary: Start a discovery offer session
+      operationId: startDiscoverySession
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offerId:
+                  type: string
+              required: [offerId]
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                required: [sessionId]
+        "400":
+          description: Already done or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /activities/discovery/claim:
+    post:
+      tags: [activities]
+      summary: Claim 30 pts after 60s discovery
+      operationId: claimDiscoveryPoints
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId:
+                  type: string
+              required: [sessionId]
+      responses:
+        "200":
+          description: Points awarded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryClaimResult"
+        "400":
+          description: Session invalid or timer not elapsed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /activities/video/start:
     post:
       tags: [activities]
@@ -1355,6 +1421,19 @@ components:
       required: [id, activityType, scheduledDate, isEnabled, createdAt]
 
     VideoClaimResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        points:
+          type: integer
+        totalToday:
+          type: integer
+        totalWeek:
+          type: integer
+      required: [success, points, totalToday, totalWeek]
+
+    DiscoveryClaimResult:
       type: object
       properties:
         success:

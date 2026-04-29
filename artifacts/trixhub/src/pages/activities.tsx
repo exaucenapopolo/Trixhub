@@ -61,11 +61,11 @@ const ACTIVITY_META: Record<
   },
   discovery: {
     label: "Découverte",
-    shortDesc: "Visite un partenaire ou un produit",
+    shortDesc: "Découvre un service partenaire · +30 pts",
     Icon: Compass,
-    color: "text-purple-600 dark:text-purple-400",
-    bgLight: "bg-purple-500/10",
-    href: "#",
+    color: "text-teal-600 dark:text-teal-400",
+    bgLight: "bg-teal-500/10",
+    href: "/activities/discovery",
   },
   surprise: {
     label: "Surprise",
