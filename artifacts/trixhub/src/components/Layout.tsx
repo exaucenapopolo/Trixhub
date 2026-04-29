@@ -146,30 +146,18 @@ export default function Layout({ children }: { children: ReactNode }) {
           );
         })}
 
-        {/* Missions section */}
+        {/* Activités section — refonte hebdomadaire (cap 100/jour, 700/sem) */}
         <div className="mt-2 pt-2 border-t border-sidebar-border/50">
-          <button
-            onClick={() => setMissionsOpen(!missionsOpen)}
+          <Link href="/activities"
+            onClick={() => setSidebarOpen(false)}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
-              location.startsWith("/tasks") ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
-            )}
-          >
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+              location.startsWith("/activities") ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
+            )}>
             <CheckSquare size={17} />
-            <span className="flex-1 text-left">Missions</span>
-            <ChevronDown size={14} className={cn("transition-transform", missionsOpen ? "rotate-180" : "")} />
-          </button>
-          {missionsOpen && (
-            <div className="ml-4 mt-1 mb-1 border-l border-sidebar-border pl-3 space-y-0.5">
-              {missionItems.map(mi => (
-                <Link key={mi.label} href={mi.href}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-sidebar-foreground transition-all">
-                  <mi.icon size={12} className={mi.color} />
-                  {mi.label}
-                </Link>
-              ))}
-            </div>
-          )}
+            <span className="flex-1 text-left">Activités</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">NEW</span>
+          </Link>
         </div>
 
         {/* Bonus section */}

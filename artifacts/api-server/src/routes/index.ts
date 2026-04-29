@@ -11,6 +11,8 @@ import swychrRouter from "./swychr";
 import missionsRouter from "./missions";
 import contactRouter from "./contact";
 import storageRouter from "./storage";
+import activitiesRouter from "./activities";
+import activityWithdrawalsRouter from "./activityWithdrawals";
 
 const router: IRouter = Router();
 
@@ -26,5 +28,7 @@ router.use(swychrRouter);
 router.use(missionsRouter);
 router.use(contactRouter);
 router.use(storageRouter);
+router.use(activitiesRouter);
+router.use(activityWithdrawalsRouter);
 
 export default router;

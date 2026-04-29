@@ -9,6 +9,9 @@ export const balancesTable = pgTable("balances", {
   taskBalance: decimal("task_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   bonusBalance: decimal("bonus_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   depositBalance: decimal("deposit_balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  // Solde activité = uniquement points hebdo convertis en FCFA le dimanche.
+  // Indépendant de taskBalance (legacy missions). Retirable à partir de 3500 FCFA via demande admin.
+  activityBalance: decimal("activity_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   inactiveBalance: decimal("inactive_balance", { precision: 15, scale: 2 }).notNull().default("0"),
   withdrawnAmount: decimal("withdrawn_amount", { precision: 15, scale: 2 }).notNull().default("0"),
   spentAmount: decimal("spent_amount", { precision: 15, scale: 2 }).notNull().default("0"),

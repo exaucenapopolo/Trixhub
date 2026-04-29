@@ -428,6 +428,114 @@ paths:
               schema:
                 $ref: "#/components/schemas/CurrencyRates"
 
+  /activities/weekly-status:
+    get:
+      operationId: getWeeklyStatus
+      tags: [activities]
+      summary: Get weekly points status (cap quotidien + hebdo, jour, conversion)
+      responses:
+        "200":
+          description: Weekly status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyStatus"
+
+  /activities/quiz/start:
+    post:
+      operationId: startQuiz
+      tags: [activities]
+      summary: Generate a new 5-question AI quiz session
+      responses:
+        "200":
+          description: Quiz session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizSession"
+        "429":
+          description: Daily or weekly cap reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /activities/quiz/{sessionId}/submit:
+    post:
+      operationId: submitQuiz
+      tags: [activities]
+      summary: Submit quiz answers and award points
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizSubmitBody"
+      responses:
+        "200":
+          description: Quiz result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResult"
+
+  /activities/convert:
+    post:
+      operationId: convertWeeklyPoints
+      tags: [activities]
+      summary: Convert 700 weekly points to 700 FCFA (Sunday only)
+      responses:
+        "200":
+          description: Conversion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConvertResult"
+        "400":
+          description: Cannot convert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /withdrawals/activity:
+    get:
+      operationId: listActivityWithdrawals
+      tags: [activities]
+      summary: List activity-balance withdrawal requests for current user
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityWithdrawal"
+    post:
+      operationId: requestActivityWithdrawal
+      tags: [activities]
+      summary: Request a withdrawal from activity balance (min 3500 FCFA)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityWithdrawalBody"
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityWithdrawal"
+
 components:
   schemas:
     HealthStatus:
@@ -571,6 +679,8 @@ components:
           type: number
         taskBalance:
           type: number
+        activityBalance:
+          type: number
         bonusBalance:
           type: number
         depositBalance:
@@ -665,6 +775,8 @@ components:
         referralBalance:
           type: number
         taskBalance:
+          type: number
+        activityBalance:
           type: number
         bonusBalance:
           type: number
@@ -838,3 +950,190 @@ components:
         nextAvailableAt:
           type: string
       required: [reward, nextAvailableAt]
+
+    WeeklyStatus:
+      type: object
+      properties:
+        weekStart:
+          type: string
+        dayOfWeek:
+          type: integer
+          description: "0=Lundi, 6=Dimanche"
+        dayLabel:
+          type: string
+        isSunday:
+          type: boolean
+        status:
+          type: string
+          description: "accumulating | converted | expired"
+        weeklyTotal:
+          type: integer
+        weeklyCap:
+          type: integer
+        weeklyRemaining:
+          type: integer
+        dailyTotal:
+          type: integer
+        dailyCap:
+          type: integer
+        dailyRemaining:
+          type: integer
+        dailyBreakdown:
+          type: object
+          additionalProperties:
+            type: integer
+        canConvert:
+          type: boolean
+        convertedAt:
+          type: ["string", "null"]
+        convertedAmount:
+          type: ["string", "null"]
+        todayByType:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              count:
+                type: integer
+              points:
+                type: integer
+            required: [count, points]
+        activityRewards:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+        [
+          weekStart, dayOfWeek, dayLabel, isSunday, status, weeklyTotal,
+          weeklyCap, weeklyRemaining, dailyTotal, dailyCap, dailyRemaining,
+          dailyBreakdown, canConvert, todayByType, activityRewards
+        ]
+
+    QuizClientQuestion:
+      type: object
+      properties:
+        index:
+          type: integer
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+      required: [index, question, options]
+
+    QuizSession:
+      type: object
+      properties:
+        sessionId:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizClientQuestion"
+        startedAt:
+          type: string
+        pointsPerCorrect:
+          type: integer
+      required: [sessionId, questions, startedAt, pointsPerCorrect]
+
+    QuizSubmitBody:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            type: integer
+          minItems: 5
+          maxItems: 5
+      required: [answers]
+
+    QuizCorrection:
+      type: object
+      properties:
+        index:
+          type: integer
+        userAnswer:
+          type: integer
+        correctIndex:
+          type: integer
+        ok:
+          type: boolean
+      required: [index, userAnswer, correctIndex, ok]
+
+    QuizResult:
+      type: object
+      properties:
+        score:
+          type: integer
+        total:
+          type: integer
+        pointsAwarded:
+          type: integer
+        corrections:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizCorrection"
+        awardError:
+          type: ["string", "null"]
+      required: [score, total, pointsAwarded, corrections]
+
+    ConvertResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        convertedAmount:
+          type: integer
+        newActivityBalance:
+          type: string
+      required: [success, convertedAmount, newActivityBalance]
+
+    ActivityWithdrawalBody:
+      type: object
+      properties:
+        amount:
+          type: number
+        method:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+        country:
+          type: ["string", "null"]
+      required: [amount, method, accountNumber, accountName]
+
+    ActivityWithdrawal:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        amount:
+          type: string
+        method:
+          type: string
+        accountNumber:
+          type: string
+        accountName:
+          type: string
+        country:
+          type: ["string", "null"]
+        status:
+          type: string
+          description: "pending | approved | paid | rejected"
+        adminNote:
+          type: ["string", "null"]
+        rejectionReason:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        approvedAt:
+          type: ["string", "null"]
+        paidAt:
+          type: ["string", "null"]
+        rejectedAt:
+          type: ["string", "null"]
+      required: [id, userId, amount, method, accountNumber, accountName, status, createdAt]

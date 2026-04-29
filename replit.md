@@ -77,6 +77,32 @@ Tous les flux financiers sont atomiques et observables :
 - `routes/tasks.ts` : `/tasks/:id/complete` en tx + UNIQUE(user_id, task_id) catch 23505 + UPDATE balance strict.
 - `scripts/post-merge.sh` : `pnpm --filter db push-force` puis backfill idempotent des balances manquantes.
 
+### Vague Activités (refonte Missions → Activités, points hebdomadaires)
+Système de points hebdomadaire avec conversion dimanche en FCFA :
+- Cap 100 pts/jour, 700 pts/semaine. 1 pt = 1 FCFA. Cycle Lundi→Samedi (gain) → Dimanche (conversion uniquement si 700 pts atteints) → reset si raté.
+- 4 types d'activités : Vidéo (20 pts), Quiz (50 pts via OpenAI gpt-4o-mini), Découverte (30 pts), Surprise (≤100 pts modéré admin). Itération 1 : seul le Quiz est actif.
+- Solde activité (`balances.activity_balance`) séparé du `task_balance` legacy.
+- Retrait activité ≥3 500 FCFA via demande validée par admin (notif Twilio WhatsApp).
+- TZ Africa/Douala (UTC+1) pour weekStart/dayOfWeek.
+
+#### Backend (artifacts/api-server/src)
+- `lib/weeklyPoints.ts` : `getCurrentWeekStart()`, `getDayOfWeek()`, `awardActivityPoints()` (advisory_xact_lock + caps + idempotent), `convertWeeklyPointsToBalance()` (transaction atomique : seulement dimanche + 700 pts + UPDATE conditionnel `WHERE status='accumulating' RETURNING`), `expirePastUnconvertedWeeks()` (lazy).
+- `lib/openaiClient.ts` : client OpenAI singleton via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_*` env).
+- `lib/quizGenerator.ts` : `generateQuizQuestions()` via gpt-4o-mini avec AbortController 25s + Zod validation stricte (5 questions × 4 options × correctIndex 0..3). `questionsForClient()` strip le correctIndex.
+- `lib/activityWithdrawalReports.ts` : 2 helpers Twilio (`reportActivityWithdrawalCreated`, `reportActivityWithdrawalStatusChange`).
+- `routes/activities.ts` : GET /activities/weekly-status, POST /activities/quiz/start (réutilise session <5min), POST /activities/quiz/:sessionId/submit (TTL 15min + UPDATE atomique conditionnel `WHERE submitted_at IS NULL` anti-replay), POST /activities/convert.
+- `routes/activityWithdrawals.ts` : POST /withdrawals/activity (tx + advisory_xact_lock + débit + insert + Twilio), GET /withdrawals/activity, PATCH /admin/withdrawals/activity/:id (FOR UPDATE + state machine + UPDATE conditionnel `WHERE status=previousStatus` anti double-refund + refund uniquement après guard atomique réussi).
+
+#### DB (lib/db/src/schema.ts)
+Nouvelles tables (toutes serial PK) : `activities` (catalogue admin), `activity_completions` (journal points), `weekly_points` (agrégat hebdo : weekStart UNIQUE/user, totalPoints, dailyBreakdown jsonb, status accumulating|converted|expired, convertedAt, convertedAmount), `activity_withdrawals` (status pending|approved|paid|rejected + traçabilité admin), `quiz_sessions` (questions jsonb + answers + score + submittedAt + startedAt). Ajout colonne `balances.activity_balance` (decimal default "0").
+
+#### Frontend (artifacts/trixhub/src)
+- `components/Layout.tsx` : sidebar — "Missions" remplacé par lien plat "Activités" → /activities (badge NEW).
+- `pages/dashboard.tsx` : carte "Missions" renommée "Activité", value = activityBalance + taskBalance legacy, CTA → /retraits/activite.
+- `pages/activities.tsx` : hub avec hero progression hebdo X/700 + day indicator (L M M J V S D + jour courant highlighted) + 4 cards (Quiz actif, autres "Bientôt") + CTA conversion gating (Sunday + 700) + lien retrait.
+- `pages/activities-quiz.tsx` : flow start → 5 QCM (radio A/B/C/D) → submit → résultat (score X/5 + points + corrections détaillées avec bonne réponse révélée) → restart.
+- `pages/activity-withdrawal.tsx` : hero solde + form (montant ≥3500 / méthode mobile money / numéro / titulaire / pays) + bouton désactivé si solde insuffisant + historique avec badges statut.
+
 ### Frontend Vague 2/3
 - `pages/dashboard.tsx` : refonte avec HeroBalance animé (count-up) + HeroReferralLink séparé + 4 BalanceCard (parrainage / missions / bonus / dépôt) + activité.
 - `pages/depot.tsx` : page dépôt via Swychr (montant libre + polling status + bouton "Vérifier maintenant").

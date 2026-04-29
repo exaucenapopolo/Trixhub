@@ -21,14 +21,20 @@ import type {
   ActivateChildBody,
   ActivateChildResponse,
   ActivityItem,
+  ActivityWithdrawal,
+  ActivityWithdrawalBody,
   AuthResponse,
   BalanceSummary,
+  ConvertResult,
   CurrencyRates,
   Dashboard,
   ErrorResponse,
   HealthStatus,
   LoginBody,
   PlatformConfig,
+  QuizResult,
+  QuizSession,
+  QuizSubmitBody,
   ReferralLevelResponse,
   ReferrerInfo,
   RegisterBody,
@@ -39,6 +45,7 @@ import type {
   UpdateProfileBody,
   UpdateThemeBody,
   User,
+  WeeklyStatus,
   Withdrawal,
   WithdrawalBody,
 } from "./api.schemas";
@@ -1798,3 +1805,490 @@ export function useGetCurrencyRates<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get weekly points status (cap quotidien + hebdo, jour, conversion)
+ */
+export const getGetWeeklyStatusUrl = () => {
+  return `/api/activities/weekly-status`;
+};
+
+export const getWeeklyStatus = async (
+  options?: RequestInit,
+): Promise<WeeklyStatus> => {
+  return customFetch<WeeklyStatus>(getGetWeeklyStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWeeklyStatusQueryKey = () => {
+  return [`/api/activities/weekly-status`] as const;
+};
+
+export const getGetWeeklyStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWeeklyStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWeeklyStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWeeklyStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeeklyStatus>>> = ({
+    signal,
+  }) => getWeeklyStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWeeklyStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWeeklyStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWeeklyStatus>>
+>;
+export type GetWeeklyStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get weekly points status (cap quotidien + hebdo, jour, conversion)
+ */
+
+export function useGetWeeklyStatus<
+  TData = Awaited<ReturnType<typeof getWeeklyStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getWeeklyStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWeeklyStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Generate a new 5-question AI quiz session
+ */
+export const getStartQuizUrl = () => {
+  return `/api/activities/quiz/start`;
+};
+
+export const startQuiz = async (
+  options?: RequestInit,
+): Promise<QuizSession> => {
+  return customFetch<QuizSession>(getStartQuizUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getStartQuizMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startQuiz>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof startQuiz>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["startQuiz"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof startQuiz>>,
+    void
+  > = () => {
+    return startQuiz(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StartQuizMutationResult = NonNullable<
+  Awaited<ReturnType<typeof startQuiz>>
+>;
+
+export type StartQuizMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Generate a new 5-question AI quiz session
+ */
+export const useStartQuiz = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startQuiz>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof startQuiz>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getStartQuizMutationOptions(options));
+};
+
+/**
+ * @summary Submit quiz answers and award points
+ */
+export const getSubmitQuizUrl = (sessionId: number) => {
+  return `/api/activities/quiz/${sessionId}/submit`;
+};
+
+export const submitQuiz = async (
+  sessionId: number,
+  quizSubmitBody: QuizSubmitBody,
+  options?: RequestInit,
+): Promise<QuizResult> => {
+  return customFetch<QuizResult>(getSubmitQuizUrl(sessionId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(quizSubmitBody),
+  });
+};
+
+export const getSubmitQuizMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitQuiz>>,
+    TError,
+    { sessionId: number; data: BodyType<QuizSubmitBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitQuiz>>,
+  TError,
+  { sessionId: number; data: BodyType<QuizSubmitBody> },
+  TContext
+> => {
+  const mutationKey = ["submitQuiz"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitQuiz>>,
+    { sessionId: number; data: BodyType<QuizSubmitBody> }
+  > = (props) => {
+    const { sessionId, data } = props ?? {};
+
+    return submitQuiz(sessionId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitQuizMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitQuiz>>
+>;
+export type SubmitQuizMutationBody = BodyType<QuizSubmitBody>;
+export type SubmitQuizMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit quiz answers and award points
+ */
+export const useSubmitQuiz = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitQuiz>>,
+    TError,
+    { sessionId: number; data: BodyType<QuizSubmitBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitQuiz>>,
+  TError,
+  { sessionId: number; data: BodyType<QuizSubmitBody> },
+  TContext
+> => {
+  return useMutation(getSubmitQuizMutationOptions(options));
+};
+
+/**
+ * @summary Convert 700 weekly points to 700 FCFA (Sunday only)
+ */
+export const getConvertWeeklyPointsUrl = () => {
+  return `/api/activities/convert`;
+};
+
+export const convertWeeklyPoints = async (
+  options?: RequestInit,
+): Promise<ConvertResult> => {
+  return customFetch<ConvertResult>(getConvertWeeklyPointsUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getConvertWeeklyPointsMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof convertWeeklyPoints>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof convertWeeklyPoints>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["convertWeeklyPoints"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof convertWeeklyPoints>>,
+    void
+  > = () => {
+    return convertWeeklyPoints(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConvertWeeklyPointsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof convertWeeklyPoints>>
+>;
+
+export type ConvertWeeklyPointsMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Convert 700 weekly points to 700 FCFA (Sunday only)
+ */
+export const useConvertWeeklyPoints = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof convertWeeklyPoints>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof convertWeeklyPoints>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getConvertWeeklyPointsMutationOptions(options));
+};
+
+/**
+ * @summary List activity-balance withdrawal requests for current user
+ */
+export const getListActivityWithdrawalsUrl = () => {
+  return `/api/withdrawals/activity`;
+};
+
+export const listActivityWithdrawals = async (
+  options?: RequestInit,
+): Promise<ActivityWithdrawal[]> => {
+  return customFetch<ActivityWithdrawal[]>(getListActivityWithdrawalsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListActivityWithdrawalsQueryKey = () => {
+  return [`/api/withdrawals/activity`] as const;
+};
+
+export const getListActivityWithdrawalsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listActivityWithdrawals>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActivityWithdrawals>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListActivityWithdrawalsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listActivityWithdrawals>>
+  > = ({ signal }) => listActivityWithdrawals({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listActivityWithdrawals>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListActivityWithdrawalsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listActivityWithdrawals>>
+>;
+export type ListActivityWithdrawalsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List activity-balance withdrawal requests for current user
+ */
+
+export function useListActivityWithdrawals<
+  TData = Awaited<ReturnType<typeof listActivityWithdrawals>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActivityWithdrawals>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListActivityWithdrawalsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Request a withdrawal from activity balance (min 3500 FCFA)
+ */
+export const getRequestActivityWithdrawalUrl = () => {
+  return `/api/withdrawals/activity`;
+};
+
+export const requestActivityWithdrawal = async (
+  activityWithdrawalBody: ActivityWithdrawalBody,
+  options?: RequestInit,
+): Promise<ActivityWithdrawal> => {
+  return customFetch<ActivityWithdrawal>(getRequestActivityWithdrawalUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(activityWithdrawalBody),
+  });
+};
+
+export const getRequestActivityWithdrawalMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestActivityWithdrawal>>,
+    TError,
+    { data: BodyType<ActivityWithdrawalBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestActivityWithdrawal>>,
+  TError,
+  { data: BodyType<ActivityWithdrawalBody> },
+  TContext
+> => {
+  const mutationKey = ["requestActivityWithdrawal"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestActivityWithdrawal>>,
+    { data: BodyType<ActivityWithdrawalBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return requestActivityWithdrawal(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestActivityWithdrawalMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestActivityWithdrawal>>
+>;
+export type RequestActivityWithdrawalMutationBody =
+  BodyType<ActivityWithdrawalBody>;
+export type RequestActivityWithdrawalMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Request a withdrawal from activity balance (min 3500 FCFA)
+ */
+export const useRequestActivityWithdrawal = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestActivityWithdrawal>>,
+    TError,
+    { data: BodyType<ActivityWithdrawalBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestActivityWithdrawal>>,
+  TError,
+  { data: BodyType<ActivityWithdrawalBody> },
+  TContext
+> => {
+  return useMutation(getRequestActivityWithdrawalMutationOptions(options));
+};

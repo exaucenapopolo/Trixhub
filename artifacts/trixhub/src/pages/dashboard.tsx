@@ -223,6 +223,7 @@ export default function DashboardPage() {
 
   const referralBalance = dashboard?.referralBalance ?? 0;
   const taskBalance = dashboard?.taskBalance ?? 0;
+  const activityBalance = dashboard?.activityBalance ?? 0;
   const bonusBalance = dashboard?.bonusBalance ?? 0;
   const depositBalance = dashboard?.depositBalance ?? 0;
   const totalBalance = dashboard?.totalBalance ?? 0;
@@ -278,13 +279,13 @@ export default function DashboardPage() {
               currency={user}
             />
             <BalanceCard
-              label="Missions"
-              value={taskBalance}
+              label="Activité"
+              value={activityBalance + taskBalance}
               loading={dashLoading}
               Icon={Gift}
               hue="purple"
-              caption="Vidéos, quizz, découverte…"
-              cta={{ label: "Retirer", href: "/withdrawals" }}
+              caption="Points hebdo convertis · ≥3 500 FCFA"
+              cta={{ label: "Retirer", href: "/retraits/activite" }}
               currency={user}
             />
             <BalanceCard

@@ -16,6 +16,9 @@ import MissionVideoPage from "@/pages/tasks/video";
 import MissionQuizzPage from "@/pages/tasks/quizz";
 import MissionDecouvertePage from "@/pages/tasks/decouverte";
 import MissionSurprisePage from "@/pages/tasks/surprise";
+import ActivitiesPage from "@/pages/activities";
+import ActivitiesQuizPage from "@/pages/activities-quiz";
+import ActivityWithdrawalPage from "@/pages/activity-withdrawal";
 import WithdrawalsPage from "@/pages/withdrawals";
 import DepotPage from "@/pages/depot";
 import ProfilePage from "@/pages/profile";
@@ -96,6 +99,9 @@ function InnerApp() {
         <Route path="/tasks/quizz" component={() => <ProtectedRoute component={MissionQuizzPage} />} />
         <Route path="/tasks/decouverte" component={() => <ProtectedRoute component={MissionDecouvertePage} />} />
         <Route path="/tasks/surprise" component={() => <ProtectedRoute component={MissionSurprisePage} />} />
+        <Route path="/activities" component={() => <ProtectedRoute component={ActivitiesPage} />} />
+        <Route path="/activities/quiz" component={() => <ProtectedRoute component={ActivitiesQuizPage} />} />
+        <Route path="/retraits/activite" component={() => <ProtectedRoute component={ActivityWithdrawalPage} />} />
         <Route path="/withdrawals" component={() => <ProtectedRoute component={WithdrawalsPage} />} />
         <Route path="/depot" component={() => <ProtectedRoute component={DepotPage} />} />
         <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />

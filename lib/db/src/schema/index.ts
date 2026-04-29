@@ -5,3 +5,8 @@ export * from "./withdrawals";
 export * from "./tasks";
 export * from "./sessions";
 export * from "./swychrTransactions";
+export * from "./activities";
+export * from "./activityCompletions";
+export * from "./weeklyPoints";
+export * from "./activityWithdrawals";
+export * from "./quizSessions";

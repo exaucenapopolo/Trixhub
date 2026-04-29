@@ -168,6 +168,7 @@ export const GetDashboardResponse = zod.object({
   totalBalance: zod.number(),
   referralBalance: zod.number(),
   taskBalance: zod.number(),
+  activityBalance: zod.number().optional(),
   bonusBalance: zod.number(),
   depositBalance: zod.number(),
   withdrawnAmount: zod.number(),
@@ -331,6 +332,7 @@ export const GetBalancesResponse = zod.object({
   totalBalance: zod.number(),
   referralBalance: zod.number(),
   taskBalance: zod.number(),
+  activityBalance: zod.number().optional(),
   bonusBalance: zod.number(),
   depositBalance: zod.number(),
   inactiveBalance: zod.number(),
@@ -420,4 +422,141 @@ export const GetCurrencyRatesResponse = zod.object({
   baseCurrency: zod.string(),
   rates: zod.record(zod.string(), zod.number()),
   updatedAt: zod.string(),
+});
+
+/**
+ * @summary Get weekly points status (cap quotidien + hebdo, jour, conversion)
+ */
+export const GetWeeklyStatusResponse = zod.object({
+  weekStart: zod.string(),
+  dayOfWeek: zod.number().describe("0=Lundi, 6=Dimanche"),
+  dayLabel: zod.string(),
+  isSunday: zod.boolean(),
+  status: zod.string().describe("accumulating | converted | expired"),
+  weeklyTotal: zod.number(),
+  weeklyCap: zod.number(),
+  weeklyRemaining: zod.number(),
+  dailyTotal: zod.number(),
+  dailyCap: zod.number(),
+  dailyRemaining: zod.number(),
+  dailyBreakdown: zod.record(zod.string(), zod.number()),
+  canConvert: zod.boolean(),
+  convertedAt: zod.string().nullish(),
+  convertedAmount: zod.string().nullish(),
+  todayByType: zod.record(
+    zod.string(),
+    zod.object({
+      count: zod.number(),
+      points: zod.number(),
+    }),
+  ),
+  activityRewards: zod.record(zod.string(), zod.number()),
+});
+
+/**
+ * @summary Generate a new 5-question AI quiz session
+ */
+export const StartQuizResponse = zod.object({
+  sessionId: zod.number(),
+  questions: zod.array(
+    zod.object({
+      index: zod.number(),
+      question: zod.string(),
+      options: zod.array(zod.string()),
+    }),
+  ),
+  startedAt: zod.string(),
+  pointsPerCorrect: zod.number(),
+});
+
+/**
+ * @summary Submit quiz answers and award points
+ */
+export const SubmitQuizParams = zod.object({
+  sessionId: zod.coerce.number(),
+});
+
+export const submitQuizBodyAnswersMin = 5;
+export const submitQuizBodyAnswersMax = 5;
+
+export const SubmitQuizBody = zod.object({
+  answers: zod
+    .array(zod.number())
+    .min(submitQuizBodyAnswersMin)
+    .max(submitQuizBodyAnswersMax),
+});
+
+export const SubmitQuizResponse = zod.object({
+  score: zod.number(),
+  total: zod.number(),
+  pointsAwarded: zod.number(),
+  corrections: zod.array(
+    zod.object({
+      index: zod.number(),
+      userAnswer: zod.number(),
+      correctIndex: zod.number(),
+      ok: zod.boolean(),
+    }),
+  ),
+  awardError: zod.string().nullish(),
+});
+
+/**
+ * @summary Convert 700 weekly points to 700 FCFA (Sunday only)
+ */
+export const ConvertWeeklyPointsResponse = zod.object({
+  success: zod.boolean(),
+  convertedAmount: zod.number(),
+  newActivityBalance: zod.string(),
+});
+
+/**
+ * @summary List activity-balance withdrawal requests for current user
+ */
+export const ListActivityWithdrawalsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  amount: zod.string(),
+  method: zod.string(),
+  accountNumber: zod.string(),
+  accountName: zod.string(),
+  country: zod.string().nullish(),
+  status: zod.string().describe("pending | approved | paid | rejected"),
+  adminNote: zod.string().nullish(),
+  rejectionReason: zod.string().nullish(),
+  createdAt: zod.string(),
+  approvedAt: zod.string().nullish(),
+  paidAt: zod.string().nullish(),
+  rejectedAt: zod.string().nullish(),
+});
+export const ListActivityWithdrawalsResponse = zod.array(
+  ListActivityWithdrawalsResponseItem,
+);
+
+/**
+ * @summary Request a withdrawal from activity balance (min 3500 FCFA)
+ */
+export const RequestActivityWithdrawalBody = zod.object({
+  amount: zod.number(),
+  method: zod.string(),
+  accountNumber: zod.string(),
+  accountName: zod.string(),
+  country: zod.string().nullish(),
+});
+
+export const RequestActivityWithdrawalResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  amount: zod.string(),
+  method: zod.string(),
+  accountNumber: zod.string(),
+  accountName: zod.string(),
+  country: zod.string().nullish(),
+  status: zod.string().describe("pending | approved | paid | rejected"),
+  adminNote: zod.string().nullish(),
+  rejectionReason: zod.string().nullish(),
+  createdAt: zod.string(),
+  approvedAt: zod.string().nullish(),
+  paidAt: zod.string().nullish(),
+  rejectedAt: zod.string().nullish(),
 });

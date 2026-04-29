@@ -90,6 +90,7 @@ export interface Dashboard {
   totalBalance: number;
   referralBalance: number;
   taskBalance: number;
+  activityBalance?: number;
   bonusBalance: number;
   depositBalance: number;
   withdrawnAmount: number;
@@ -138,6 +139,7 @@ export interface BalanceSummary {
   totalBalance: number;
   referralBalance: number;
   taskBalance: number;
+  activityBalance?: number;
   bonusBalance: number;
   depositBalance: number;
   inactiveBalance: number;
@@ -236,4 +238,115 @@ export interface MissionResult {
   score?: number;
   reward: number;
   nextAvailableAt: string;
+}
+
+export type WeeklyStatusDailyBreakdown = { [key: string]: number };
+
+export type WeeklyStatusTodayByType = {
+  [key: string]: {
+    count: number;
+    points: number;
+  };
+};
+
+export type WeeklyStatusActivityRewards = { [key: string]: number };
+
+export interface WeeklyStatus {
+  weekStart: string;
+  /** 0=Lundi, 6=Dimanche */
+  dayOfWeek: number;
+  dayLabel: string;
+  isSunday: boolean;
+  /** accumulating | converted | expired */
+  status: string;
+  weeklyTotal: number;
+  weeklyCap: number;
+  weeklyRemaining: number;
+  dailyTotal: number;
+  dailyCap: number;
+  dailyRemaining: number;
+  dailyBreakdown: WeeklyStatusDailyBreakdown;
+  canConvert: boolean;
+  /** @nullable */
+  convertedAt?: string | null;
+  /** @nullable */
+  convertedAmount?: string | null;
+  todayByType: WeeklyStatusTodayByType;
+  activityRewards: WeeklyStatusActivityRewards;
+}
+
+export interface QuizClientQuestion {
+  index: number;
+  question: string;
+  options: string[];
+}
+
+export interface QuizSession {
+  sessionId: number;
+  questions: QuizClientQuestion[];
+  startedAt: string;
+  pointsPerCorrect: number;
+}
+
+export interface QuizSubmitBody {
+  /**
+   * @minItems 5
+   * @maxItems 5
+   */
+  answers: number[];
+}
+
+export interface QuizCorrection {
+  index: number;
+  userAnswer: number;
+  correctIndex: number;
+  ok: boolean;
+}
+
+export interface QuizResult {
+  score: number;
+  total: number;
+  pointsAwarded: number;
+  corrections: QuizCorrection[];
+  /** @nullable */
+  awardError?: string | null;
+}
+
+export interface ConvertResult {
+  success: boolean;
+  convertedAmount: number;
+  newActivityBalance: string;
+}
+
+export interface ActivityWithdrawalBody {
+  amount: number;
+  method: string;
+  accountNumber: string;
+  accountName: string;
+  /** @nullable */
+  country?: string | null;
+}
+
+export interface ActivityWithdrawal {
+  id: number;
+  userId: number;
+  amount: string;
+  method: string;
+  accountNumber: string;
+  accountName: string;
+  /** @nullable */
+  country?: string | null;
+  /** pending | approved | paid | rejected */
+  status: string;
+  /** @nullable */
+  adminNote?: string | null;
+  /** @nullable */
+  rejectionReason?: string | null;
+  createdAt: string;
+  /** @nullable */
+  approvedAt?: string | null;
+  /** @nullable */
+  paidAt?: string | null;
+  /** @nullable */
+  rejectedAt?: string | null;
 }

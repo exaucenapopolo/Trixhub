@@ -82,12 +82,13 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
   const [balance] = await db.select().from(balancesTable).where(eq(balancesTable.userId, userId));
   const referralBalance = parseFloat(balance?.referralBalance ?? "0");
   const taskBalance = parseFloat(balance?.taskBalance ?? "0");
+  const activityBalance = parseFloat(balance?.activityBalance ?? "0");
   const bonusBalance = parseFloat(balance?.bonusBalance ?? "0");
   const depositBalance = parseFloat(balance?.depositBalance ?? "0");
   const inactiveBalance = parseFloat(balance?.inactiveBalance ?? "0");
   const withdrawnAmount = parseFloat(balance?.withdrawnAmount ?? "0");
   const spentAmount = parseFloat(balance?.spentAmount ?? "0");
-  const totalBalance = referralBalance + taskBalance + bonusBalance + depositBalance;
+  const totalBalance = referralBalance + taskBalance + activityBalance + bonusBalance + depositBalance;
 
   const l1 = await getLevel1Members(userId);
   const l2 = await getLevel2Members(userId);
@@ -99,7 +100,7 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
   const exchangeRate = rates[currency] ?? 1;
 
   res.json({
-    totalBalance, referralBalance, taskBalance, bonusBalance, depositBalance,
+    totalBalance, referralBalance, taskBalance, activityBalance, bonusBalance, depositBalance,
     withdrawnAmount, spentAmount, inactiveBalance,
     totalReferrals: all.length,
     activeReferrals: all.filter(m => m.isActivated).length,
