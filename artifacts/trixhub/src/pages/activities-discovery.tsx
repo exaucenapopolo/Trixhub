@@ -29,6 +29,8 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { formatLocal } from "@/lib/currency";
 
 // ─── Fiches publicitaires Social Boost Horizon ──────────────────
 const OFFERS = [
@@ -129,6 +131,7 @@ const OFFERS = [
     cta: "Commander un site web",
     ctaUrl: "https://socialboosthorizon.com/telecharger.html",
     tag: "Dès 15 000 FCFA",
+    tagFcfa: 15000,
   },
   {
     id: "sbh-spotify",
@@ -214,6 +217,7 @@ export default function ActivitiesDiscoveryPage() {
   const claimMut = useClaimDiscoveryPoints();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   // Synchronise phaseRef à chaque changement de phase
   useEffect(() => {
@@ -438,7 +442,9 @@ export default function ActivitiesDiscoveryPage() {
                         </div>
                       </div>
                       <span className="shrink-0 text-[10px] font-bold bg-teal-500/10 text-teal-600 px-2 py-0.5 rounded-full">
-                        {offer.tag}
+                        {"tagFcfa" in offer
+                          ? `Dès ${formatLocal((offer as typeof offer & { tagFcfa: number }).tagFcfa, user)}`
+                          : offer.tag}
                       </span>
                     </div>
                     <p className="text-xs font-semibold text-foreground/80 leading-snug">

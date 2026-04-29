@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/context/AuthContext";
+import { formatLocal } from "@/lib/currency";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -89,10 +91,6 @@ const DAY_ABBR = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 const DAY_FULL = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 const DAYS_INDICATOR = ["L", "M", "M", "J", "V", "S", "D"];
 
-function fmtFCFA(n: number) {
-  return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " FCFA";
-}
-
 function dateToLocalDow(dateStr: string): number {
   return new Date(dateStr + "T12:00:00Z").getUTCDay();
 }
@@ -172,6 +170,7 @@ export default function ActivitiesPage() {
   const convert = useConvertWeeklyPoints();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { user } = useAuth();
 
   const weeklyTotal = status?.weeklyTotal ?? 0;
   const weeklyCap = status?.weeklyCap ?? 700;
@@ -200,7 +199,7 @@ export default function ActivitiesPage() {
       const result = await convert.mutateAsync();
       toast({
         title: "🎉 Conversion réussie !",
-        description: `${fmtFCFA(result.convertedAmount ?? 700)} crédités sur ton solde activité`,
+        description: `${formatLocal(result.convertedAmount ?? 700, user)} crédités sur ton solde activité`,
       });
       await qc.invalidateQueries({ queryKey: getGetWeeklyStatusQueryKey() });
       await refetch();
@@ -225,7 +224,7 @@ export default function ActivitiesPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Jusqu'à <strong>100 pts/jour</strong> · Converti
-            <strong> 700 pts</strong> chaque dimanche → 700 FCFA
+            <strong> 700 pts</strong> chaque dimanche → {formatLocal(700, user)}
           </p>
         </div>
 
@@ -329,7 +328,7 @@ export default function ActivitiesPage() {
                     700 pts prêts à convertir !
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    Reçois <strong>700 FCFA</strong> sur ton solde activité.
+                    Reçois <strong>{formatLocal(700, user)}</strong> sur ton solde activité.
                   </div>
                 </div>
                 <Button
@@ -339,7 +338,7 @@ export default function ActivitiesPage() {
                   className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold"
                   data-testid="button-convert"
                 >
-                  {convert.isPending ? "Conversion…" : "Convertir 700 pts → 700 FCFA"}
+                  {convert.isPending ? "Conversion…" : `Convertir 700 pts → ${formatLocal(700, user)}`}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -358,7 +357,7 @@ export default function ActivitiesPage() {
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
                 <span>
                   Converti cette semaine —{" "}
-                  <strong>{status?.convertedAmount ?? "700"} FCFA</strong> crédités.
+                  <strong>{formatLocal(Number(status?.convertedAmount ?? 700), user)}</strong> crédités.
                 </span>
               </div>
             ) : wstatus === "expired" ? (
@@ -528,7 +527,7 @@ export default function ActivitiesPage() {
                 </div>
                 <div className="flex-1">
                   <div className="font-bold text-sm">Retirer mon solde activité</div>
-                  <div className="text-xs text-muted-foreground">Min. 3 500 FCFA · Validé par l'admin</div>
+                  <div className="text-xs text-muted-foreground">Min. {formatLocal(3500, user)} · Validé par l'admin</div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
@@ -546,7 +545,7 @@ export default function ActivitiesPage() {
                   <li>• Lun–Jeu + Sam : Quiz + Vidéo + Découverte (100 pts)</li>
                   <li>• Vendredi : activité Surprise (100 pts)</li>
                   <li>• Chaque activité ne peut être faite qu'une fois par jour</li>
-                  <li>• Dimanche : convertis 700 pts → 700 FCFA</li>
+                  <li>• Dimanche : convertis 700 pts → {formatLocal(700, user)}</li>
                 </ul>
               </div>
             </CardContent>

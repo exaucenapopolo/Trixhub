@@ -32,6 +32,8 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { formatLocal } from "@/lib/currency";
 
 const MIN_AMOUNT = 3500;
 
@@ -44,11 +46,6 @@ const METHODS = [
   { value: "airtel_money", label: "Airtel Money" },
   { value: "mpesa", label: "M-Pesa" },
 ];
-
-function fmt(n: string | number) {
-  const x = typeof n === "string" ? parseFloat(n) : n;
-  return new Intl.NumberFormat("fr-FR").format(Math.round(x)) + " FCFA";
-}
 
 function statusBadge(s: string) {
   if (s === "pending")
@@ -68,6 +65,7 @@ export default function ActivityWithdrawalPage() {
   const qc = useQueryClient();
 
   const balance = dashboard?.activityBalance ?? 0;
+  const { user } = useAuth();
 
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<string>("");
@@ -137,7 +135,7 @@ export default function ActivityWithdrawalPage() {
               <div>
                 <div className="text-xs uppercase tracking-widest opacity-90 font-bold">Solde activité</div>
                 <div className="text-3xl md:text-4xl font-black mt-1" data-testid="text-activity-balance">
-                  {fmt(balance)}
+                  {formatLocal(balance, user)}
                 </div>
                 <div className="text-xs opacity-80 mt-0.5">Issu des points hebdomadaires convertis</div>
               </div>
@@ -156,7 +154,7 @@ export default function ActivityWithdrawalPage() {
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2 text-xs">
               <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <strong>Minimum : {fmt(MIN_AMOUNT)}</strong>. Ta demande sera vérifiée par l'admin
+                <strong>Minimum : {formatLocal(MIN_AMOUNT, user)}</strong>. Ta demande sera vérifiée par l'admin
                 avant paiement (anti-fraude). Tu seras notifié(e) par WhatsApp.
               </div>
             </div>
@@ -165,7 +163,7 @@ export default function ActivityWithdrawalPage() {
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-start gap-2 text-xs">
                 <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  Il te manque <strong>{fmt(MIN_AMOUNT - balance)}</strong> pour pouvoir retirer.
+                  Il te manque <strong>{formatLocal(MIN_AMOUNT - balance, user)}</strong> pour pouvoir retirer.
                   Continue à gagner des points dans les activités !
                 </div>
               </div>
@@ -186,7 +184,7 @@ export default function ActivityWithdrawalPage() {
                   data-testid="input-amount"
                 />
                 <div className="text-[11px] text-muted-foreground">
-                  Min : {fmt(MIN_AMOUNT)} · Max : {fmt(balance)}
+                  Min : {formatLocal(MIN_AMOUNT, user)} · Max : {formatLocal(balance, user)}
                 </div>
               </div>
 
@@ -278,7 +276,7 @@ export default function ActivityWithdrawalPage() {
                           <Wallet className="w-5 h-5 text-emerald-600" />
                         </div>
                         <div>
-                          <div className="font-bold text-sm">{fmt(w.amount)}</div>
+                          <div className="font-bold text-sm">{formatLocal(Number(w.amount), user)}</div>
                           <div className="text-xs text-muted-foreground">
                             {METHODS.find((m) => m.value === w.method)?.label ?? w.method} ·{" "}
                             {new Date(w.createdAt).toLocaleDateString("fr-FR")}
