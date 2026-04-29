@@ -6,9 +6,13 @@ import {
   activityCompletionsTable,
   quizSessionsTable,
   balancesTable,
+  usersTable,
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
+import { extractWhatsAppStatusViewCount } from "../lib/ocr";
+import { uploadSurpriseShot } from "../lib/uploadSurpriseShot";
+import { sendWhatsAppWithMedia } from "../lib/twilio";
 import {
   awardActivityPoints,
   convertWeeklyPointsToBalance,
@@ -602,6 +606,165 @@ router.post(
       } catch (err) {
         req.log.error({ err }, "activities/discovery/claim failed");
         res.status(500).json({ error: "Erreur" });
+      }
+    })();
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────
+// Activité Surprise — vendredi uniquement, capture statut WhatsApp
+// ─────────────────────────────────────────────────────────────────
+
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+const MAX_IMAGE_B64_LEN = Math.ceil(10 * 1024 * 1024 * 1.37); // ~10MB encodés en base64
+
+// POST /activities/surprise/submit
+router.post(
+  "/activities/surprise/submit",
+  authenticate,
+  requireActivation,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const userId = req.userId!;
+
+        // Vérifie que c'est vendredi (dayOfWeek 4 = vendredi)
+        const today = getDayOfWeek();
+        if (today !== 4) {
+          res.status(400).json({ error: "L'activité Surprise n'est disponible que le vendredi." });
+          return;
+        }
+
+        const weekStart = getCurrentWeekStart();
+
+        // Vérifie pas déjà fait cette semaine
+        const existing = await db
+          .select({ id: activityCompletionsTable.id })
+          .from(activityCompletionsTable)
+          .where(
+            and(
+              eq(activityCompletionsTable.userId, userId),
+              eq(activityCompletionsTable.activityType, "surprise"),
+              eq(activityCompletionsTable.weekStart, weekStart),
+            ),
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          res.status(400).json({ error: "Tu as déjà soumis ta capture d'écran cette semaine." });
+          return;
+        }
+
+        // Valide l'image
+        const { imageBase64, mimeType } = req.body as {
+          imageBase64?: string;
+          mimeType?: string;
+        };
+        if (!imageBase64 || !mimeType) {
+          res.status(400).json({ error: "imageBase64 et mimeType sont requis." });
+          return;
+        }
+        if (!ALLOWED_IMAGE_TYPES.has(mimeType.toLowerCase())) {
+          res.status(400).json({ error: "Format d'image invalide (jpg, png, webp seulement)." });
+          return;
+        }
+        if (imageBase64.length > MAX_IMAGE_B64_LEN) {
+          res.status(400).json({ error: "Image trop grande (max 10 MB)." });
+          return;
+        }
+
+        const buffer = Buffer.from(imageBase64, "base64");
+
+        // Upload vers Object Storage
+        const { objectPath, token, signedUrl } = await uploadSurpriseShot({
+          buffer,
+          contentType: mimeType,
+          userId,
+        });
+
+        // OCR — extrait le nombre de vues (silencieux en cas d'échec)
+        let viewCount = 0;
+        try {
+          viewCount = await extractWhatsAppStatusViewCount(imageBase64, mimeType);
+        } catch (ocrErr) {
+          req.log.warn({ err: ocrErr }, "OCR surprise failed, defaulting to 0 views");
+        }
+
+        // Calcule les points : <10 → 0, 10-99 → nb vues, ≥100 → 100
+        const rawPoints = viewCount >= 100 ? 100 : viewCount >= 10 ? viewCount : 0;
+
+        // Infos utilisateur pour la notification admin
+        const [user] = await db
+          .select({ displayName: usersTable.displayName, phone: usersTable.phone, country: usersTable.country })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId));
+
+        let newDailyTotal = 0;
+        let newWeeklyTotal = 0;
+
+        if (rawPoints > 0) {
+          const result = await awardActivityPoints({
+            userId,
+            activityType: "surprise",
+            points: rawPoints,
+            payloadProof: { objectPath, token, viewCount, signedUrl },
+            log: req.log,
+          });
+
+          if (!result.success) {
+            const messages: Record<string, string> = {
+              daily_cap_reached: "Tu as atteint le maximum de points pour aujourd'hui.",
+              weekly_cap_reached: "Tu as atteint le maximum de points pour cette semaine.",
+              already_completed: "Tu as déjà soumis cette semaine.",
+              invalid_points: "Points invalides.",
+            };
+            res.status(400).json({
+              error: messages[result.reason ?? ""] ?? "Impossible d'attribuer les points.",
+            });
+            return;
+          }
+          newDailyTotal = result.newDailyTotal;
+          newWeeklyTotal = result.newWeeklyTotal;
+        } else {
+          // < 10 vues : marque comme terminé (0 pts) pour éviter le spam
+          await db.insert(activityCompletionsTable).values({
+            userId,
+            activityType: "surprise",
+            weekStart,
+            dayOfWeek: 4,
+            pointsAwarded: 0,
+            payloadProof: { objectPath, token, viewCount, signedUrl },
+            status: "approved",
+          });
+        }
+
+        // Notification admin via Twilio (fire & forget, non bloquant)
+        const doubalaTime = new Date(Date.now() + 60 * 60 * 1000);
+        const dateStr = doubalaTime.toISOString().slice(0, 16).replace("T", " ") + " Douala";
+        const adminMsg =
+          `🎯 *ACTIVITÉ SURPRISE — TRIXHUB*\n\n` +
+          `👤 ${user?.displayName ?? "Inconnu"}\n` +
+          `📞 ${user?.phone ?? "N/A"}\n` +
+          `🌍 ${user?.country ?? "N/A"}\n` +
+          `🆔 User #${userId}\n\n` +
+          `👁 Vues détectées : *${viewCount}*\n` +
+          `🏆 Points attribués : *${rawPoints}*\n\n` +
+          `⏰ ${dateStr}`;
+
+        void sendWhatsAppWithMedia(adminMsg, signedUrl).catch((err) => {
+          req.log.warn({ err }, "Twilio admin surprise notification failed");
+        });
+
+        res.json({
+          success: true,
+          points: rawPoints,
+          viewCount,
+          totalToday: newDailyTotal,
+          totalWeek: newWeeklyTotal,
+        });
+      } catch (err) {
+        req.log.error({ err }, "activities/surprise/submit failed");
+        res.status(500).json({ error: "Erreur lors du traitement de la capture d'écran." });
       }
     })();
   },

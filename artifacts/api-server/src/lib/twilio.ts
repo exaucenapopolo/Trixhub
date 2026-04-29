@@ -32,6 +32,32 @@ export type SendResult =
  * Envoie un message WhatsApp au numéro d'assistance via Twilio.
  * Retourne { ok: false } si la config Twilio est absente — ne crash pas.
  */
+export async function sendWhatsAppWithMedia(
+  message: string,
+  mediaUrl: string,
+): Promise<SendResult> {
+  const cli = getClient();
+  const from = ensurePrefix(FROM);
+  const to = ensurePrefix(TO);
+
+  if (!cli || !from || !to) {
+    logger.warn(
+      { hasSid: !!ACCOUNT_SID, hasToken: !!AUTH_TOKEN, hasFrom: !!from, hasTo: !!to },
+      "Twilio non configuré : message avec image non envoyé",
+    );
+    return { ok: false, error: "Service de messagerie non configuré" };
+  }
+
+  try {
+    const result = await cli.messages.create({ from, to, body: message, mediaUrl: [mediaUrl] });
+    logger.info({ sid: result.sid, to }, "Message WhatsApp avec image envoyé via Twilio");
+    return { ok: true, sid: result.sid };
+  } catch (err: any) {
+    logger.error({ err: err?.message ?? String(err), code: err?.code }, "Échec envoi Twilio media");
+    return { ok: false, error: err?.message ?? "Erreur d'envoi" };
+  }
+}
+
 export async function sendWhatsAppToAssistance(message: string): Promise<SendResult> {
   const cli = getClient();
   const from = ensurePrefix(FROM);

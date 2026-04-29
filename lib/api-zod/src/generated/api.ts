@@ -502,6 +502,22 @@ export const SubmitQuizResponse = zod.object({
 });
 
 /**
+ * @summary Submit WhatsApp status screenshot for Surprise activity (Friday only)
+ */
+export const SubmitSurpriseActivityBody = zod.object({
+  imageBase64: zod.string().describe("Base64-encoded screenshot image"),
+  mimeType: zod.string().describe("image\/jpeg | image\/png | image\/webp"),
+});
+
+export const SubmitSurpriseActivityResponse = zod.object({
+  success: zod.boolean(),
+  points: zod.number().describe("Points attribués (0 si <10 vues)"),
+  viewCount: zod.number().describe("Nombre de vues détectées par OCR"),
+  totalToday: zod.number(),
+  totalWeek: zod.number(),
+});
+
+/**
  * @summary Start a discovery offer session
  */
 export const StartDiscoverySessionBody = zod.object({

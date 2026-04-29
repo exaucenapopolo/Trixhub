@@ -68,12 +68,12 @@ const ACTIVITY_META: Record<
     href: "/activities/discovery",
   },
   surprise: {
-    label: "Surprise",
-    shortDesc: "Défi spécial du jour",
+    label: "Surprise Vendredi",
+    shortDesc: "Partage une pub WhatsApp · jusqu'à 100 pts",
     Icon: Sparkles,
     color: "text-amber-600 dark:text-amber-400",
     bgLight: "bg-amber-500/10",
-    href: "#",
+    href: "/activities/surprise",
   },
 };
 

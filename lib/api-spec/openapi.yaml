@@ -485,6 +485,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuizResult"
 
+  /activities/surprise/submit:
+    post:
+      tags: [activities]
+      summary: Submit WhatsApp status screenshot for Surprise activity (Friday only)
+      operationId: submitSurpriseActivity
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageBase64:
+                  type: string
+                  description: Base64-encoded screenshot image
+                mimeType:
+                  type: string
+                  description: "image/jpeg | image/png | image/webp"
+              required: [imageBase64, mimeType]
+      responses:
+        "200":
+          description: Screenshot processed and points awarded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SurpriseSubmitResult"
+        "400":
+          description: Invalid request or already done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /activities/discovery/start:
     post:
       tags: [activities]
@@ -1432,6 +1467,23 @@ components:
         totalWeek:
           type: integer
       required: [success, points, totalToday, totalWeek]
+
+    SurpriseSubmitResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        points:
+          type: integer
+          description: Points attribués (0 si <10 vues)
+        viewCount:
+          type: integer
+          description: Nombre de vues détectées par OCR
+        totalToday:
+          type: integer
+        totalWeek:
+          type: integer
+      required: [success, points, viewCount, totalToday, totalWeek]
 
     DiscoveryClaimResult:
       type: object

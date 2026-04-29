@@ -405,12 +405,29 @@ export interface VideoClaimResult {
   totalWeek: number;
 }
 
+export interface SurpriseSubmitResult {
+  success: boolean;
+  /** Points attribués (0 si <10 vues) */
+  points: number;
+  /** Nombre de vues détectées par OCR */
+  viewCount: number;
+  totalToday: number;
+  totalWeek: number;
+}
+
 export interface DiscoveryClaimResult {
   success: boolean;
   points: number;
   totalToday: number;
   totalWeek: number;
 }
+
+export type SubmitSurpriseActivityBody = {
+  /** Base64-encoded screenshot image */
+  imageBase64: string;
+  /** image/jpeg | image/png | image/webp */
+  mimeType: string;
+};
 
 export type StartDiscoverySessionBody = {
   offerId: string;

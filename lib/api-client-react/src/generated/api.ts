@@ -49,7 +49,9 @@ import type {
   StartDiscoverySessionBody,
   StartVideoSession200,
   StartVideoSessionBody,
+  SubmitSurpriseActivityBody,
   SuccessResponse,
+  SurpriseSubmitResult,
   Task,
   TeamResponse,
   UpdateCurrencyBody,
@@ -2059,6 +2061,93 @@ export const useSubmitQuiz = <
   TContext
 > => {
   return useMutation(getSubmitQuizMutationOptions(options));
+};
+
+/**
+ * @summary Submit WhatsApp status screenshot for Surprise activity (Friday only)
+ */
+export const getSubmitSurpriseActivityUrl = () => {
+  return `/api/activities/surprise/submit`;
+};
+
+export const submitSurpriseActivity = async (
+  submitSurpriseActivityBody: SubmitSurpriseActivityBody,
+  options?: RequestInit,
+): Promise<SurpriseSubmitResult> => {
+  return customFetch<SurpriseSubmitResult>(getSubmitSurpriseActivityUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitSurpriseActivityBody),
+  });
+};
+
+export const getSubmitSurpriseActivityMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitSurpriseActivity>>,
+    TError,
+    { data: BodyType<SubmitSurpriseActivityBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitSurpriseActivity>>,
+  TError,
+  { data: BodyType<SubmitSurpriseActivityBody> },
+  TContext
+> => {
+  const mutationKey = ["submitSurpriseActivity"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitSurpriseActivity>>,
+    { data: BodyType<SubmitSurpriseActivityBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitSurpriseActivity(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitSurpriseActivityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitSurpriseActivity>>
+>;
+export type SubmitSurpriseActivityMutationBody =
+  BodyType<SubmitSurpriseActivityBody>;
+export type SubmitSurpriseActivityMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Submit WhatsApp status screenshot for Surprise activity (Friday only)
+ */
+export const useSubmitSurpriseActivity = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitSurpriseActivity>>,
+    TError,
+    { data: BodyType<SubmitSurpriseActivityBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitSurpriseActivity>>,
+  TError,
+  { data: BodyType<SubmitSurpriseActivityBody> },
+  TContext
+> => {
+  return useMutation(getSubmitSurpriseActivityMutationOptions(options));
 };
 
 /**

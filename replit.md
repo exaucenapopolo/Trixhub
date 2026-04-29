@@ -80,7 +80,7 @@ Tous les flux financiers sont atomiques et observables :
 ### Vague Activités (refonte Missions → Activités, points hebdomadaires)
 Système de points hebdomadaire avec conversion dimanche en FCFA :
 - Cap 100 pts/jour, 700 pts/semaine. 1 pt = 1 FCFA. Cycle Lundi→Samedi (gain) → Dimanche (conversion uniquement si 700 pts atteints) → reset si raté.
-- 4 types d'activités : Vidéo (20 pts), Quiz (50 pts via OpenAI gpt-4o-mini), Découverte (30 pts), Surprise (≤100 pts modéré admin). Itération 1 : seul le Quiz est actif.
+- 4 types d'activités : Vidéo (20 pts), Quiz (50 pts via OpenAI gpt-4o-mini), Découverte (30 pts), Surprise (≤100 pts via OCR Vision). Toutes sont implémentées. Surprise = vendredi uniquement, partage statut WhatsApp publicitaire SBH, upload capture d'écran, OCR gpt-4o Vision détecte les vues, notif admin Twilio WhatsApp avec image.
 - Solde activité (`balances.activity_balance`) séparé du `task_balance` legacy.
 - Retrait activité ≥3 500 FCFA via demande validée par admin (notif Twilio WhatsApp).
 - TZ Africa/Douala (UTC+1) pour weekStart/dayOfWeek.

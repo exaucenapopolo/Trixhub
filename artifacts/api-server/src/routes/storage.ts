@@ -1,8 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { timingSafeEqual } from "crypto";
-import { eq } from "drizzle-orm";
-import { db, withdrawalsTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
+import { db, withdrawalsTable, activityCompletionsTable } from "@workspace/db";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage";
 
 const router: IRouter = Router();
@@ -143,6 +143,65 @@ router.get("/storage/proofs/:withdrawalId/:token", async (req: Request, res: Res
     }
     req.log.error({ err: error }, "Error serving proof");
     res.status(500).json({ error: "Échec du chargement de la preuve" });
+  }
+});
+
+/**
+ * GET /storage/surprises/:token
+ * Sert une capture d'écran de statut WhatsApp via un token opaque (non devinable).
+ * Le token est stocké en BD dans activity_completions.payload_proof->>'token'.
+ * Pas d'auth requise — le token 256 bits rend l'URL non devinable.
+ */
+router.get("/storage/surprises/:token", async (req: Request, res: Response) => {
+  try {
+    const token = String(req.params.token ?? "");
+    if (!token || token.length < 32 || token.length > 128) {
+      res.status(404).json({ error: "Capture d'écran introuvable" });
+      return;
+    }
+
+    const [match] = await db
+      .select({ payloadProof: activityCompletionsTable.payloadProof })
+      .from(activityCompletionsTable)
+      .where(
+        and(
+          eq(activityCompletionsTable.activityType, "surprise"),
+          sql`${activityCompletionsTable.payloadProof}->>'token' = ${token}`,
+        ),
+      )
+      .limit(1);
+
+    if (!match) {
+      res.status(404).json({ error: "Capture d'écran introuvable" });
+      return;
+    }
+
+    const objectPath = (match.payloadProof as Record<string, unknown>)?.objectPath as
+      | string
+      | undefined;
+    if (!objectPath) {
+      res.status(404).json({ error: "Chemin introuvable" });
+      return;
+    }
+
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+    const response = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    res.setHeader("Cache-Control", "private, max-age=3600");
+
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Capture d'écran introuvable" });
+      return;
+    }
+    res.status(500).json({ error: "Échec du chargement" });
   }
 });
 
