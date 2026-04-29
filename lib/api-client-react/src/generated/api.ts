@@ -28,6 +28,7 @@ import type {
   AdminUpdateActivityScheduleBody,
   AuthResponse,
   BalanceSummary,
+  ClaimVideoPointsBody,
   ConvertResult,
   CurrencyRates,
   Dashboard,
@@ -42,6 +43,8 @@ import type {
   ReferrerInfo,
   RegisterBody,
   ScheduleResponse,
+  StartVideoSession200,
+  StartVideoSessionBody,
   SuccessResponse,
   Task,
   TeamResponse,
@@ -49,6 +52,7 @@ import type {
   UpdateProfileBody,
   UpdateThemeBody,
   User,
+  VideoClaimResult,
   WeeklyStatus,
   Withdrawal,
   WithdrawalBody,
@@ -2051,6 +2055,178 @@ export const useSubmitQuiz = <
   TContext
 > => {
   return useMutation(getSubmitQuizMutationOptions(options));
+};
+
+/**
+ * @summary Start a video watch session
+ */
+export const getStartVideoSessionUrl = () => {
+  return `/api/activities/video/start`;
+};
+
+export const startVideoSession = async (
+  startVideoSessionBody: StartVideoSessionBody,
+  options?: RequestInit,
+): Promise<StartVideoSession200> => {
+  return customFetch<StartVideoSession200>(getStartVideoSessionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(startVideoSessionBody),
+  });
+};
+
+export const getStartVideoSessionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startVideoSession>>,
+    TError,
+    { data: BodyType<StartVideoSessionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof startVideoSession>>,
+  TError,
+  { data: BodyType<StartVideoSessionBody> },
+  TContext
+> => {
+  const mutationKey = ["startVideoSession"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof startVideoSession>>,
+    { data: BodyType<StartVideoSessionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return startVideoSession(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StartVideoSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof startVideoSession>>
+>;
+export type StartVideoSessionMutationBody = BodyType<StartVideoSessionBody>;
+export type StartVideoSessionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Start a video watch session
+ */
+export const useStartVideoSession = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startVideoSession>>,
+    TError,
+    { data: BodyType<StartVideoSessionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof startVideoSession>>,
+  TError,
+  { data: BodyType<StartVideoSessionBody> },
+  TContext
+> => {
+  return useMutation(getStartVideoSessionMutationOptions(options));
+};
+
+/**
+ * @summary Claim 20 pts after watching 45s
+ */
+export const getClaimVideoPointsUrl = () => {
+  return `/api/activities/video/claim`;
+};
+
+export const claimVideoPoints = async (
+  claimVideoPointsBody: ClaimVideoPointsBody,
+  options?: RequestInit,
+): Promise<VideoClaimResult> => {
+  return customFetch<VideoClaimResult>(getClaimVideoPointsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(claimVideoPointsBody),
+  });
+};
+
+export const getClaimVideoPointsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimVideoPoints>>,
+    TError,
+    { data: BodyType<ClaimVideoPointsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof claimVideoPoints>>,
+  TError,
+  { data: BodyType<ClaimVideoPointsBody> },
+  TContext
+> => {
+  const mutationKey = ["claimVideoPoints"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof claimVideoPoints>>,
+    { data: BodyType<ClaimVideoPointsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return claimVideoPoints(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClaimVideoPointsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof claimVideoPoints>>
+>;
+export type ClaimVideoPointsMutationBody = BodyType<ClaimVideoPointsBody>;
+export type ClaimVideoPointsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Claim 20 pts after watching 45s
+ */
+export const useClaimVideoPoints = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimVideoPoints>>,
+    TError,
+    { data: BodyType<ClaimVideoPointsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof claimVideoPoints>>,
+  TError,
+  { data: BodyType<ClaimVideoPointsBody> },
+  TContext
+> => {
+  return useMutation(getClaimVideoPointsMutationOptions(options));
 };
 
 /**

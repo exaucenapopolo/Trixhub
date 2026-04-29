@@ -485,6 +485,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuizResult"
 
+  /activities/video/start:
+    post:
+      tags: [activities]
+      summary: Start a video watch session
+      operationId: startVideoSession
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                videoId:
+                  type: string
+              required: [videoId]
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                required: [sessionId]
+
+  /activities/video/claim:
+    post:
+      tags: [activities]
+      summary: Claim 20 pts after watching 45s
+      operationId: claimVideoPoints
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId:
+                  type: string
+              required: [sessionId]
+      responses:
+        "200":
+          description: Points awarded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoClaimResult"
+
   /activities/convert:
     post:
       operationId: convertWeeklyPoints
@@ -1299,3 +1353,16 @@ components:
         createdAt:
           type: string
       required: [id, activityType, scheduledDate, isEnabled, createdAt]
+
+    VideoClaimResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        points:
+          type: integer
+        totalToday:
+          type: integer
+        totalWeek:
+          type: integer
+      required: [success, points, totalToday, totalWeek]

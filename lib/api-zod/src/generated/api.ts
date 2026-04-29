@@ -502,6 +502,31 @@ export const SubmitQuizResponse = zod.object({
 });
 
 /**
+ * @summary Start a video watch session
+ */
+export const StartVideoSessionBody = zod.object({
+  videoId: zod.string(),
+});
+
+export const StartVideoSessionResponse = zod.object({
+  sessionId: zod.string(),
+});
+
+/**
+ * @summary Claim 20 pts after watching 45s
+ */
+export const ClaimVideoPointsBody = zod.object({
+  sessionId: zod.string(),
+});
+
+export const ClaimVideoPointsResponse = zod.object({
+  success: zod.boolean(),
+  points: zod.number(),
+  totalToday: zod.number(),
+  totalWeek: zod.number(),
+});
+
+/**
  * @summary Convert 700 weekly points to 700 FCFA (Sunday only)
  */
 export const ConvertWeeklyPointsResponse = zod.object({

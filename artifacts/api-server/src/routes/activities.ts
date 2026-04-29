@@ -370,6 +370,125 @@ router.post(
 );
 
 // ─────────────────────────────────────────────────────────────────
+// Vidéo — sessions en mémoire (durée min 45s pour réclamer les pts)
+// ─────────────────────────────────────────────────────────────────
+interface VideoSession { sessionId: string; startedAt: number; videoId: string }
+const videoSessions = new Map<number, VideoSession>();
+const VIDEO_WATCH_MIN_MS = 45_000; // 45 secondes
+
+// POST /activities/video/start — démarre une session de visionnage
+router.post(
+  "/activities/video/start",
+  authenticate,
+  requireActivation,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const userId = req.userId!;
+        const videoId = String((req.body as { videoId?: unknown }).videoId ?? "");
+        if (!videoId) {
+          res.status(400).json({ error: "videoId requis" });
+          return;
+        }
+
+        // Vérifie que l'activité vidéo n'a pas déjà été faite aujourd'hui
+        const weekStart = getCurrentWeekStart();
+        const dayOfWeek = getDayOfWeek();
+        const [existing] = await db
+          .select({ id: activityCompletionsTable.id })
+          .from(activityCompletionsTable)
+          .where(
+            and(
+              eq(activityCompletionsTable.userId, userId),
+              eq(activityCompletionsTable.activityType, "video"),
+              eq(activityCompletionsTable.weekStart, weekStart),
+              eq(activityCompletionsTable.dayOfWeek, dayOfWeek),
+              eq(activityCompletionsTable.status, "approved"),
+            ),
+          );
+
+        if (existing) {
+          res.status(400).json({ error: "Tu as déjà regardé ta vidéo aujourd'hui." });
+          return;
+        }
+
+        const sessionId = crypto.randomUUID();
+        videoSessions.set(userId, { sessionId, startedAt: Date.now(), videoId });
+        res.json({ sessionId });
+      } catch (err) {
+        req.log.error({ err }, "activities/video/start failed");
+        res.status(500).json({ error: "Erreur" });
+      }
+    })();
+  },
+);
+
+// POST /activities/video/claim — réclame 20 pts après 45s de visionnage
+router.post(
+  "/activities/video/claim",
+  authenticate,
+  requireActivation,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const userId = req.userId!;
+        const { sessionId } = req.body as { sessionId?: string };
+
+        const session = videoSessions.get(userId);
+        if (!session || session.sessionId !== sessionId) {
+          res.status(400).json({ error: "Session vidéo invalide ou expirée." });
+          return;
+        }
+
+        const elapsed = Date.now() - session.startedAt;
+        if (elapsed < VIDEO_WATCH_MIN_MS) {
+          const remaining = Math.ceil((VIDEO_WATCH_MIN_MS - elapsed) / 1000);
+          res.status(400).json({
+            error: `Encore ${remaining}s de visionnage requis avant de réclamer.`,
+          });
+          return;
+        }
+
+        // Nettoie la session et attribue les points
+        videoSessions.delete(userId);
+
+        const result = await awardActivityPoints({
+          userId,
+          activityType: "video",
+          points: ACTIVITY_POINTS.video,
+          payloadProof: { videoId: session.videoId },
+          log: req.log,
+        });
+
+        if (!result.success) {
+          const messages: Record<string, string> = {
+            daily_cap_reached: "Tu as atteint le maximum de points pour aujourd'hui.",
+            weekly_cap_reached: "Tu as atteint le maximum de points pour cette semaine.",
+            already_completed: "Tu as déjà regardé ta vidéo aujourd'hui.",
+            week_not_accumulating: "Impossible d'ajouter des points cette semaine.",
+            invalid_points: "Points invalides.",
+          };
+          res.status(400).json({
+            error: messages[result.reason ?? ""] ?? "Impossible d'attribuer les points.",
+          });
+          return;
+        }
+
+        res.json({
+          success: true,
+          points: ACTIVITY_POINTS.video,
+          totalToday: result.newDailyTotal,
+          totalWeek: result.newWeeklyTotal,
+        });
+      } catch (err) {
+        req.log.error({ err }, "activities/video/claim failed");
+        res.status(500).json({ error: "Erreur" });
+      }
+    })();
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────
 // POST /activities/convert — conversion dimanche 700pts → 700 FCFA
 // ─────────────────────────────────────────────────────────────────
 router.post(

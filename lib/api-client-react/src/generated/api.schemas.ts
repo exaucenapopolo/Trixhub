@@ -398,6 +398,25 @@ export interface ActivityScheduleEntry {
   createdAt: string;
 }
 
+export interface VideoClaimResult {
+  success: boolean;
+  points: number;
+  totalToday: number;
+  totalWeek: number;
+}
+
+export type StartVideoSessionBody = {
+  videoId: string;
+};
+
+export type StartVideoSession200 = {
+  sessionId: string;
+};
+
+export type ClaimVideoPointsBody = {
+  sessionId: string;
+};
+
 export type AdminUpdateActivityScheduleBody = {
   isEnabled?: boolean;
   notes?: string;

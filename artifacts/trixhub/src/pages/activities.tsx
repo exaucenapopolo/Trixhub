@@ -53,11 +53,11 @@ const ACTIVITY_META: Record<
   },
   video: {
     label: "Vidéo",
-    shortDesc: "Regarde une courte vidéo",
+    shortDesc: "Regarde une courte vidéo · +20 pts",
     Icon: PlayCircle,
     color: "text-red-600 dark:text-red-400",
     bgLight: "bg-red-500/10",
-    href: "#",
+    href: "/activities/video",
   },
   discovery: {
     label: "Découverte",
