@@ -354,7 +354,10 @@ export interface ActivityWithdrawal {
 export interface DayActivity {
   /** quiz | video | discovery | surprise */
   type: string;
+  /** Points max que cette activité rapporte */
+  points: number;
   isAvailable: boolean;
+  /** true = déjà faite aujourd'hui → verrouillée */
   isCompleted: boolean;
   /** @nullable */
   scheduleId: number | null;
@@ -364,6 +367,8 @@ export interface DaySchedule {
   /** YYYY-MM-DD */
   date: string;
   isToday: boolean;
+  /** Total des points possibles ce jour */
+  maxPoints: number;
   activities: DayActivity[];
 }
 

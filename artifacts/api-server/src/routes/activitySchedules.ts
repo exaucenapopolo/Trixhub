@@ -43,8 +43,24 @@ function currentWeekDates(): string[] {
   return dates;
 }
 
+// Points par type d'activité
+const ACTIVITY_POINTS: Record<string, number> = {
+  quiz: 50,
+  video: 20,
+  discovery: 30,
+  surprise: 100,
+};
+
+// Activités par défaut lundi→jeudi + samedi (quiz+vidéo+découverte = 100pts)
+// Vendredi : surprise seule (100pts)
+function defaultActivitiesForDate(dateStr: string): string[] {
+  const dow = new Date(dateStr + "T12:00:00Z").getUTCDay(); // 0=dim, 5=ven, 6=sam
+  if (dow === 5) return ["surprise"]; // vendredi
+  return ["quiz", "video", "discovery"]; // autres jours (lundi-jeudi + samedi)
+}
+
 // ─────────────────────────────────────────────────────────────────
-// GET /activities/schedule — 7 prochains jours + état d'aujourd'hui
+// GET /activities/schedule — semaine lundi→samedi + état du user
 // ─────────────────────────────────────────────────────────────────
 router.get(
   "/activities/schedule",
@@ -55,21 +71,21 @@ router.get(
       try {
         const userId = req.userId!;
         const today = todayStr();
-        const { from, to } = dateRange(7);
+        const weekDates = currentWeekDates(); // lundi→samedi (6 dates)
 
-        // Entrées calendrier admin pour les 7 prochains jours
+        // Entrées admin pour cette semaine
         const schedules = await db
           .select()
           .from(activitySchedulesTable)
           .where(
             and(
-              gte(activitySchedulesTable.scheduledDate, from),
-              lte(activitySchedulesTable.scheduledDate, to),
+              gte(activitySchedulesTable.scheduledDate, weekDates[0]),
+              lte(activitySchedulesTable.scheduledDate, weekDates[5]),
               eq(activitySchedulesTable.isEnabled, true),
             ),
           );
 
-        // Completions du user aujourd'hui (toutes activités)
+        // Completions du user AUJOURD'HUI (pour verrouillage)
         const weekStart = getCurrentWeekStart();
         const dayOfWeek = getDayOfWeek();
         const completions = await db
@@ -84,52 +100,36 @@ router.get(
             ),
           );
 
-        const completedTypesToday = new Set(completions.map((c) => c.activityType));
+        const completedToday = new Set(completions.map((c) => c.activityType));
 
-        // Quiz IA : toujours disponible (pas de schedule requis)
-        const quizDone = completedTypesToday.has("quiz");
-
-        // Construire les 7 jours
-        const days: {
-          date: string;
-          isToday: boolean;
-          activities: {
-            type: string;
-            isAvailable: boolean;
-            isCompleted: boolean;
-            scheduleId: number | null;
-          }[];
-        }[] = [];
-
-        for (let i = 0; i < 7; i++) {
-          const base = new Date(new Date(from).getTime() + i * 86400 * 1000);
-          const dateStr = base.toISOString().slice(0, 10);
+        const days = weekDates.map((dateStr) => {
           const isToday = dateStr === today;
 
-          const dayActivities = [
-            // Quiz : toujours disponible
-            {
-              type: "quiz",
-              isAvailable: true,
-              isCompleted: isToday ? quizDone : false,
-              scheduleId: null,
-            },
-            // Activités planifiées
-            ...SCHEDULED_TYPES.map((type) => {
-              const sched = schedules.find(
-                (s) => s.scheduledDate === dateStr && s.activityType === type,
-              );
-              return {
-                type,
-                isAvailable: sched?.isEnabled ?? false,
-                isCompleted: isToday ? completedTypesToday.has(type) : false,
-                scheduleId: sched?.id ?? null,
-              };
-            }),
-          ];
+          // L'admin a-t-il planifié ce jour ?
+          const daySchedules = schedules.filter((s) => s.scheduledDate === dateStr);
+          const adminTypes = daySchedules.map((s) => s.activityType);
 
-          days.push({ date: dateStr, isToday, activities: dayActivities });
-        }
+          // Types d'activités pour ce jour :
+          // si l'admin a configuré ce jour → utiliser SES choix
+          // sinon → logique par défaut
+          const types = adminTypes.length > 0 ? adminTypes : defaultActivitiesForDate(dateStr);
+
+          const activities = types.map((type) => {
+            const sched = daySchedules.find((s) => s.activityType === type);
+            return {
+              type,
+              points: ACTIVITY_POINTS[type] ?? 0,
+              isAvailable: true,
+              // Verrouillé pour la journée si déjà fait (peu importe le score)
+              isCompleted: isToday ? completedToday.has(type) : false,
+              scheduleId: sched?.id ?? null,
+            };
+          });
+
+          const maxPoints = activities.reduce((sum, a) => sum + (a.points ?? 0), 0);
+
+          return { date: dateStr, isToday, maxPoints, activities };
+        });
 
         res.json({ today, days });
       } catch (err) {

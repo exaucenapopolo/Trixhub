@@ -570,11 +570,17 @@ export const GetActivitiesScheduleResponse = zod.object({
     zod.object({
       date: zod.string().describe("YYYY-MM-DD"),
       isToday: zod.boolean(),
+      maxPoints: zod.number().describe("Total des points possibles ce jour"),
       activities: zod.array(
         zod.object({
           type: zod.string().describe("quiz | video | discovery | surprise"),
+          points: zod
+            .number()
+            .describe("Points max que cette activité rapporte"),
           isAvailable: zod.boolean(),
-          isCompleted: zod.boolean(),
+          isCompleted: zod
+            .boolean()
+            .describe("true = déjà faite aujourd'hui → verrouillée"),
           scheduleId: zod.number().nullable(),
         }),
       ),

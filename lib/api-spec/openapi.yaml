@@ -1227,13 +1227,17 @@ components:
         type:
           type: string
           description: "quiz | video | discovery | surprise"
+        points:
+          type: integer
+          description: Points max que cette activité rapporte
         isAvailable:
           type: boolean
         isCompleted:
           type: boolean
+          description: "true = déjà faite aujourd'hui → verrouillée"
         scheduleId:
           type: ["integer", "null"]
-      required: [type, isAvailable, isCompleted, scheduleId]
+      required: [type, points, isAvailable, isCompleted, scheduleId]
 
     DaySchedule:
       type: object
@@ -1243,11 +1247,14 @@ components:
           description: YYYY-MM-DD
         isToday:
           type: boolean
+        maxPoints:
+          type: integer
+          description: Total des points possibles ce jour
         activities:
           type: array
           items:
             $ref: "#/components/schemas/DayActivity"
-      required: [date, isToday, activities]
+      required: [date, isToday, maxPoints, activities]
 
     ScheduleResponse:
       type: object
