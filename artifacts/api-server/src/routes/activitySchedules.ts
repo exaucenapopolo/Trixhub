@@ -16,24 +16,31 @@ import {
 const router: IRouter = Router();
 
 // Types d'activités gérés par le calendrier (le quiz IA est toujours dispo)
-const SCHEDULED_TYPES = ["video", "discovery", "surprise"] as const;
+const SCHEDULED_TYPES = ["video", "discovery", "surprise", "quiz"] as const;
 type ScheduledType = (typeof SCHEDULED_TYPES)[number];
 
-function todayStr(): string {
-  // Africa/Douala (UTC+1)
-  const now = new Date();
-  const offset = 60; // minutes
-  const local = new Date(now.getTime() + offset * 60 * 1000);
-  return local.toISOString().slice(0, 10);
+function localNow(): Date {
+  // Africa/Douala UTC+1
+  return new Date(Date.now() + 60 * 60 * 1000);
 }
 
-function dateRange(days: number): { from: string; to: string } {
-  const now = new Date();
-  const offset = 60;
-  const base = new Date(now.getTime() + offset * 60 * 1000);
-  const from = base.toISOString().slice(0, 10);
-  const to = new Date(base.getTime() + days * 86400 * 1000).toISOString().slice(0, 10);
-  return { from, to };
+function todayStr(): string {
+  return localNow().toISOString().slice(0, 10);
+}
+
+/** Retourne les 6 dates lundi→samedi de la semaine courante */
+function currentWeekDates(): string[] {
+  const now = localNow();
+  const dow = now.getUTCDay(); // 0=dim,1=lun,...,6=sam
+  // Décalage vers le lundi (si dim=0 → reculer 6 jours)
+  const toMonday = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(now.getTime() + toMonday * 86400 * 1000);
+  const dates: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    // lundi (i=0) à samedi (i=5)
+    dates.push(new Date(monday.getTime() + i * 86400 * 1000).toISOString().slice(0, 10));
+  }
+  return dates;
 }
 
 // ─────────────────────────────────────────────────────────────────
