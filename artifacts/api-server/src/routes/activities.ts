@@ -185,7 +185,28 @@ router.post(
           }
         }
 
-        const quiz = await generateQuizQuestions(req.log);
+        // Anti-doublon : on extrait les questions des 5 dernières sessions soumises
+        const recentSessions = await db
+          .select({ questions: quizSessionsTable.questions })
+          .from(quizSessionsTable)
+          .where(
+            and(
+              eq(quizSessionsTable.userId, userId),
+              sql`${quizSessionsTable.submittedAt} IS NOT NULL`,
+            ),
+          )
+          .orderBy(desc(quizSessionsTable.startedAt))
+          .limit(5);
+
+        const recentQuestions: string[] = [];
+        for (const s of recentSessions) {
+          const qs = s.questions as QuizQuestion[];
+          for (const q of qs) {
+            recentQuestions.push(q.q);
+          }
+        }
+
+        const quiz = await generateQuizQuestions(req.log, recentQuestions);
         const [session] = await db
           .insert(quizSessionsTable)
           .values({
@@ -231,8 +252,9 @@ router.post(
           return;
         }
         const answers = body.answers.map((a) => Number(a));
-        if (answers.some((a) => !Number.isInteger(a) || a < 0 || a > 3)) {
-          res.status(400).json({ error: "Réponses invalides (0..3)" });
+        // -1 = pas répondu (timer écoulé) = faux automatiquement
+        if (answers.some((a) => !Number.isInteger(a) || a < -1 || a > 3)) {
+          res.status(400).json({ error: "Réponses invalides (-1..3)" });
           return;
         }
 

@@ -21,8 +21,11 @@ import type {
   ActivateChildBody,
   ActivateChildResponse,
   ActivityItem,
+  ActivityScheduleBody,
+  ActivityScheduleEntry,
   ActivityWithdrawal,
   ActivityWithdrawalBody,
+  AdminUpdateActivityScheduleBody,
   AuthResponse,
   BalanceSummary,
   ConvertResult,
@@ -38,6 +41,7 @@ import type {
   ReferralLevelResponse,
   ReferrerInfo,
   RegisterBody,
+  ScheduleResponse,
   SuccessResponse,
   Task,
   TeamResponse,
@@ -2291,4 +2295,344 @@ export const useRequestActivityWithdrawal = <
   TContext
 > => {
   return useMutation(getRequestActivityWithdrawalMutationOptions(options));
+};
+
+/**
+ * @summary 7-day activity schedule + today's availability
+ */
+export const getGetActivitiesScheduleUrl = () => {
+  return `/api/activities/schedule`;
+};
+
+export const getActivitiesSchedule = async (
+  options?: RequestInit,
+): Promise<ScheduleResponse> => {
+  return customFetch<ScheduleResponse>(getGetActivitiesScheduleUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActivitiesScheduleQueryKey = () => {
+  return [`/api/activities/schedule`] as const;
+};
+
+export const getGetActivitiesScheduleQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivitiesSchedule>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getActivitiesSchedule>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivitiesScheduleQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getActivitiesSchedule>>
+  > = ({ signal }) => getActivitiesSchedule({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivitiesSchedule>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActivitiesScheduleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActivitiesSchedule>>
+>;
+export type GetActivitiesScheduleQueryError = ErrorType<unknown>;
+
+/**
+ * @summary 7-day activity schedule + today's availability
+ */
+
+export function useGetActivitiesSchedule<
+  TData = Awaited<ReturnType<typeof getActivitiesSchedule>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getActivitiesSchedule>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActivitiesScheduleQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin — schedule an activity for a date
+ */
+export const getAdminCreateActivityScheduleUrl = () => {
+  return `/api/admin/activities/schedule`;
+};
+
+export const adminCreateActivitySchedule = async (
+  activityScheduleBody: ActivityScheduleBody,
+  options?: RequestInit,
+): Promise<ActivityScheduleEntry> => {
+  return customFetch<ActivityScheduleEntry>(
+    getAdminCreateActivityScheduleUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(activityScheduleBody),
+    },
+  );
+};
+
+export const getAdminCreateActivityScheduleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateActivitySchedule>>,
+    TError,
+    { data: BodyType<ActivityScheduleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreateActivitySchedule>>,
+  TError,
+  { data: BodyType<ActivityScheduleBody> },
+  TContext
+> => {
+  const mutationKey = ["adminCreateActivitySchedule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreateActivitySchedule>>,
+    { data: BodyType<ActivityScheduleBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminCreateActivitySchedule(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreateActivityScheduleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreateActivitySchedule>>
+>;
+export type AdminCreateActivityScheduleMutationBody =
+  BodyType<ActivityScheduleBody>;
+export type AdminCreateActivityScheduleMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin — schedule an activity for a date
+ */
+export const useAdminCreateActivitySchedule = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreateActivitySchedule>>,
+    TError,
+    { data: BodyType<ActivityScheduleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreateActivitySchedule>>,
+  TError,
+  { data: BodyType<ActivityScheduleBody> },
+  TContext
+> => {
+  return useMutation(getAdminCreateActivityScheduleMutationOptions(options));
+};
+
+/**
+ * @summary Admin — update schedule entry
+ */
+export const getAdminUpdateActivityScheduleUrl = (id: number) => {
+  return `/api/admin/activities/schedule/${id}`;
+};
+
+export const adminUpdateActivitySchedule = async (
+  id: number,
+  adminUpdateActivityScheduleBody: AdminUpdateActivityScheduleBody,
+  options?: RequestInit,
+): Promise<ActivityScheduleEntry> => {
+  return customFetch<ActivityScheduleEntry>(
+    getAdminUpdateActivityScheduleUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(adminUpdateActivityScheduleBody),
+    },
+  );
+};
+
+export const getAdminUpdateActivityScheduleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateActivitySchedule>>,
+    TError,
+    { id: number; data: BodyType<AdminUpdateActivityScheduleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateActivitySchedule>>,
+  TError,
+  { id: number; data: BodyType<AdminUpdateActivityScheduleBody> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateActivitySchedule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateActivitySchedule>>,
+    { id: number; data: BodyType<AdminUpdateActivityScheduleBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateActivitySchedule(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateActivityScheduleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateActivitySchedule>>
+>;
+export type AdminUpdateActivityScheduleMutationBody =
+  BodyType<AdminUpdateActivityScheduleBody>;
+export type AdminUpdateActivityScheduleMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin — update schedule entry
+ */
+export const useAdminUpdateActivitySchedule = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateActivitySchedule>>,
+    TError,
+    { id: number; data: BodyType<AdminUpdateActivityScheduleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateActivitySchedule>>,
+  TError,
+  { id: number; data: BodyType<AdminUpdateActivityScheduleBody> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateActivityScheduleMutationOptions(options));
+};
+
+/**
+ * @summary Admin — delete schedule entry
+ */
+export const getAdminDeleteActivityScheduleUrl = (id: number) => {
+  return `/api/admin/activities/schedule/${id}`;
+};
+
+export const adminDeleteActivitySchedule = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getAdminDeleteActivityScheduleUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getAdminDeleteActivityScheduleMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteActivitySchedule>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDeleteActivitySchedule>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["adminDeleteActivitySchedule"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDeleteActivitySchedule>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return adminDeleteActivitySchedule(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDeleteActivityScheduleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDeleteActivitySchedule>>
+>;
+
+export type AdminDeleteActivityScheduleMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin — delete schedule entry
+ */
+export const useAdminDeleteActivitySchedule = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDeleteActivitySchedule>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDeleteActivitySchedule>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAdminDeleteActivityScheduleMutationOptions(options));
 };

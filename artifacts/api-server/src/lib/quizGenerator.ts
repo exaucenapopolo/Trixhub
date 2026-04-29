@@ -25,7 +25,7 @@ const QuizPayloadSchema = z.object({
 export type QuizQuestion = z.infer<typeof QuestionSchema>;
 export type QuizPayload = z.infer<typeof QuizPayloadSchema>;
 
-const SYSTEM_PROMPT = `Tu es un générateur de quiz pour TRIXHUB, plateforme d'affiliation africaine.
+const BASE_SYSTEM_PROMPT = `Tu es un générateur de quiz pour TRIXHUB, plateforme d'affiliation africaine.
 Génère EXACTEMENT 5 questions à choix multiple (QCM) en français.
 
 Thèmes possibles : culture générale, business, Afrique (histoire, géographie, sport, économie),
@@ -35,9 +35,10 @@ Règles strictes :
 - Niveau accessible (grand public, pas trop expert)
 - Chaque question a EXACTEMENT 4 options
 - Une seule bonne réponse par question
-- Les questions doivent être différentes les unes des autres et variées
+- Les questions doivent être ORIGINALES et VARIÉES entre elles (thèmes différents)
 - Pas de question piège ni double sens
 - Style clair, court, sans ambiguïté
+- TRÈS IMPORTANT : N'utilise PAS les mêmes formulations que les questions récentes listées ci-dessous
 
 Retourne UNIQUEMENT du JSON valide au format :
 {
@@ -51,10 +52,26 @@ Retourne UNIQUEMENT du JSON valide au format :
   ]
 }`;
 
-export async function generateQuizQuestions(log: Logger): Promise<QuizPayload> {
+function buildSystemPrompt(recentQuestions: string[]): string {
+  if (recentQuestions.length === 0) return BASE_SYSTEM_PROMPT;
+  const list = recentQuestions
+    .slice(0, 20)
+    .map((q, i) => `${i + 1}. "${q}"`)
+    .join("\n");
+  return (
+    BASE_SYSTEM_PROMPT +
+    `\n\n⛔ Questions déjà posées récemment à cet utilisateur (à NE PAS réutiliser) :\n${list}`
+  );
+}
+
+export async function generateQuizQuestions(
+  log: Logger,
+  recentQuestions: string[] = [],
+): Promise<QuizPayload> {
   const client = getOpenAIClient();
   const model = "gpt-4o-mini";
-  log.info({ model }, "QUIZ_GENERATION_START");
+  log.info({ model, recentCount: recentQuestions.length }, "QUIZ_GENERATION_START");
+  const systemPrompt = buildSystemPrompt(recentQuestions);
 
   // Timeout 25s pour rester sous le timeout du tester (30s) et de la route
   const controller = new AbortController();
@@ -69,7 +86,7 @@ export async function generateQuizQuestions(log: Logger): Promise<QuizPayload> {
         max_tokens: 1500,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
             content:

@@ -536,6 +536,89 @@ paths:
               schema:
                 $ref: "#/components/schemas/ActivityWithdrawal"
 
+  /activities/schedule:
+    get:
+      tags: [activities]
+      summary: 7-day activity schedule + today's availability
+      operationId: getActivitiesSchedule
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleResponse"
+
+  /admin/activities/schedule:
+    post:
+      tags: [admin]
+      summary: Admin — schedule an activity for a date
+      operationId: adminCreateActivitySchedule
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityScheduleBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityScheduleEntry"
+
+  /admin/activities/schedule/{id}:
+    patch:
+      tags: [admin]
+      summary: Admin — update schedule entry
+      operationId: adminUpdateActivitySchedule
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isEnabled:
+                  type: boolean
+                notes:
+                  type: string
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityScheduleEntry"
+    delete:
+      tags: [admin]
+      summary: Admin — delete schedule entry
+      operationId: adminDeleteActivitySchedule
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -1137,3 +1220,75 @@ components:
         rejectedAt:
           type: ["string", "null"]
       required: [id, userId, amount, method, accountNumber, accountName, status, createdAt]
+
+    DayActivity:
+      type: object
+      properties:
+        type:
+          type: string
+          description: "quiz | video | discovery | surprise"
+        isAvailable:
+          type: boolean
+        isCompleted:
+          type: boolean
+        scheduleId:
+          type: ["integer", "null"]
+      required: [type, isAvailable, isCompleted, scheduleId]
+
+    DaySchedule:
+      type: object
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD
+        isToday:
+          type: boolean
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayActivity"
+      required: [date, isToday, activities]
+
+    ScheduleResponse:
+      type: object
+      properties:
+        today:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/DaySchedule"
+      required: [today, days]
+
+    ActivityScheduleBody:
+      type: object
+      properties:
+        activityType:
+          type: string
+        scheduledDate:
+          type: string
+          description: YYYY-MM-DD
+        isEnabled:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+      required: [activityType, scheduledDate]
+
+    ActivityScheduleEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        activityType:
+          type: string
+        scheduledDate:
+          type: string
+        isEnabled:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        createdBy:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required: [id, activityType, scheduledDate, isEnabled, createdAt]

@@ -560,3 +560,63 @@ export const RequestActivityWithdrawalResponse = zod.object({
   paidAt: zod.string().nullish(),
   rejectedAt: zod.string().nullish(),
 });
+
+/**
+ * @summary 7-day activity schedule + today's availability
+ */
+export const GetActivitiesScheduleResponse = zod.object({
+  today: zod.string(),
+  days: zod.array(
+    zod.object({
+      date: zod.string().describe("YYYY-MM-DD"),
+      isToday: zod.boolean(),
+      activities: zod.array(
+        zod.object({
+          type: zod.string().describe("quiz | video | discovery | surprise"),
+          isAvailable: zod.boolean(),
+          isCompleted: zod.boolean(),
+          scheduleId: zod.number().nullable(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/**
+ * @summary Admin — schedule an activity for a date
+ */
+export const AdminCreateActivityScheduleBody = zod.object({
+  activityType: zod.string(),
+  scheduledDate: zod.string().describe("YYYY-MM-DD"),
+  isEnabled: zod.boolean().optional(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Admin — update schedule entry
+ */
+export const AdminUpdateActivityScheduleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminUpdateActivityScheduleBody = zod.object({
+  isEnabled: zod.boolean().optional(),
+  notes: zod.string().optional(),
+});
+
+export const AdminUpdateActivityScheduleResponse = zod.object({
+  id: zod.number(),
+  activityType: zod.string(),
+  scheduledDate: zod.string(),
+  isEnabled: zod.boolean(),
+  notes: zod.string().nullish(),
+  createdBy: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Admin — delete schedule entry
+ */
+export const AdminDeleteActivityScheduleParams = zod.object({
+  id: zod.coerce.number(),
+});

@@ -10,3 +10,4 @@ export * from "./activityCompletions";
 export * from "./weeklyPoints";
 export * from "./activityWithdrawals";
 export * from "./quizSessions";
+export * from "./activitySchedules";

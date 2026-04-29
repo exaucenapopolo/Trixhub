@@ -99,8 +99,8 @@ Nouvelles tables (toutes serial PK) : `activities` (catalogue admin), `activity_
 #### Frontend (artifacts/trixhub/src)
 - `components/Layout.tsx` : sidebar — "Missions" remplacé par lien plat "Activités" → /activities (badge NEW).
 - `pages/dashboard.tsx` : carte "Missions" renommée "Activité", value = activityBalance + taskBalance legacy, CTA → /retraits/activite.
-- `pages/activities.tsx` : hub avec hero progression hebdo X/700 + day indicator (L M M J V S D + jour courant highlighted) + 4 cards (Quiz actif, autres "Bientôt") + CTA conversion gating (Sunday + 700) + lien retrait.
-- `pages/activities-quiz.tsx` : flow start → 5 QCM (radio A/B/C/D) → submit → résultat (score X/5 + points + corrections détaillées avec bonne réponse révélée) → restart.
+- `pages/activities.tsx` : hub avec hero progression hebdo X/700 + day indicator + activités disponibles aujourd'hui selon calendrier backend + mini-calendrier 7 jours (dots colorés par type d'activité, vert = complété) + CTA conversion gating (Sunday + 700) + lien retrait.
+- `pages/activities-quiz.tsx` : quiz question par question — timer 10s/question (barre dégradée vert→rouge), auto-avance si temps écoulé (réponse −1), 4 choix, récapitulatif final avec corrections (icône Minus = pas répondu). Fix timer : `useRef` stable pour `goNext` (évite stale closures dans `setInterval`).
 - `pages/activity-withdrawal.tsx` : hero solde + form (montant ≥3500 / méthode mobile money / numéro / titulaire / pays) + bouton désactivé si solde insuffisant + historique avec badges statut.
 
 ### Frontend Vague 2/3

@@ -13,6 +13,7 @@ import contactRouter from "./contact";
 import storageRouter from "./storage";
 import activitiesRouter from "./activities";
 import activityWithdrawalsRouter from "./activityWithdrawals";
+import activitySchedulesRouter from "./activitySchedules";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(contactRouter);
 router.use(storageRouter);
 router.use(activitiesRouter);
 router.use(activityWithdrawalsRouter);
+router.use(activitySchedulesRouter);
 
 export default router;

@@ -350,3 +350,50 @@ export interface ActivityWithdrawal {
   /** @nullable */
   rejectedAt?: string | null;
 }
+
+export interface DayActivity {
+  /** quiz | video | discovery | surprise */
+  type: string;
+  isAvailable: boolean;
+  isCompleted: boolean;
+  /** @nullable */
+  scheduleId: number | null;
+}
+
+export interface DaySchedule {
+  /** YYYY-MM-DD */
+  date: string;
+  isToday: boolean;
+  activities: DayActivity[];
+}
+
+export interface ScheduleResponse {
+  today: string;
+  days: DaySchedule[];
+}
+
+export interface ActivityScheduleBody {
+  activityType: string;
+  /** YYYY-MM-DD */
+  scheduledDate: string;
+  isEnabled?: boolean;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface ActivityScheduleEntry {
+  id: number;
+  activityType: string;
+  scheduledDate: string;
+  isEnabled: boolean;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  createdBy?: number | null;
+  createdAt: string;
+}
+
+export type AdminUpdateActivityScheduleBody = {
+  isEnabled?: boolean;
+  notes?: string;
+};
