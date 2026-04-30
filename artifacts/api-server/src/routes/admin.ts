@@ -22,25 +22,66 @@ const PROFIT_PER_ACTIVATION = 900;
 // ─────────────────────────────────────────────────────────────────
 // GET /admin/stats — tableau de bord global
 // ─────────────────────────────────────────────────────────────────
+// Commission max possible par activation si la chaîne est complète (L1+L2+L3)
+const MAX_COMMISSIONS_PER_ACTIVATION = 1700 + 700 + 300; // 2700 FCFA
+
 router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const [totalRow] = await db.select({ total: count() }).from(usersTable);
-  const [activeRow] = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isActivated, true));
-  const [bannedRow] = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isBanned, true));
-  const [pendingWRow] = await db.select({ total: count(), sum: sql<string>`COALESCE(SUM(amount::numeric),0)` }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "pending"));
-  const [processingWRow] = await db.select({ total: count() }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "processing"));
-  const [pendingAWRow] = await db.select({ total: count() }).from(activityWithdrawalsTable).where(eq(activityWithdrawalsTable.status, "pending"));
-  const [approvedAWRow] = await db.select({ total: count() }).from(activityWithdrawalsTable).where(eq(activityWithdrawalsTable.status, "approved"));
+  const [totalRow]        = await db.select({ total: count() }).from(usersTable);
+  const [activeRow]       = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isActivated, true));
+  const [bannedRow]       = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isBanned, true));
+  const [pendingWRow]     = await db.select({ total: count(), sum: sql<string>`COALESCE(SUM(amount::numeric),0)` }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "pending"));
+  const [processingWRow]  = await db.select({ total: count() }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "processing"));
+  const [pendingAWRow]    = await db.select({ total: count() }).from(activityWithdrawalsTable).where(eq(activityWithdrawalsTable.status, "pending"));
+  const [approvedAWRow]   = await db.select({ total: count() }).from(activityWithdrawalsTable).where(eq(activityWithdrawalsTable.status, "approved"));
   const [totalWithdrawnRow] = await db.select({ sum: sql<string>`COALESCE(SUM(amount::numeric),0)` }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "completed"));
   const [totalActivationsRevRow] = await db.select({ sum: sql<string>`COALESCE(SUM(spent_amount::numeric),0)` }).from(balancesTable);
 
-  const total = totalRow?.total ?? 0;
-  const active = activeRow?.total ?? 0;
-  const inactive = total - active;
-  const banned = bannedRow?.total ?? 0;
+  // ── Nouvelles métriques réseau ──────────────────────────────────
+  // 1. Inscrits sans parrain (referredByCode IS NULL)
+  const [noSponsorRow] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(sql`${usersTable.referredByCode} IS NULL`);
+
+  // 2. Inscrits avec parrain mais 0 filleul eux-mêmes
+  //    (leur referralCode n'apparaît chez aucun autre utilisateur)
+  const [noReferralsRow] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(and(
+      sql`${usersTable.referredByCode} IS NOT NULL`,
+      sql`NOT EXISTS (
+        SELECT 1 FROM users u2
+        WHERE u2.referred_by_code = ${usersTable.referralCode}
+      )`
+    ));
+
+  // 3. Commissions réellement versées aux filleuls (L1+L2+L3 actives uniquement)
+  const [commissionsPaidRow] = await db
+    .select({ sum: sql<string>`COALESCE(SUM(amount::numeric), 0)` })
+    .from(transactionsTable)
+    .where(sql`${transactionsTable.type} IN ('referral_l1','referral_l2','referral_l3') AND ${transactionsTable.amount}::numeric > 0`);
+
+  // ── Calculs ────────────────────────────────────────────────────
+  const total     = totalRow?.total      ?? 0;
+  const active    = activeRow?.total     ?? 0;
+  const inactive  = total - active;
+  const banned    = bannedRow?.total     ?? 0;
+  const noSponsor   = noSponsorRow?.total    ?? 0;
+  const noReferrals = noReferralsRow?.total  ?? 0;
+
+  // Revenu primaire : 900 FCFA × nombre d'activés
   const companyProfit = active * PROFIT_PER_ACTIVATION;
 
+  // Revenu secondaire : commissions non versées car chaîne incomplète
+  // = (activés × 2700) − commissions réellement payées
+  const commissionsPaid    = parseFloat(commissionsPaidRow?.sum ?? "0");
+  const maxCommissions     = active * MAX_COMMISSIONS_PER_ACTIVATION;
+  const secondaryIncome    = Math.max(0, maxCommissions - commissionsPaid);
+  const totalCompanyIncome = companyProfit + secondaryIncome;
+
   res.json({
-    users: { total, active, inactive, banned },
+    users: { total, active, inactive, banned, noSponsor, noReferrals },
     withdrawals: {
       pendingCount: pendingWRow?.total ?? 0,
       pendingAmount: parseFloat(pendingWRow?.sum ?? "0"),
@@ -53,6 +94,9 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
     },
     finance: {
       companyProfit,
+      secondaryIncome,
+      totalCompanyIncome,
+      commissionsPaid,
       totalRevenue: parseFloat(totalActivationsRevRow?.sum ?? "0"),
       profitPerActivation: PROFIT_PER_ACTIVATION,
     },

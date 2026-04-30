@@ -32,10 +32,10 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
 
 // ─── Types ───────────────────────────────────────────────────────
 interface AdminStats {
-  users: { total: number; active: number; inactive: number; banned: number };
+  users: { total: number; active: number; inactive: number; banned: number; noSponsor: number; noReferrals: number };
   withdrawals: { pendingCount: number; pendingAmount: number; processingCount: number; totalPaid: number };
   activityWithdrawals: { pendingCount: number; approvedCount: number };
-  finance: { companyProfit: number; totalRevenue: number; profitPerActivation: number };
+  finance: { companyProfit: number; secondaryIncome: number; totalCompanyIncome: number; commissionsPaid: number; totalRevenue: number; profitPerActivation: number };
 }
 
 interface PeriodData {
@@ -231,6 +231,81 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
         <StatCard icon={DollarSign} label="Total retiré" value={withdrawals.totalPaid.toLocaleString("fr-FR") + " FCFA"} color="bg-teal-500" />
       </div>
 
+      {/* ── Analyse du réseau ──────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-border bg-muted/30">
+          <Globe size={16} className="text-primary" />
+          <h3 className="text-sm font-bold">Analyse du réseau de parrainage</h3>
+          <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{users.total} membres au total</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border/50">
+          {/* Sans parrain */}
+          <div className="p-5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-slate-500/15 flex items-center justify-center">
+                <User size={13} className="text-slate-500" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">Sans parrain</span>
+            </div>
+            <p className="text-2xl font-bold">{users.noSponsor}</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Inscrits sans code de parrainage. Leurs 3 600 FCFA d'activation reviennent entièrement à l'entreprise.
+            </p>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-1">
+              + {(users.noSponsor * 3600).toLocaleString("fr-FR")} FCFA récupérés (si activés)
+            </p>
+          </div>
+          {/* Avec parrain, 0 filleul */}
+          <div className="p-5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                <AlertTriangle size={13} className="text-amber-500" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">0 filleul direct</span>
+            </div>
+            <p className="text-2xl font-bold">{users.noReferrals}</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Ont un parrain mais n'ont encore parrainé personne. Les commissions L1/L2/L3 de leurs futurs filleuls leur reviendraient à eux.
+            </p>
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-1">
+              Réseau non encore actif
+            </p>
+          </div>
+          {/* Commissions versées */}
+          <div className="p-5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                <ArrowUpRight size={13} className="text-blue-500" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">Commissions versées</span>
+            </div>
+            <p className="text-2xl font-bold">{finance.commissionsPaid.toLocaleString("fr-FR")}</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              FCFA versés aux filleuls L1, L2 et L3 sur toutes les activations. Maximum possible : {(users.active * 2700).toLocaleString("fr-FR")} FCFA.
+            </p>
+            <p className="text-xs font-semibold text-blue-500 mt-1">
+              sur {users.active} activations
+            </p>
+          </div>
+          {/* Revenu secondaire */}
+          <div className="p-5 flex flex-col gap-1 bg-emerald-500/5">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                <DollarSign size={13} className="text-emerald-600" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">2ème revenu</span>
+            </div>
+            <p className="text-2xl font-bold text-emerald-600">{finance.secondaryIncome.toLocaleString("fr-FR")}</p>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              FCFA de commissions non versées car les niveaux L1/L2/L3 étaient absents. Ce budget peut financer les tâches &amp; activités.
+            </p>
+            <p className="text-xs font-bold text-emerald-600 mt-1">
+              Total entreprise : {finance.totalCompanyIncome.toLocaleString("fr-FR")} FCFA
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Section Tendances ──────────────────────────────────────── */}
       <div>
         <div className="flex items-center gap-2 mb-4">
@@ -280,15 +355,17 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
       </div>
 
       {/* ── Calcul du revenu ──────────────────────────────────────── */}
-      <div className="bg-card border border-border rounded-2xl p-6">
-        <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><BarChart3 size={16} className="text-amber-500" /> Calcul du revenu par activation</h3>
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+        <h3 className="font-semibold text-sm flex items-center gap-2"><BarChart3 size={16} className="text-amber-500" /> Calcul du revenu par activation</h3>
+
+        {/* Formule */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
           {[
             { label: "Pack client", value: "3 600 FCFA", color: "text-foreground" },
             { label: "Commission N1", value: "− 1 700 FCFA", color: "text-red-500" },
             { label: "Commission N2", value: "− 700 FCFA", color: "text-orange-500" },
             { label: "Commission N3", value: "− 300 FCFA", color: "text-amber-500" },
-            { label: "Profit net", value: "= 900 FCFA", color: "text-emerald-600 font-bold" },
+            { label: "Profit net garanti", value: "= 900 FCFA", color: "text-emerald-600 font-bold" },
           ].map(item => (
             <div key={item.label} className="bg-muted/50 rounded-xl p-3">
               <p className={cn("text-base font-bold", item.color)}>{item.value}</p>
@@ -296,8 +373,27 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
             </div>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-4">
-          Avec <strong>{users.active}</strong> membres actifs → profit total estimé : <strong className="text-emerald-600">{finance.companyProfit.toLocaleString("fr-FR")} FCFA</strong>
+
+        {/* Deux sources de revenu */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold uppercase tracking-wide mb-1">1er revenu — Profit garanti</p>
+            <p className="text-xl font-bold text-emerald-600">{finance.companyProfit.toLocaleString("fr-FR")} FCFA</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{users.active} activations × 900 FCFA</p>
+          </div>
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+            <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wide mb-1">2ème revenu — Chaînes incomplètes</p>
+            <p className="text-xl font-bold text-blue-600">{finance.secondaryIncome.toLocaleString("fr-FR")} FCFA</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Commissions N1/N2/N3 non versées (niveaux absents). Ce fonds peut financer les tâches &amp; activités des membres.</p>
+          </div>
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex flex-col justify-center">
+            <p className="text-[10px] text-primary font-semibold uppercase tracking-wide mb-1">Revenu total entreprise</p>
+            <p className="text-2xl font-bold text-primary">{finance.totalCompanyIncome.toLocaleString("fr-FR")} FCFA</p>
+            <p className="text-[10px] text-muted-foreground mt-1">1er + 2ème revenu combinés</p>
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Le 2ème revenu correspond aux commissions N1/N2/N3 qui n'ont pas pu être attribuées car les niveaux correspondants n'existaient pas dans la chaîne de parrainage.
         </p>
       </div>
     </div>
