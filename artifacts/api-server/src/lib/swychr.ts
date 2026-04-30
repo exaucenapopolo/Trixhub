@@ -291,17 +291,44 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
 
   const data = JSON.parse(rawText) as Record<string, unknown>;
 
-  // Structure réelle de l'API AccountPE :
-  // { data: { payment_methods: [{ payment_method: "MTN", ... }, ...] } }
-  const inner = (data.data as Record<string, unknown>) ?? {};
-  const rawMethods = (inner.payment_methods as Array<Record<string, string>>) ?? [];
+  // L'API AccountPE retourne l'un ou l'autre des formats selon la version :
+  //
+  // Format "objet" (documenté dans le guide et utilisé actuellement) :
+  //   { data: { country, payment_methods: [{ payment_method: "MTN", mobile_format: "6XXXXXXXX" }] } }
+  //
+  // Format "tableau" (ancienne documentation) :
+  //   { data: [{ id: "mtn_cm", name: "MTN Mobile Money", country: "CM" }] }
+  //
+  // On gère les deux.
+  let arr: PayoutMethod[] = [];
 
-  const arr: PayoutMethod[] = rawMethods.map(m => ({
-    id: m.payment_method,              // ex: "MTN", "Orange" — utilisé tel quel dans createPayout
-    name: m.payment_method,            // affiché à l'utilisateur
-    country: countryCode,
-    mobileFormat: m.mobile_format,
-  }));
+  if (Array.isArray(data.data)) {
+    // Format tableau : data.data est le tableau directement
+    const rawArr = data.data as Array<Record<string, string>>;
+    arr = rawArr
+      .filter(m => m.id || m.payment_method)
+      .map(m => ({
+        id:           (m.id || m.payment_method || "").trim(),
+        name:         (m.name || m.payment_method || m.id || "").trim(),
+        country:      m.country || countryCode,
+        mobileFormat: m.mobile_format ?? undefined,
+      }));
+  } else {
+    // Format objet : { data: { payment_methods: [...] } }
+    const inner = (data.data as Record<string, unknown>) ?? {};
+    const rawMethods = (inner.payment_methods as Array<Record<string, string>>) ?? [];
+    arr = rawMethods
+      .filter(m => m.payment_method)
+      .map(m => ({
+        id:           (m.payment_method || "").trim(),
+        name:         (m.payment_method || "").trim(),
+        country:      countryCode,
+        mobileFormat: m.mobile_format ?? undefined,
+      }));
+  }
+
+  // Filtrer les entrées avec ID vide (données corrompues)
+  arr = arr.filter(m => m.id.length > 0);
 
   console.log("[AccountPE] getPayoutMethods:", countryCode, "→", arr.length, "méthodes:", arr.map(m => m.id).join(", "));
   payoutMethodsCache[countryCode] = { methods: arr, expiresAt: now + METHODS_CACHE_TTL_MS };

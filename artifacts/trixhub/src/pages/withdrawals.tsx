@@ -102,10 +102,10 @@ function getPayoutFeeLocal(amountFcfa: number): number {
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class PageErrorBoundary extends Component<
-  { children: ReactNode; fallback?: ReactNode },
+  { children: ReactNode; fallback?: ReactNode | ((error: Error | null) => ReactNode) },
   { hasError: boolean; error: Error | null }
 > {
-  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+  constructor(props: { children: ReactNode; fallback?: ReactNode | ((error: Error | null) => ReactNode) }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -113,16 +113,24 @@ class PageErrorBoundary extends Component<
     return { hasError: true, error };
   }
   componentDidCatch(error: Error) {
-    console.error("[WithdrawalsPage] Erreur capturée:", error);
+    console.error("[WithdrawalsPage] Erreur capturée:", error?.message, error?.stack);
   }
   render() {
     if (this.state.hasError) {
-      return this.props.fallback ?? (
+      const { fallback } = this.props;
+      if (typeof fallback === "function") return fallback(this.state.error);
+      if (fallback) return fallback;
+      return (
         <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center p-6">
           <AlertCircle className="w-12 h-12 text-destructive opacity-60" />
           <div>
             <p className="font-semibold text-foreground">Une erreur est survenue</p>
             <p className="text-sm text-muted-foreground mt-1">Veuillez rafraîchir la page.</p>
+            {this.state.error?.message && (
+              <p className="text-xs text-muted-foreground/70 mt-2 font-mono bg-muted/50 rounded px-3 py-1.5 max-w-xs mx-auto break-words">
+                {this.state.error.message}
+              </p>
+            )}
           </div>
           <Button variant="outline" onClick={() => window.location.reload()}>Rafraîchir</Button>
         </div>
@@ -205,7 +213,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
     const safeAmount = isFinite(values.amount) && values.amount > 0 ? values.amount : 0;
 
     if (safeAmount < minReferral) {
-      form.setError("amount", { message: `Minimum ${minReferral.toLocaleString("fr-FR")} FCFA` });
+      form.setError("amount", { message: `Minimum ${formatLocal(minReferral, user)} (${minReferral.toLocaleString("fr-FR")} FCFA)` });
       return;
     }
 
@@ -214,7 +222,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
 
     if (debitTotal > referralBalance) {
       const msg = values.feeMode === "from_balance"
-        ? `Il vous faut ${formatLocal(debitTotal, user)} (montant + frais ${fee.toLocaleString("fr-FR")} FCFA) mais votre solde est de ${formatLocal(referralBalance, user)}.`
+        ? `Il vous faut ${formatLocal(debitTotal, user)} (montant + frais ${formatLocal(fee, user)}) mais votre solde est de ${formatLocal(referralBalance, user)}.`
         : `Votre solde parrainage est de ${formatLocal(referralBalance, user)}. Vous avez demandé ${formatLocal(safeAmount, user)}.`;
       toast({ title: "Solde insuffisant", description: msg, variant: "destructive" });
       return;
@@ -251,7 +259,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
       const feeModeLabel = values.feeMode === "from_balance" ? "frais prélevés sur solde" : "frais déduits du montant";
       toast({
         title: "Retrait en cours !",
-        description: `Vous recevrez ${formatLocal(received, user)} (${fee.toLocaleString("fr-FR")} FCFA de frais — ${feeModeLabel}).`,
+        description: `Vous recevrez ${formatLocal(received, user)} (frais ${formatLocal(fee, user)} — ${feeModeLabel}).`,
       });
       onClose();
     } catch (err: unknown) {
@@ -341,7 +349,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
             {/* Montant */}
             <FormField control={form.control} name="amount" render={({ field }) => (
               <FormItem>
-                <FormLabel>Montant à retirer (FCFA)</FormLabel>
+                <FormLabel>Montant à retirer (FCFA interne)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -356,6 +364,11 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
                     data-testid="input-withdrawal-amount"
                   />
                 </FormControl>
+                {safeAmount > 0 && safeAmount !== minReferral && (
+                  <p className="text-[11px] text-muted-foreground">
+                    ≈ {formatLocal(safeAmount, user)} converti dans votre devise
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
@@ -391,9 +404,10 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
                             <span className="text-sm font-medium">Déduire du montant reçu</span>
                           </div>
                           <p className="text-[11px] text-muted-foreground mt-0.5">
-                            Vous demandez <strong>{safeAmount.toLocaleString("fr-FR")} FCFA</strong>,
-                            vous recevrez <strong className="text-foreground">{formatLocal(amountReceived, user)}</strong>.
-                            Votre solde est débité de <strong>{safeAmount.toLocaleString("fr-FR")} FCFA</strong>.
+                            Vous demandez <strong>{formatLocal(safeAmount, user)}</strong>,
+                            vous recevrez <strong className="text-foreground">{formatLocal(amountReceived, user)}</strong>{" "}
+                            (frais <strong>{formatLocal(currentFee, user)}</strong> déduits).
+                            Votre solde est débité de <strong>{formatLocal(safeAmount, user)}</strong>.
                           </p>
                         </div>
                       </div>
@@ -427,12 +441,12 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
                             Vous recevrez le montant plein{" "}
                             <strong className="text-foreground">{formatLocal(safeAmount, user)}</strong>.
                             Votre solde est débité de{" "}
-                            <strong>{totalDebit.toLocaleString("fr-FR")} FCFA</strong>{" "}
-                            (montant + <strong>{currentFee.toLocaleString("fr-FR")} FCFA</strong> de frais).
+                            <strong>{formatLocal(totalDebit, user)}</strong>{" "}
+                            (montant + <strong>{formatLocal(currentFee, user)}</strong> de frais).
                             {!hasEnoughForFromBalance && (
                               <span className="block text-amber-500 mt-0.5">
                                 Solde insuffisant — il vous manque{" "}
-                                {Math.max(0, totalDebit - referralBalance).toLocaleString("fr-FR")} FCFA.
+                                {formatLocal(Math.max(0, totalDebit - referralBalance), user)}.
                               </span>
                             )}
                           </p>
@@ -531,7 +545,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
               <div className="text-xs text-foreground space-y-1">
                 <p>Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.</p>
                 <p className="text-muted-foreground">
-                  Barème des frais :
+                  Barème des frais (montants en FCFA — devise interne) :
                   <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5 ml-1">
                     <span>{'<'} 10 000 → <strong>550 FCFA</strong></span>
                     <span>10–19 999 → <strong>750</strong></span>
@@ -539,9 +553,11 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
                     <span>50–99 999 → <strong>1 500</strong></span>
                     <span>100–199 999 → <strong>2 000</strong></span>
                     <span>200–499 999 → <strong>2 500</strong></span>
-                    <span>500–999 999 → <strong>3 000</strong></span>
-                    <span>1 000 000+ → <strong>4 000 FCFA</strong></span>
+                    <span>≥ 500 000 → <strong>3 000–4 000 FCFA</strong></span>
                   </span>
+                </p>
+                <p className="text-muted-foreground/80">
+                  Frais calculés sur votre montant actuel : <strong className="text-foreground">{formatLocal(currentFee, user)}</strong>
                 </p>
               </div>
             </div>
@@ -711,7 +727,7 @@ export default function WithdrawalsPage() {
               <p className="text-sm font-semibold text-foreground">Paiement automatique en 1 minute</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                 Dès que votre demande est envoyée, le virement Mobile Money est déclenché automatiquement via AccountPe.
-                Frais de traitement : <strong>550 FCFA</strong>. Si rien reçu après 5 minutes, contactez l'assistance.
+                Frais de traitement à partir de <strong>{formatLocal(550, user)}</strong>. Si rien reçu après 5 minutes, contactez l'assistance.
               </p>
             </div>
           </div>
@@ -833,18 +849,24 @@ export default function WithdrawalsPage() {
         {/* MODAL RETRAIT PARRAINAGE — tout le form est dans WithdrawalDialogContent */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <PageErrorBoundary
-            fallback={
+            fallback={(err) => (
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Demande de retrait</DialogTitle>
                 </DialogHeader>
                 <div className="p-4 text-center space-y-3">
                   <AlertCircle className="w-10 h-10 text-destructive mx-auto opacity-60" />
-                  <p className="text-sm text-muted-foreground">Une erreur est survenue. Veuillez fermer et réessayer.</p>
+                  <p className="text-sm font-semibold text-foreground">Une erreur est survenue.</p>
+                  <p className="text-xs text-muted-foreground">Envoyez une capture de ce message à l'assistance.</p>
+                  {err?.message && (
+                    <p className="text-xs font-mono bg-muted rounded px-3 py-2 text-left text-muted-foreground max-h-32 overflow-auto break-all">
+                      {err.message}
+                    </p>
+                  )}
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>Fermer</Button>
                 </div>
               </DialogContent>
-            }
+            )}
           >
             <WithdrawalDialogContent
               open={dialogOpen}

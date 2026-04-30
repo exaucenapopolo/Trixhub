@@ -187,7 +187,7 @@ router.get("/admin/users", authenticate, requireAdmin, async (req, res): Promise
 // GET /admin/users/:id — détail d'un utilisateur
 // ─────────────────────────────────────────────────────────────────
 router.get("/admin/users/:id", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
   const [user] = await db
@@ -229,7 +229,7 @@ router.get("/admin/users/:id", authenticate, requireAdmin, async (req, res): Pro
 // PATCH /admin/users/:id/balances — modifier les soldes
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/balances", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
   const { referralBalance, taskBalance, bonusBalance, depositBalance, activityBalance, inactiveBalance } = req.body as Record<string, unknown>;
@@ -281,7 +281,7 @@ router.patch("/admin/users/:id/balances", authenticate, requireAdmin, async (req
 // PATCH /admin/users/:id/password — modifier le mot de passe
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/password", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
   const { password } = req.body as { password?: string };
@@ -302,7 +302,7 @@ router.patch("/admin/users/:id/password", authenticate, requireAdmin, async (req
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/activate", authenticate, requireAdmin, async (req, res): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
     const { activated } = req.body as { activated?: boolean };
@@ -344,7 +344,7 @@ router.patch("/admin/users/:id/activate", authenticate, requireAdmin, async (req
 // PATCH /admin/users/:id/block — bloquer / débloquer
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/block", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
   const { banned } = req.body as { banned?: boolean };
@@ -365,7 +365,7 @@ router.patch("/admin/users/:id/block", authenticate, requireAdmin, async (req, r
 // DELETE /admin/users/:id — supprimer un utilisateur
 // ─────────────────────────────────────────────────────────────────
 router.delete("/admin/users/:id", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
   if (id === req.userId) {
