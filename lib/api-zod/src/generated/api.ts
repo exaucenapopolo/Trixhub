@@ -358,8 +358,13 @@ export const ListWithdrawalsResponseItem = zod.object({
   method: zod.string(),
   accountNumber: zod.string(),
   accountName: zod.string(),
+  whatsappNumber: zod.string().nullish(),
   source: zod.string(),
   status: zod.string(),
+  payoutStatus: zod
+    .string()
+    .nullish()
+    .describe("Statut AccountPE payout: pending | success | failed"),
   requestedAt: zod.string(),
   processedAt: zod.string().nullish(),
 });
@@ -370,10 +375,26 @@ export const ListWithdrawalsResponse = zod.array(ListWithdrawalsResponseItem);
  */
 export const RequestWithdrawalBody = zod.object({
   amount: zod.number(),
-  method: zod.string(),
-  accountNumber: zod.string(),
-  accountName: zod.string(),
+  method: zod
+    .string()
+    .describe(
+      "ID méthode de paiement AccountPE (ex: mtn_cm, orange_cm) ou id interne pour tâches",
+    ),
+  accountNumber: zod.string().describe("Numéro Mobile Money du bénéficiaire"),
+  accountName: zod.string().describe("Nom du titulaire du compte Mobile Money"),
   source: zod.string().describe("referral or task"),
+  whatsappNumber: zod
+    .string()
+    .optional()
+    .describe(
+      "Numéro WhatsApp du membre (obligatoire pour retraits parrainage)",
+    ),
+  payoutMethod: zod
+    .string()
+    .optional()
+    .describe(
+      "ID AccountPE de la méthode payout (ex: mtn_cm) — obligatoire pour retraits parrainage",
+    ),
 });
 
 /**
@@ -418,7 +439,25 @@ export const GetPlatformConfigResponse = zod.object({
   level2Commission: zod.number(),
   level3Commission: zod.number(),
   minimumWithdrawal: zod.number(),
+  payoutFee: zod
+    .number()
+    .optional()
+    .describe("Frais AccountPE déduits du montant envoyé (550 FCFA)"),
   currency: zod.string(),
+});
+
+/**
+ * @summary Get available payout methods for the user's country (from AccountPE)
+ */
+export const GetPayoutMethodsResponse = zod.object({
+  countryCode: zod.string(),
+  methods: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      country: zod.string(),
+    }),
+  ),
 });
 
 /**

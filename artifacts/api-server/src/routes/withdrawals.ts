@@ -9,8 +9,14 @@ import { withdrawalLimiter } from "../middlewares/rateLimiters";
 import { RequestWithdrawalBody } from "@workspace/api-zod";
 import { reportWithdrawalCreated, reportWithdrawalStatusChange, reportWithdrawalProof } from "../lib/withdrawalReports";
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
+import {
+  createPayout,
+  COUNTRY_CODES,
+  PAYOUT_FEE,
+  PAYOUT_MIN,
+} from "../lib/swychr";
 
-const MIN_REFERRAL = 3000;
+const MIN_REFERRAL = PAYOUT_MIN; // 3100 FCFA — aligne avec AccountPE
 const MIN_TASK = 3500;
 const MAX_PROOF_BYTES = 5 * 1024 * 1024; // 5 Mo
 
@@ -35,6 +41,7 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
     method: w.method,
     accountNumber: w.accountNumber,
     accountName: w.accountName,
+    whatsappNumber: w.whatsappNumber ?? null,
     source: w.source ?? "referral",
     status: w.status,
     rejectionReason: w.rejectionReason ?? null,
@@ -42,6 +49,7 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
     proofUploadedAt: w.proofUploadedAt ? w.proofUploadedAt.toISOString() : null,
     requestedAt: w.createdAt.toISOString(),
     processedAt: w.processedAt ? w.processedAt.toISOString() : null,
+    payoutStatus: w.payoutStatus ?? null,
   };
 }
 
@@ -61,7 +69,7 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     return;
   }
 
-  const { amount, method, accountNumber, accountName, source } = parsed.data;
+  const { amount, method, accountNumber, accountName, source, whatsappNumber, payoutMethod } = parsed.data;
   const src = source === "task" ? "task" : "referral";
   const minAmount = src === "task" ? MIN_TASK : MIN_REFERRAL;
 
@@ -69,6 +77,18 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     res.status(400).json({
       error: `Le montant minimum de retrait pour ce solde est de ${minAmount} FCFA`,
     });
+    return;
+  }
+
+  // Champ WhatsApp obligatoire pour les retraits parrainage
+  if (src === "referral" && (!whatsappNumber || whatsappNumber.trim().length < 8)) {
+    res.status(400).json({ error: "Le numéro WhatsApp est obligatoire pour les retraits parrainage." });
+    return;
+  }
+
+  // Méthode de paiement AccountPE obligatoire pour les retraits parrainage automatiques
+  if (src === "referral" && (!payoutMethod || payoutMethod.trim().length === 0)) {
+    res.status(400).json({ error: "La méthode de paiement est obligatoire." });
     return;
   }
 
@@ -112,8 +132,9 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
       method,
       accountNumber,
       accountName,
+      whatsappNumber: whatsappNumber ?? null,
       source: src,
-      status: "pending",
+      status: src === "referral" ? "processing" : "pending", // parrainage → AccountPE traite
     }).returning();
 
     await tx.insert(transactionsTable).values({
@@ -138,7 +159,65 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 
   req.log.info({ userId, amount, source: src }, "Withdrawal requested");
 
-  // Rapport WhatsApp à l'assistance (best-effort, ne bloque pas la réponse).
+  // ─── Payout automatique AccountPE pour les retraits parrainage ───
+  if (src === "referral") {
+    const w = result.withdrawal;
+    const countryCode = COUNTRY_CODES[user.country] || "CM";
+    const transactionId = `PAY-${Date.now()}-${userId}`;
+    const amountAfterFee = amount - PAYOUT_FEE;
+    const mobile = accountNumber.replace(/\D/g, "");
+    const name = user.displayName || accountName;
+
+    req.log.info({ transactionId, amount, amountAfterFee, payoutMethod, countryCode }, "[AccountPE] Payout initié");
+
+    // Lancer le payout de façon asynchrone (ne bloque pas la réponse HTTP)
+    ;(async () => {
+      try {
+        const { id: payoutRef, status: payoutStatus } = await createPayout({
+          countryCode,
+          name,
+          email: user.email,
+          mobile,
+          amount,
+          currency: "XAF",
+          transactionId,
+          payoutMethod: payoutMethod!,
+          description: `Retrait parrainage TRIXHUB — ${name}`,
+        });
+
+        req.log.info({ payoutRef, payoutStatus }, "[AccountPE] Payout créé");
+
+        // Mettre à jour le retrait avec la référence AccountPE
+        await db.update(withdrawalsTable)
+          .set({
+            payoutRef,
+            payoutStatus,
+            status: payoutStatus === "success" ? "completed" : "processing",
+            processedAt: payoutStatus === "success" ? new Date() : undefined,
+          })
+          .where(eq(withdrawalsTable.id, w.id));
+
+      } catch (err) {
+        req.log.error({ err, withdrawalId: w.id }, "[AccountPE] Payout échoué");
+        // En cas d'échec AccountPE : on note le statut failed dans la DB
+        // Le retrait reste en "processing" pour traitement manuel par l'admin
+        await db.update(withdrawalsTable)
+          .set({ payoutStatus: "failed" })
+          .where(eq(withdrawalsTable.id, w.id))
+          .catch(() => {});
+      }
+    })();
+
+    // Notification WhatsApp admin (best-effort)
+    reportWithdrawalCreated(result.withdrawal, user).catch((err) => {
+      req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi rapport retrait Twilio");
+    });
+
+    res.status(201).json(formatWithdrawal(result.withdrawal));
+    return;
+  }
+
+  // Retraits missions : flux manuel existant
   reportWithdrawalCreated(result.withdrawal, user).catch((err) => {
     req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi rapport retrait Twilio");
   });
@@ -148,7 +227,6 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 
 // ─────────────────────────────────────────────────────────────────
 // Upload de la preuve de paiement (capture d'écran SMS) par le membre.
-// L'image est stockée dans Object Storage, le lien est envoyé à l'assistance.
 // ─────────────────────────────────────────────────────────────────
 router.post(
   "/withdrawals/:id/proof",
@@ -197,8 +275,6 @@ router.post(
         userId,
       });
 
-      // ATOMIC : on n'écrit la preuve que si proof_url est encore NULL.
-      // Empêche la race entre 2 uploads concurrents.
       const updatedRows = await db.update(withdrawalsTable)
         .set({ proofUrl: objectPath, proofToken: token, proofUploadedAt: new Date() })
         .where(and(
@@ -215,7 +291,6 @@ router.post(
       const updated = updatedRows[0];
       const publicUrl = getPublicProofUrl(req, id, token);
 
-      // Récupérer les infos user complètes pour le rapport
       const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
       if (user) {
         reportWithdrawalProof(updated, user, publicUrl).catch((err) => {
@@ -240,11 +315,6 @@ router.get("/admin/withdrawals", authenticate, requireAdmin, async (_req, res): 
   res.json(items.map(formatWithdrawal));
 });
 
-// Machine d'état des retraits :
-//   pending    → processing | completed | rejected
-//   processing → completed | rejected
-//   completed  → (terminal)
-//   rejected   → (terminal)
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   pending: ["processing", "completed", "rejected"],
   processing: ["completed", "rejected"],
@@ -275,7 +345,6 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
     return;
   }
 
-  // Vérification de la machine d'état (empêche notamment rejected → completed sans débit).
   const validTargets = ALLOWED_TRANSITIONS[existing.status] ?? [];
   if (!validTargets.includes(status)) {
     res.status(409).json({
@@ -293,8 +362,6 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
     update.rejectionReason = reason.trim().slice(0, 500);
   }
 
-  // Transition + rollback (si rejet) en une transaction atomique.
-  // L'UPDATE des withdrawals est conditionné par le statut courant pour bloquer les races concurrentes.
   type TxOk = { ok: true; updated: typeof withdrawalsTable.$inferSelect };
   type TxFail = { ok: false; reason: "race" };
   const txResult = await db.transaction(async (tx): Promise<TxOk | TxFail> => {
@@ -302,7 +369,7 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
       .set(update)
       .where(and(
         eq(withdrawalsTable.id, id),
-        eq(withdrawalsTable.status, existing.status), // garde la transition atomique
+        eq(withdrawalsTable.status, existing.status),
       ))
       .returning();
 
@@ -310,8 +377,6 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
       return { ok: false, reason: "race" };
     }
 
-    // Rollback du solde si on bascule vers rejected.
-    // (existing.status était != rejected, garanti par la machine d'état + UPDATE conditionnel.)
     if (status === "rejected") {
       const isTask = existing.source === "task";
       const sourceCol = isTask ? balancesTable.taskBalance : balancesTable.referralBalance;

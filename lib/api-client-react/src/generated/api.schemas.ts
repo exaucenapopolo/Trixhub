@@ -171,11 +171,18 @@ export interface ActivateChildResponse {
 
 export interface WithdrawalBody {
   amount: number;
+  /** ID méthode de paiement AccountPE (ex: mtn_cm, orange_cm) ou id interne pour tâches */
   method: string;
+  /** Numéro Mobile Money du bénéficiaire */
   accountNumber: string;
+  /** Nom du titulaire du compte Mobile Money */
   accountName: string;
   /** referral or task */
   source: string;
+  /** Numéro WhatsApp du membre (obligatoire pour retraits parrainage) */
+  whatsappNumber?: string;
+  /** ID AccountPE de la méthode payout (ex: mtn_cm) — obligatoire pour retraits parrainage */
+  payoutMethod?: string;
 }
 
 export interface Withdrawal {
@@ -184,8 +191,15 @@ export interface Withdrawal {
   method: string;
   accountNumber: string;
   accountName: string;
+  /** @nullable */
+  whatsappNumber?: string | null;
   source: string;
   status: string;
+  /**
+   * Statut AccountPE payout: pending | success | failed
+   * @nullable
+   */
+  payoutStatus?: string | null;
   requestedAt: string;
   /** @nullable */
   processedAt?: string | null;
@@ -210,7 +224,20 @@ export interface PlatformConfig {
   level2Commission: number;
   level3Commission: number;
   minimumWithdrawal: number;
+  /** Frais AccountPE déduits du montant envoyé (550 FCFA) */
+  payoutFee?: number;
   currency: string;
+}
+
+export interface PayoutMethod {
+  id: string;
+  name: string;
+  country: string;
+}
+
+export interface PayoutMethodsResponse {
+  countryCode: string;
+  methods: PayoutMethod[];
 }
 
 export type CurrencyRatesRates = { [key: string]: number };

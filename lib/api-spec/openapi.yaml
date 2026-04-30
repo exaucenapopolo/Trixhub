@@ -415,6 +415,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/PlatformConfig"
 
+  /config/payout-methods:
+    get:
+      operationId: getPayoutMethods
+      tags: [config]
+      summary: Get available payout methods for the user's country (from AccountPE)
+      responses:
+        "200":
+          description: Payout methods
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutMethodsResponse"
+
   /currency/rates:
     get:
       operationId: getCurrencyRates
@@ -1073,13 +1086,22 @@ components:
           type: number
         method:
           type: string
+          description: "ID méthode de paiement AccountPE (ex: mtn_cm, orange_cm) ou id interne pour tâches"
         accountNumber:
           type: string
+          description: "Numéro Mobile Money du bénéficiaire"
         accountName:
           type: string
+          description: "Nom du titulaire du compte Mobile Money"
         source:
           type: string
           description: "referral or task"
+        whatsappNumber:
+          type: string
+          description: "Numéro WhatsApp du membre (obligatoire pour retraits parrainage)"
+        payoutMethod:
+          type: string
+          description: "ID AccountPE de la méthode payout (ex: mtn_cm) — obligatoire pour retraits parrainage"
       required: [amount, method, accountNumber, accountName, source]
 
     Withdrawal:
@@ -1095,10 +1117,15 @@ components:
           type: string
         accountName:
           type: string
+        whatsappNumber:
+          type: ["string", "null"]
         source:
           type: string
         status:
           type: string
+        payoutStatus:
+          type: ["string", "null"]
+          description: "Statut AccountPE payout: pending | success | failed"
         requestedAt:
           type: string
         processedAt:
@@ -1139,9 +1166,34 @@ components:
           type: number
         minimumWithdrawal:
           type: number
+        payoutFee:
+          type: number
+          description: "Frais AccountPE déduits du montant envoyé (550 FCFA)"
         currency:
           type: string
       required: [activationFee, level1Commission, level2Commission, level3Commission, minimumWithdrawal, currency]
+
+    PayoutMethod:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+      required: [id, name, country]
+
+    PayoutMethodsResponse:
+      type: object
+      properties:
+        countryCode:
+          type: string
+        methods:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayoutMethod"
+      required: [countryCode, methods]
 
     CurrencyRates:
       type: object

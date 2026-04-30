@@ -37,6 +37,7 @@ import type {
   ErrorResponse,
   HealthStatus,
   LoginBody,
+  PayoutMethodsResponse,
   PlatformConfig,
   QuizResult,
   QuizSession,
@@ -1737,6 +1738,81 @@ export function useGetPlatformConfig<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetPlatformConfigQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get available payout methods for the user's country (from AccountPE)
+ */
+export const getGetPayoutMethodsUrl = () => {
+  return `/api/config/payout-methods`;
+};
+
+export const getPayoutMethods = async (
+  options?: RequestInit,
+): Promise<PayoutMethodsResponse> => {
+  return customFetch<PayoutMethodsResponse>(getGetPayoutMethodsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPayoutMethodsQueryKey = () => {
+  return [`/api/config/payout-methods`] as const;
+};
+
+export const getGetPayoutMethodsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPayoutMethods>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPayoutMethods>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPayoutMethodsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPayoutMethods>>
+  > = ({ signal }) => getPayoutMethods({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPayoutMethods>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPayoutMethodsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPayoutMethods>>
+>;
+export type GetPayoutMethodsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get available payout methods for the user's country (from AccountPE)
+ */
+
+export function useGetPayoutMethods<
+  TData = Awaited<ReturnType<typeof getPayoutMethods>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPayoutMethods>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPayoutMethodsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

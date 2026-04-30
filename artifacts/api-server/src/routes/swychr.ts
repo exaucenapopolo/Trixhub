@@ -9,20 +9,11 @@ import {
   verifyWebhookSignature,
   getWebhookUrl,
   ACCOUNTPE,
+  COUNTRY_CODES,
 } from "../lib/swychr";
 import { activateUserTx, creditDepositTx, ACTIVATION_AMOUNT } from "../lib/activation";
 
 const router: IRouter = Router();
-
-// Mapping des 18 pays africains supportés par AccountPE (Swychr Connect)
-const COUNTRY_CODES: Record<string, string> = {
-  "Bénin": "BJ", "Burkina Faso": "BF", "Cameroun": "CM",
-  "Côte d'Ivoire": "CI", "Congo-Brazzaville": "CG", "RD Congo": "CD",
-  "Gabon": "GA", "Ghana": "GH", "Guinée": "GN", "Kenya": "KE",
-  "Mali": "ML", "Niger": "NE", "Nigeria": "NG",
-  "Rwanda": "RW", "Sénégal": "SN", "Togo": "TG", "Tanzanie": "TZ",
-  "Ouganda": "UG",
-};
 
 const MIN_DEPOSIT = 500;        // Montant minimum d'un dépôt libre
 const MAX_DEPOSIT = 5_000_000;  // Anti-abus

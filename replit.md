@@ -26,7 +26,7 @@ TRIXHUB est une plateforme d'affiliation professionnelle ciblant l'Afrique franc
   - Niveau 2: 700 FCFA
   - Niveau 3: 300 FCFA
 - **Mécanisme inactif/actif**: à l'inscription d'un filleul, la commission va en `inactive_balance`. Elle est transférée en `referral_balance` seulement quand le filleul active son compte.
-- **Retrait minimum**: 3 000 FCFA
+- **Retrait minimum**: 3 100 FCFA (parrainage) / 3 500 FCFA (missions)
 - **Devises**: FCFA de base, conversion multi-devises possible (EUR, USD, GBP, etc.)
 - **Anti-fraude**: validation des références de paiement, compte isBanned
 
@@ -45,7 +45,7 @@ TRIXHUB est une plateforme d'affiliation professionnelle ciblant l'Afrique franc
 - `routes/users.ts` — dashboard, updateProfile, updateCurrency. `formatUser` partagé avec auth.
 - `routes/referrals.ts` — team, referralsByLevel, activity
 - `routes/balances.ts` — balances summary
-- `routes/withdrawals.ts` — list, request withdrawal (atomic conditional UPDATE par source de solde — anti race condition). POST /:id/proof (multipart 5Mo PNG/JPG/WEBP, génère un token signé). Routes admin protégées par `requireAdmin` : GET /admin/withdrawals + PATCH /admin/withdrawals/:id/status (machine d'état pending→processing/completed/rejected, processing→completed/rejected ; transitions atomiques via UPDATE conditionnel sur statut courant ; rollback solde + withdrawnAmount si rejet, dans une seule transaction).
+- `routes/withdrawals.ts` — list, request withdrawal (atomic conditional UPDATE par source de solde — anti race condition). Retraits parrainage : **automatiques via AccountPE payout** (champ `whatsappNumber` obligatoire, `payoutMethod` AccountPE requis, frais 550 FCFA déduits, statut `payoutRef`/`payoutStatus` en DB). Retraits missions : flux manuel existant. POST /:id/proof (multipart 5Mo PNG/JPG/WEBP, génère un token signé). Routes admin protégées par `requireAdmin` : GET /admin/withdrawals + PATCH /admin/withdrawals/:id/status (machine d'état pending→processing/completed/rejected, processing→completed/rejected ; transitions atomiques via UPDATE conditionnel sur statut courant ; rollback solde + withdrawnAmount si rejet, dans une seule transaction).
 - `routes/contact.ts` — POST /contact/canva, /contact/formation, /contact/assistance. Anti-fraude **atomique** via UPDATE conditionnel `WHERE *_requested_at IS NULL RETURNING` AVANT envoi Twilio ; rollback du stamp si Twilio échoue. Anti-spam additionnel 30s par user/type.
 - `routes/storage.ts` — GET /storage/public-objects/* (assets publics). GET /storage/proofs/:withdrawalId/:token : URL signée pour preuves de retrait, vérification via `timingSafeEqual` du token stocké en DB. Plus de route publique /storage/objects/* (sécurité).
 - `routes/missions.ts` — quizz (questions tirées et notées côté serveur, banque privée), vidéo (session start + complete avec vérification 30s côté serveur). Réservation atomique via INSERT ... WHERE NOT EXISTS pour empêcher double-credit.
