@@ -47,15 +47,21 @@ function now(): string {
  * Retraits missions (flux manuel) — notifie l'admin à la création.
  * Pour les retraits parrainage automatiques, utiliser reportPayoutSuccess ou reportPayoutFailed.
  */
-export async function reportWithdrawalCreated(w: Withdrawal, user: User) {
+export async function reportWithdrawalCreated(w: Withdrawal, user: User, balanceBefore: number, balanceAfter: number) {
+  const fee = typeof w.feeAmount === "number" ? w.feeAmount : parseFloat(String(w.feeAmount ?? "0"));
   const message =
     `💸 NOUVEAU RETRAIT — #${w.id}\n` +
     `${STATUS_LABELS[w.status] ?? w.status}\n\n` +
-    `💰 Montant : ${fmtAmount(w.amount)}\n` +
+    `💰 Montant demandé : ${fmtAmount(w.amount)}\n` +
+    `🏷️ Frais prélevés : ${fmtAmount(fee)}\n` +
+    `📤 Montant reçu : ${fmtAmount(parseFloat(String(w.amount)) - (w.feeMode === "from_amount" ? fee : 0))}\n` +
     `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
     `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
     `📞 N° destinataire : ${w.accountNumber}\n` +
     `👤 Titulaire : ${w.accountName}\n\n` +
+    `── Soldes ──\n` +
+    `📊 Avant retrait : ${fmtAmount(balanceBefore)}\n` +
+    `📉 Après retrait : ${fmtAmount(balanceAfter)}\n\n` +
     memberBlock(user) + "\n\n" +
     `🕐 ${now()}`;
   return sendWhatsAppToAssistance(message);
@@ -72,22 +78,27 @@ export async function reportPayoutSuccess(
   payoutStatus: "pending" | "success",
   amountSent: number,
   fee: number,
+  balanceBefore: number,
+  balanceAfter: number,
 ) {
   const statusLine = payoutStatus === "success"
-    ? "✅ PAIEMENT CONFIRMÉ PAR ACCOUNTPE"
+    ? "✅ PAIEMENT CONFIRMÉ PAR NOTRE PARTENAIRE"
     : "🔵 PAIEMENT INITIÉ — EN COURS DE TRAITEMENT";
 
   const message =
     `💸 RETRAIT AUTOMATIQUE — #${w.id}\n` +
     `${statusLine}\n\n` +
     `💰 Montant demandé : ${fmtAmount(w.amount)}\n` +
-    `💸 Montant envoyé à l'utilisateur : ${fmtAmount(amountSent)}\n` +
+    `📤 Montant reçu par l'utilisateur : ${fmtAmount(amountSent)}\n` +
     `🏷️ Frais prélevés : ${fmtAmount(fee)}\n` +
     `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
     `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
     `📞 N° destinataire : ${w.accountNumber}\n` +
     `👤 Titulaire : ${w.accountName}\n` +
-    `🔑 Réf. AccountPE : ${payoutRef}\n\n` +
+    `🔑 Réf. paiement : ${payoutRef}\n\n` +
+    `── Soldes ──\n` +
+    `📊 Avant retrait : ${fmtAmount(balanceBefore)}\n` +
+    `📉 Après retrait : ${fmtAmount(balanceAfter)}\n\n` +
     memberBlock(user) + "\n\n" +
     `🕐 ${now()}`;
   return sendWhatsAppToAssistance(message);
@@ -104,24 +115,28 @@ export async function reportPayoutFailed(
   isInsufficientFunds: boolean,
   amountRequested: number,
   totalDebited: number,
+  balanceBefore: number,
+  balanceAfterRefund: number,
 ) {
   const reason = isInsufficientFunds
-    ? "⚠️ SOLDE INSUFFISANT DANS LE PORTEFEUILLE ACCOUNTPE"
-    : "❌ ERREUR TECHNIQUE ACCOUNTPE";
+    ? "⚠️ SOLDE INSUFFISANT DANS LE PORTEFEUILLE PARTENAIRE"
+    : "❌ ERREUR TECHNIQUE — PAIEMENT ÉCHOUÉ";
 
   const message =
     `🚨 RETRAIT ÉCHOUÉ — #${w.id}\n` +
     `${reason}\n\n` +
-    `💰 Montant réclamé : ${fmtAmount(amountRequested)}\n` +
+    `💰 Montant demandé : ${fmtAmount(amountRequested)}\n` +
     `💵 Total qui aurait été débité : ${fmtAmount(totalDebited)}\n` +
     `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
     `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
     `📞 N° destinataire : ${w.accountNumber}\n` +
     `👤 Titulaire : ${w.accountName}\n\n` +
+    `── Soldes ──\n` +
+    `📊 Avant tentative : ${fmtAmount(balanceBefore)}\n` +
+    `♻️ Après remboursement : ${fmtAmount(balanceAfterRefund)}\n\n` +
     (isInsufficientFunds
-      ? `⚡ ACTION REQUISE : recharger le portefeuille AccountPE avant de traiter d'autres retraits.\n\n`
-      : `🔍 Erreur brute : ${rawError.slice(0, 300)}\n\n`) +
-    `♻️ Solde de l'utilisateur restitué automatiquement.\n\n` +
+      ? `⚡ ACTION REQUISE : recharger le portefeuille partenaire avant de traiter d'autres retraits.\n\n`
+      : `🔍 Erreur : ${rawError.slice(0, 300)}\n\n`) +
     memberBlock(user) + "\n\n" +
     `🕐 ${now()}`;
   return sendWhatsAppToAssistance(message);

@@ -121,10 +121,16 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
   const userId = req.userId!;
 
   type TxResult =
-    | { ok: true; withdrawal: typeof withdrawalsTable.$inferSelect }
+    | { ok: true; withdrawal: typeof withdrawalsTable.$inferSelect; balanceBefore: number; balanceAfter: number }
     | { ok: false; available: number; reason: string };
 
   const result = await db.transaction(async (tx): Promise<TxResult> => {
+    // Lire le solde AVANT déduction pour le rapport WhatsApp
+    const [balanceRow] = await tx.select().from(balancesTable).where(eq(balancesTable.userId, userId));
+    const balanceBefore = balanceRow
+      ? parseFloat(src === "task" ? balanceRow.taskBalance : balanceRow.referralBalance)
+      : 0;
+
     const decrementSql = src === "task"
       ? { taskBalance: sql`(${balancesTable.taskBalance})::numeric - ${totalDebit.toFixed(2)}::numeric`,
           withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${totalDebit.toFixed(2)}::numeric` }
@@ -140,8 +146,7 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
       .returning();
 
     if (updated.length === 0) {
-      const [b] = await tx.select().from(balancesTable).where(eq(balancesTable.userId, userId));
-      const available = b ? parseFloat(src === "task" ? b.taskBalance : b.referralBalance) : 0;
+      const available = balanceBefore;
       const reason = feeMode === "from_balance"
         ? `Solde insuffisant pour couvrir le montant + les frais (${fee.toLocaleString("fr-FR")} FCFA). Il vous faut au moins ${totalDebit.toLocaleString("fr-FR")} FCFA.`
         : `Solde ${src === "task" ? "missions" : "parrainage"} insuffisant`;
@@ -169,7 +174,8 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
       status: "pending",
     });
 
-    return { ok: true, withdrawal };
+    const balanceAfter = Math.max(0, balanceBefore - totalDebit);
+    return { ok: true, withdrawal, balanceBefore, balanceAfter };
   });
 
   if (!result.ok) {
@@ -231,7 +237,7 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
         .where(eq(withdrawalsTable.id, w.id));
 
       // ✅ Notification WhatsApp admin — uniquement après confirmation AccountPE
-      reportPayoutSuccess(w, user, payoutRef, payoutStatus as "pending" | "success", amountSentToAccountPE, fee).catch((err) => {
+      reportPayoutSuccess(w, user, payoutRef, payoutStatus as "pending" | "success", amountSentToAccountPE, fee, result.balanceBefore, result.balanceAfter).catch((err) => {
         req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi WhatsApp succès payout");
       });
 
@@ -266,7 +272,8 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
       });
 
       // 🚨 Notification WhatsApp admin avec la raison exacte de l'échec
-      reportPayoutFailed(w, user, errMsg, isInsufficientFunds, amount, totalDebit).catch((notifErr) => {
+      // Le solde est remboursé → balanceAfter = balanceBefore (solde inchangé après remboursement)
+      reportPayoutFailed(w, user, errMsg, isInsufficientFunds, amount, totalDebit, result.balanceBefore, result.balanceBefore).catch((notifErr) => {
         req.log.warn({ err: notifErr }, "Échec envoi WhatsApp échec payout");
       });
 
@@ -284,7 +291,7 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
   }
 
   // Retraits missions : flux manuel existant
-  reportWithdrawalCreated(result.withdrawal, user).catch((err) => {
+  reportWithdrawalCreated(result.withdrawal, user, result.balanceBefore, result.balanceAfter).catch((err) => {
     req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi rapport retrait Twilio");
   });
 
