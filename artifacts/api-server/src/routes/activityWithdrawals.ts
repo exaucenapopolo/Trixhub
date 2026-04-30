@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
+import { withdrawalLimiter } from "../middlewares/rateLimiters";
 import { ACTIVITY_WITHDRAWAL_MIN } from "../lib/weeklyPoints";
 import {
   reportActivityWithdrawalCreated,
@@ -34,6 +35,7 @@ router.post(
   "/withdrawals/activity",
   authenticate,
   requireActivation,
+  withdrawalLimiter,
   (req: Request, res: Response) => {
     void (async () => {
       try {

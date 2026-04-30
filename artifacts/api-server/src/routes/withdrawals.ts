@@ -5,6 +5,7 @@ import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } fr
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { withdrawalLimiter } from "../middlewares/rateLimiters";
 import { RequestWithdrawalBody } from "@workspace/api-zod";
 import { reportWithdrawalCreated, reportWithdrawalStatusChange, reportWithdrawalProof } from "../lib/withdrawalReports";
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
@@ -53,7 +54,7 @@ router.get("/withdrawals", authenticate, requireActivation, async (req, res): Pr
   res.json(withdrawals.map(formatWithdrawal));
 });
 
-router.post("/withdrawals", authenticate, requireActivation, async (req, res): Promise<void> => {
+router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, async (req, res): Promise<void> => {
   const parsed = RequestWithdrawalBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

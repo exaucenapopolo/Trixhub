@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, usersTable, swychrTransactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
+import { paymentLimiter } from "../middlewares/rateLimiters";
 import {
   createPaymentLink,
   checkPaymentStatus,
@@ -39,7 +40,7 @@ function deriveDisplayName(email: string): string {
 //           = "deposit"           : recharger son solde dépôt (montant libre)
 //           = "child_activation"  : activer un filleul N1 inactif (3600)
 // ─────────────────────────────────────────────────────────────────
-router.post("/swychr/initiate", authenticate, async (req, res): Promise<void> => {
+router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!user) { res.status(401).json({ success: false, error: "Utilisateur introuvable" }); return; }
 

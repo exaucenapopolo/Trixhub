@@ -3,6 +3,7 @@ import { eq, or, sql } from "drizzle-orm";
 import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
 import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth";
 import { authenticate } from "../middlewares/authenticate";
+import { authLimiter } from "../middlewares/rateLimiters";
 import {
   RegisterBody,
   LoginBody,
@@ -47,7 +48,7 @@ router.get("/auth/referrer/:code", async (req, res): Promise<void> => {
   res.json({ displayName, referralCode: user.referralCode, country: user.country });
 });
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Données invalides" });
@@ -186,7 +187,7 @@ async function creditInactiveBalanceTx(
   });
 }
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Données invalides" });
