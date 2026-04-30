@@ -22,8 +22,8 @@ function buildTickerItems(country?: string | null) {
     "💳 Retrait via Orange Money, Wave, MTN, M-Pesa et plus",
     "👥 Commissions sur 3 niveaux de parrainage",
     `🚀 Activation unique ${formatLocal(3600, country)} — Accès à vie à la plateforme`,
-    "🎯 Missions rémunérées disponibles chaque jour",
-    "🔗 Partage ton lien unique et génère des revenus passifs",
+    "⭐ Activités quotidiennes — gagne des points convertibles en FCFA (1 pt = 1 FCFA)",
+    "🔗 Partage ton lien unique et gagne des commissions sur 3 niveaux",
   ];
 }
 
@@ -383,34 +383,9 @@ export default function ActivatePage() {
                 </h2>
                 <p className="text-xs text-muted-foreground mb-5">Voici tout ce que tu débloques avec ton activation à {priceDisplay.primary} :</p>
 
-                {/* 1. Missions rémunérées */}
                 <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
-                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-                      <Briefcase className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-foreground text-sm">Missions rémunérées</h3>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                        Réalise des tâches simples (vidéos à regarder, contenus à partager, lectures) et gagne directement de l'argent dans ton solde.
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* 2. Accès au parrainage */}
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-                      <Share2 className="w-5 h-5 text-blue-500" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-foreground text-sm">Accès au parrainage</h3>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                        Lien de parrainage unique, commissions automatiques sur 3 niveaux : <strong className="text-foreground">{commissionN1} / {commissionN2} / {commissionN3}</strong> par filleul activé.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 3. Accès aux formations */}
+                  {/* 1. Accès aux formations */}
                   <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-lg bg-purple-500/15 flex items-center justify-center flex-shrink-0">
@@ -435,7 +410,20 @@ export default function ActivatePage() {
                     </ul>
                   </div>
 
-                  {/* 4. Bonus exclusifs */}
+                  {/* 2. Accès au parrainage */}
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                      <Share2 className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm">Accès au parrainage</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Lien de parrainage unique, commissions automatiques sur 3 niveaux : <strong className="text-foreground">{commissionN1} / {commissionN2} / {commissionN3}</strong> par filleul activé.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3. Cadeaux & bonus exclusifs */}
                   <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
@@ -467,6 +455,21 @@ export default function ActivatePage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* 4. Activités de progression */}
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm">Activités</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Participe chaque jour à de petites activités sur la plateforme — regarder des vidéos, répondre à des quiz, explorer des produits partenaires…
+                        Chaque activité réussie te rapporte des <strong className="text-foreground">points de progression</strong>.
+                        <strong className="text-foreground"> 1 point = 1 FCFA.</strong> Cumule 700 pts dans la semaine, puis convertis-les en argent réel le dimanche et retire sur ton Mobile Money.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -481,9 +484,9 @@ export default function ActivatePage() {
                     <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center mb-2">
                       <Briefcase className="w-4 h-4 text-primary" />
                     </div>
-                    <h4 className="text-sm font-semibold text-foreground mb-1">Avec les tâches</h4>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">Avec les activités</h4>
                     <p className="text-[11px] text-muted-foreground leading-snug">
-                      Réalise des missions quotidiennes simples et gagne, même sans parrainer personne.
+                      Participe aux activités quotidiennes, gagne des points et convertis-les en argent, même sans parrainer personne.
                     </p>
                   </div>
                   <div className="bg-card border border-border rounded-xl p-3">
@@ -532,7 +535,7 @@ export default function ActivatePage() {
                 <p className="text-xs text-muted-foreground mb-4">Paiement unique — accès permanent à toutes les fonctionnalités</p>
                 <div className="flex items-center gap-2 p-3 bg-primary/8 rounded-xl">
                   <TrendingUp className="w-4 h-4 text-primary flex-shrink-0" />
-                  <p className="text-xs text-foreground">Récupère ton activation avec seulement <strong>2 filleuls actifs</strong> (2 × {commissionN1}), ou en réalisant tes premières missions rémunérées.</p>
+                  <p className="text-xs text-foreground">Récupère ton activation avec seulement <strong>2 filleuls actifs</strong> (2 × {commissionN1}), ou en réalisant tes premières activités quotidiennes.</p>
                 </div>
               </div>
 

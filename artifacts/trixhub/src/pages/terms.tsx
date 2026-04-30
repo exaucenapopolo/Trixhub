@@ -28,12 +28,39 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">2. Description du service</h2>
-              <p>TRIXHUB est une plateforme d'affiliation africaine permettant à ses membres de générer des revenus grâce au parrainage et à l'accomplissement de missions. La plateforme est disponible dans 18 pays africains.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-2">2. Nature de la plateforme</h2>
+              <p>
+                TRIXHUB est une <strong className="text-foreground">plateforme de marketing d'affiliation</strong> opérant en Afrique.
+                Elle met à la disposition de ses membres un ensemble d'outils et de ressources pour développer leurs compétences et générer des revenus grâce à leurs efforts personnels.
+              </p>
+              <p className="mt-2">
+                <strong className="text-foreground">TRIXHUB n'est pas une plateforme d'investissement.</strong> Aucune somme d'argent n'est placée, investie ou mise en jeu en vue d'un rendement garanti. Les membres ne versent pas de fonds dans le but de les faire fructifier passivement. Les gains sur TRIXHUB sont exclusivement le fruit du travail, de l'engagement et de la régularité de chaque membre.
+              </p>
+              <p className="mt-2">
+                La plateforme est disponible dans 18 pays africains.
+              </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">3. Conditions d'inscription</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">3. Frais d'activation du compte — Ce que vous payez réellement</h2>
+              <p>
+                Pour accéder aux fonctionnalités complètes de TRIXHUB, chaque membre doit s'acquitter de <strong className="text-foreground">frais d'activation unique de 3 600 FCFA</strong>. Ces frais sont définitifs et non remboursables.
+              </p>
+              <p className="mt-2 font-medium text-foreground">⚠️ Point important : vous ne payez pas ces 3 600 FCFA pour accéder simplement à une plateforme, pour gagner de l'argent garanti, ni pour réaliser des activités rémunérées.</p>
+              <p className="mt-2">Ces frais vous donnent accès à un <strong className="text-foreground">pack complet</strong> composé de :</p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li><strong className="text-foreground">Formations exclusives</strong> — un catalogue de formations pratiques sur le développement personnel, le marketing digital, la gestion financière, la vente et l'entrepreneuriat.</li>
+                <li><strong className="text-foreground">Accès au système de parrainage</strong> — un lien de parrainage unique permettant de toucher des commissions lorsque vos filleuls activent leur compte.</li>
+                <li><strong className="text-foreground">Cadeaux & bonus exclusifs</strong> — abonnement Canal+, compte Canva Pro, VPN offert par l'équipe, et autres bonus à valeur réelle.</li>
+                <li><strong className="text-foreground">Accès aux activités de progression</strong> — un espace d'activités quotidiennes (vidéos, quiz, découverte de produits partenaires) permettant d'accumuler des points convertibles.</li>
+              </ul>
+              <p className="mt-3">
+                En résumé : vous payez pour un <strong className="text-foreground">pack d'accès</strong>, non pour une promesse de gains. Les revenus que vous pourrez générer dépendent entièrement de votre implication.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">4. Conditions d'inscription</h2>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
                 <li>Vous devez avoir au moins 18 ans pour vous inscrire.</li>
                 <li>Un seul compte par personne est autorisé. La création de plusieurs comptes avec la même adresse e-mail ou le même numéro de téléphone est strictement interdite.</li>
@@ -43,48 +70,78 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">4. Activation du compte</h2>
-              <p>Pour accéder à toutes les fonctionnalités de la plateforme et commencer à gagner des commissions, vous devez activer votre compte en payant des frais d'activation de <strong>3 600 FCFA</strong>. Ces frais sont non remboursables.</p>
-            </section>
-
-            <section>
               <h2 className="text-lg font-semibold text-foreground mb-2">5. Système de parrainage et commissions</h2>
               <p>TRIXHUB utilise un système de commissions à 3 niveaux :</p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
-                <li>Niveau 1 (filleuls directs) : <strong>1 700 FCFA</strong> par activation</li>
-                <li>Niveau 2 : <strong>700 FCFA</strong> par activation</li>
-                <li>Niveau 3 : <strong>300 FCFA</strong> par activation</li>
+                <li>Niveau 1 (filleuls directs) : <strong className="text-foreground">1 700 FCFA</strong> par activation</li>
+                <li>Niveau 2 : <strong className="text-foreground">700 FCFA</strong> par activation</li>
+                <li>Niveau 3 : <strong className="text-foreground">300 FCFA</strong> par activation</li>
               </ul>
-              <p className="mt-2">Les commissions sont créditées sur votre solde uniquement lorsque votre filleul active son compte.</p>
+              <p className="mt-2">Les commissions sont créditées sur votre solde uniquement lorsque votre filleul active son compte en payant ses propres frais d'activation. Il n'y a aucune commission automatique sans action réelle.</p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">6. Retraits</h2>
-              <p>Le retrait minimum est de <strong>3 000 FCFA</strong>. Les demandes de retrait sont traitées dans un délai de 24 à 72 heures ouvrables. TRIXHUB se réserve le droit de refuser toute demande de retrait en cas de suspicion de fraude.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-2">6. Activités de progression et points</h2>
+              <p>
+                TRIXHUB propose des activités quotidiennes (visionnage de vidéos, quiz, découverte de produits partenaires, activités surprise). Ces activités rapportent des <strong className="text-foreground">points de progression</strong>.
+              </p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li><strong className="text-foreground">1 point = 1 FCFA</strong></li>
+                <li>La conversion des points en argent est possible chaque dimanche, à condition d'avoir accumulé au minimum <strong className="text-foreground">700 points</strong> dans la semaine.</li>
+                <li>La conversion n'est pas automatique : elle nécessite une action volontaire du membre.</li>
+              </ul>
+              <p className="mt-2">
+                <strong className="text-foreground">Les gains liés aux activités ne sont pas garantis.</strong> Ils dépendent de la régularité de participation, du score obtenu et du respect des critères de validation définis par la plateforme. Une activité mal réalisée ou non validée ne rapporte aucun point.
+              </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">7. Comportements interdits</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">7. Absence de garantie de gains</h2>
+              <p>
+                TRIXHUB ne garantit aucun revenu minimum ni aucun retour sur les frais d'activation. Les gains réalisés sur la plateforme dépendent exclusivement des efforts, de la régularité et de l'engagement de chaque membre. Il est faux de penser que l'activation du compte suffit à générer de l'argent sans rien faire.
+              </p>
+              <p className="mt-2">
+                Pour gagner sur TRIXHUB, vous devez :
+              </p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Parrainer activement et accompagner vos filleuls à activer leur compte.</li>
+                <li>Participer régulièrement aux activités quotidiennes.</li>
+                <li>Exploiter les formations pour développer vos compétences et créer des opportunités.</li>
+                <li>Revendre les bonus (Canal+, formations, etc.) si vous choisissez cette voie.</li>
+              </ul>
+              <p className="mt-2">
+                TRIXHUB n'est pas un système où l'argent vient automatiquement. C'est une plateforme où vous travaillez pour gagner.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">8. Retraits</h2>
+              <p>Le retrait minimum depuis le solde parrainage est de <strong className="text-foreground">3 000 FCFA</strong>, et depuis le solde activités est de <strong className="text-foreground">3 500 FCFA</strong>. Les demandes de retrait sont vérifiées par notre équipe avant tout paiement. TRIXHUB se réserve le droit de refuser toute demande de retrait en cas de suspicion de fraude ou de non-respect des présentes conditions.</p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">9. Comportements interdits</h2>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
                 <li>Créer plusieurs comptes (multi-compte)</li>
                 <li>Utiliser des informations fausses ou usurper l'identité d'une autre personne</li>
-                <li>Toute tentative de manipulation du système de parrainage</li>
-                <li>Diffuser des informations mensongères sur la plateforme</li>
+                <li>Toute tentative de manipulation du système de parrainage ou des activités</li>
+                <li>Diffuser des informations mensongères sur la plateforme, notamment promettre des gains garantis à de futurs membres</li>
+                <li>Présenter TRIXHUB comme une plateforme d'investissement ou promettre un retour sur investissement</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">8. Suspension et résiliation</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">10. Suspension et résiliation</h2>
               <p>TRIXHUB se réserve le droit de suspendre ou de supprimer tout compte en cas de violation des présentes conditions, sans préavis et sans remboursement des soldes éventuels.</p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">9. Modifications</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">11. Modifications</h2>
               <p>TRIXHUB se réserve le droit de modifier les présentes conditions à tout moment. Les modifications entrent en vigueur dès leur publication sur la plateforme. Il est de votre responsabilité de les consulter régulièrement.</p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">10. Contact</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">12. Contact</h2>
               <p>Pour toute question concernant ces conditions, vous pouvez nous contacter via notre page de support sur la plateforme.</p>
             </section>
           </div>

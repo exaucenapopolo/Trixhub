@@ -16,7 +16,7 @@ const DEV_PERSO: Formation[] = [
   { title: "Maîtrise de soi & discipline", tagline: "Tenez vos engagements et atteignez vos objectifs." },
   { title: "Productivité & gestion du temps", tagline: "Organisez vos journées pour produire plus en moins de temps." },
   { title: "Intelligence émotionnelle", tagline: "Comprenez vos émotions pour mieux décider et communiquer." },
-  { title: "Gestion financière personnelle", tagline: "Maîtrisez votre argent, épargnez et investissez intelligemment." },
+  { title: "Gestion financière personnelle", tagline: "Maîtrisez votre argent, épargnez et gérez vos finances intelligemment." },
   { title: "Communication efficace & leadership", tagline: "Inspirez et fédérez autour de vous." },
 ];
 
@@ -234,7 +234,7 @@ export default function FormationsPage() {
           <CardContent className="p-4 flex items-start gap-3">
             <TrendingUp size={18} className="text-primary mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-semibold text-foreground">Investissez dans vos compétences pour multiplier vos revenus.</p>
+              <p className="font-semibold text-foreground">Développez vos compétences pour multiplier vos opportunités de revenus.</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Chaque formation est conçue pour vous donner des résultats concrets en quelques semaines.
               </p>

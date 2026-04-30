@@ -315,7 +315,7 @@ export default function DashboardPage() {
           <div className="bg-card border border-card-border rounded-xl p-3.5">
             <div className="flex items-center gap-2 mb-1.5">
               <Zap className="w-3.5 h-3.5 text-orange-500" />
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Investi</span>
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Activation</span>
             </div>
             <p className="text-base md:text-lg font-bold tabular-nums amount-display">{formatLocal(dashboard?.spentAmount ?? 0, user)}</p>
           </div>
