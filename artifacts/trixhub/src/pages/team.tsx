@@ -8,8 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Search, CheckCircle, Clock, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 export default function TeamPage() {
+  usePageTitle('Mon équipe');
   const { data: team, isLoading } = useGetTeam();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");

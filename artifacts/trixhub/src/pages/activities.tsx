@@ -6,6 +6,7 @@ import { formatLocal } from "@/lib/currency";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   HelpCircle,
   PlayCircle,
@@ -170,6 +171,7 @@ function ActivityCard({ act }: { act: DayActivity }) {
 
 // ─── Page principale ─────────────────────────────────────────────
 export default function ActivitiesPage() {
+  usePageTitle('Activités');
   const { data: status, isLoading, refetch } = useGetWeeklyStatus();
   const { data: schedule } = useGetActivitiesSchedule();
   const convert = useConvertWeeklyPoints();

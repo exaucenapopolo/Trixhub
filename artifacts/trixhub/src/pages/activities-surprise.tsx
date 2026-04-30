@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   ArrowLeft,
   Sparkles,
@@ -99,6 +100,7 @@ function pointsLabel(pts: number) {
 }
 
 export default function ActivitiesSurprisePage() {
+  usePageTitle('Activité Surprise');
   const { data: schedule, refetch: refetchSchedule } = useGetActivitiesSchedule();
   const [phase, setPhase] = useState<Phase>("select");
   const [selectedMsg, setSelectedMsg] = useState<(typeof MESSAGES)[number] | null>(null);

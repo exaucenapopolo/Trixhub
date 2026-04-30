@@ -16,6 +16,7 @@ import { Shield, User, Globe, Copy, CheckCircle, Link as LinkIcon, Camera, Trash
 import { CURRENCY_LABELS } from "@/lib/currency";
 import { resolveAvatarUrl } from "@/lib/utils";
 import { useRef, useState } from "react";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const TOKEN_KEY = "trixhub_token";
 const ACCEPTED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
@@ -36,6 +37,7 @@ const AFRICAN_COUNTRIES = [
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 export default function ProfilePage() {
+  usePageTitle('Mon profil');
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

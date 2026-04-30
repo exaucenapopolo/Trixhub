@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Globe2, Users, ExternalLink, MessageCircle, CheckCircle2, Send, Loader2 } from "lucide-react";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const VPN_GROUP_URL = "https://chat.whatsapp.com/I9uoCsp8Wgz3ZRPclsP9Av";
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 export default function BonusVpnPage() {
+  usePageTitle("Bonus VPN");
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);

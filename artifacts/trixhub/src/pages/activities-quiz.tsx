@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   HelpCircle,
   ArrowLeft,
@@ -31,6 +32,7 @@ const QUESTION_TIME = 10;
 type Phase = "idle" | "loading" | "playing" | "submitting" | "results";
 
 export default function ActivitiesQuizPage() {
+  usePageTitle('Activité Quiz');
   const [phase, setPhase] = useState<Phase>("idle");
   const [session, setSession] = useState<QuizSession | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);

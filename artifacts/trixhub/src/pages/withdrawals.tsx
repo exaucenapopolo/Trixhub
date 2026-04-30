@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle,
   Users, ChevronRight, Upload, ImageIcon, Loader2, ShieldCheck, Zap,
@@ -600,6 +601,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function WithdrawalsPage() {
+  usePageTitle('Retraits');
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);

@@ -3,6 +3,7 @@ import { Link, Redirect } from "wouter";
 import { useGetDashboard, useGetReferralActivity, useGetPlatformConfig } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Copy, CheckCheck, Users, Wallet, ArrowDownLeft, Zap, Gift,
   PlayCircle, HelpCircle, Compass, Sparkles, ChevronRight, Clock,
@@ -301,6 +302,7 @@ function BalanceCard({ label, value, loading, Icon, hue, caption, cta, badge, cu
 }
 
 export default function DashboardPage() {
+  usePageTitle('Tableau de bord');
   const { user } = useAuth();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);

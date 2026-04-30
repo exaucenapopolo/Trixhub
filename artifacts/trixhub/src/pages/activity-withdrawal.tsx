@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Select,
   SelectContent,
@@ -62,6 +63,7 @@ function statusBadge(s: string) {
 }
 
 export default function ActivityWithdrawalPage() {
+  usePageTitle('Retrait activités');
   const { data: dashboard } = useGetDashboard();
   const { data: history, refetch } = useListActivityWithdrawals();
   const submit = useRequestActivityWithdrawal();

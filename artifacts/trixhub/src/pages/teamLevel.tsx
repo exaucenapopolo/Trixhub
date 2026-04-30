@@ -11,8 +11,10 @@ import { Users, Search, CheckCircle, Clock, Globe, TrendingUp, Zap } from "lucid
 import { cn } from "@/lib/utils";
 import { formatLocal } from "@/lib/currency";
 import ActivateChildModal from "@/components/ActivateChildModal";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 export default function TeamLevelPage() {
+  usePageTitle('Mon équipe — Niveaux');
   const { user } = useAuth();
   const [, params] = useRoute("/team/level/:level");
   const level = parseInt(params?.level ?? "1", 10);

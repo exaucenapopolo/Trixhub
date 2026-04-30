@@ -7,6 +7,7 @@ import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, 
 import PartnersFooter from "@/components/PartnersFooter";
 import JoinCommunityButton from "@/components/JoinCommunityButton";
 import { formatLocal } from "@/lib/currency";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const SSG_URL = "https://socialsuccesgroup.socialboosthorizon.com/index.html";
 const SBH_URL = "https://socialboosthorizon.com";
@@ -47,6 +48,7 @@ interface ReferrerInfo {
 }
 
 export default function RegisterPage() {
+  usePageTitle('Inscription');
   const [, navigate] = useLocation();
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();

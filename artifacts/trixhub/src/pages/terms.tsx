@@ -1,9 +1,11 @@
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
 export default function TermsPage() {
+  usePageTitle("Conditions d'utilisation");
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8">

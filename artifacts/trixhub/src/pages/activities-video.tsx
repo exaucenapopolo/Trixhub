@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   ArrowLeft,
   PlayCircle,
@@ -110,6 +111,7 @@ function TimerRing({ timeLeft }: { timeLeft: number }) {
 
 // ─── Page principale ─────────────────────────────────────────────
 export default function ActivitiesVideoPage() {
+  usePageTitle('Activité Vidéo');
   const { data: schedule, refetch: refetchSchedule } = useGetActivitiesSchedule();
   const [phase, setPhase] = useState<Phase>("select");
   const [selected, setSelected] = useState<Video | null>(null);

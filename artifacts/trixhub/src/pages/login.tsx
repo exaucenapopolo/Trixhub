@@ -8,6 +8,7 @@ import PartnersFooter from "@/components/PartnersFooter";
 import JoinCommunityButton from "@/components/JoinCommunityButton";
 import ImageLightbox from "@/components/ImageLightbox";
 import { formatLocalWithFcfa, formatLocal } from "@/lib/currency";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -72,6 +73,7 @@ function IllustrationCarousel({ onImageClick }: IllustrationCarouselProps) {
 }
 
 export default function LoginPage() {
+  usePageTitle('Connexion');
   const [, navigate] = useLocation();
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();

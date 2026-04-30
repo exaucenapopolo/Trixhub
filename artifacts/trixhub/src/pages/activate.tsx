@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   CheckCircle2, ChevronRight, Zap, TrendingUp,
   Globe, X, Star, Loader2, Clock, ExternalLink, RefreshCw,
@@ -124,6 +125,7 @@ const BONUS_LIST = [
 type Step = "info" | "pay" | "waiting" | "success" | "failed";
 
 export default function ActivatePage() {
+  usePageTitle('Activer mon compte');
   const [, navigate] = useLocation();
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Users, TrendingUp, TrendingDown, Wallet, Activity, Search, RefreshCw,
   Ban, Trash2, Key, Edit3, ChevronRight, CheckCircle,
@@ -1201,6 +1202,7 @@ function WalletsSection() {
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
+  usePageTitle('Administration');
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Send, Sparkles, Briefcase, Heart, TrendingUp, Loader2, CheckCircle2, ShieldCheck, Lock } from "lucide-react";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -83,6 +84,7 @@ function FormationCard({ formation, accentColor, onRequest, sending, requested, 
 }
 
 export default function FormationsPage() {
+  usePageTitle('Formations');
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const [sendingTitle, setSendingTitle] = useState<string | null>(null);

@@ -10,6 +10,7 @@ import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Palette, Send, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -20,6 +21,7 @@ const schema = z.object({
 });
 
 export default function BonusCanvaPage() {
+  usePageTitle("Bonus Canva");
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);

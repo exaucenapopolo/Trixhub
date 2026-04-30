@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { formatLocal } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 const TOKEN_KEY = "trixhub_token";
 const DEPOSIT_TX_KEY = "trixhub_deposit_tx";
@@ -21,6 +22,7 @@ const MAX_DEPOSIT = 5_000_000;
 type Step = "form" | "waiting" | "success";
 
 export default function DepotPage() {
+  usePageTitle('Dépôt');
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();

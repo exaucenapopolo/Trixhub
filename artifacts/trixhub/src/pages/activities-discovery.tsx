@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   ArrowLeft,
   Compass,
@@ -203,6 +204,7 @@ function TimerRing({ timeLeft }: { timeLeft: number }) {
 }
 
 export default function ActivitiesDiscoveryPage() {
+  usePageTitle('Activité Découverte');
   const { data: schedule, refetch: refetchSchedule } = useGetActivitiesSchedule();
   const [phase, setPhase] = useState<Phase>("select");
   const [selected, setSelected] = useState<Offer | null>(null);
