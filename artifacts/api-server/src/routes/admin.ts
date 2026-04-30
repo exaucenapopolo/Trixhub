@@ -11,6 +11,7 @@ import {
 import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { hashPassword } from "../lib/auth";
+import { activateUserTx } from "../lib/activation";
 
 const router: IRouter = Router();
 
@@ -300,38 +301,43 @@ router.patch("/admin/users/:id/password", authenticate, requireAdmin, async (req
 // PATCH /admin/users/:id/activate — activer / désactiver manuellement
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/activate", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id, 10);
-  if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
 
-  const { activated } = req.body as { activated?: boolean };
-  if (typeof activated !== "boolean") {
-    res.status(400).json({ error: "Champ 'activated' (boolean) requis" });
-    return;
-  }
-
-  await db.transaction(async (tx) => {
-    await tx.update(usersTable).set({ isActivated: activated }).where(eq(usersTable.id, id));
+    const { activated } = req.body as { activated?: boolean };
+    if (typeof activated !== "boolean") {
+      res.status(400).json({ error: "Champ 'activated' (boolean) requis" });
+      return;
+    }
 
     if (activated) {
-      const [existing] = await tx.select({ userId: balancesTable.userId }).from(balancesTable).where(eq(balancesTable.userId, id));
-      if (!existing) {
-        await tx.insert(balancesTable).values({ userId: id });
-      }
-      await tx.insert(transactionsTable).values({
-        userId: id,
-        type: "activation",
-        amount: "0",
-        description: "Activation manuelle par administrateur",
-        status: "completed",
+      // Activation complète via activateUserTx :
+      //   1. UPDATE atomique WHERE is_activated = false (idempotent)
+      //   2. Crédit +800 FCFA bonus d'activation
+      //   3. Transaction logs (activation + bonus)
+      //   4. Commissions N1/N2/N3 si parrainage
+      // amount = 0 car l'admin active gratuitement (pas de paiement utilisateur)
+      await db.transaction(async (tx) => {
+        // Garantit que la ligne balances existe (register la crée normalement,
+        // mais on protège contre les comptes créés sans balances)
+        await tx.insert(balancesTable).values({ userId: id }).onConflictDoNothing();
+        await activateUserTx(tx, id, 0, "admin_manual", req.userId, req.log);
       });
+    } else {
+      // Désactivation manuelle (pas de remboursement, juste le flag)
+      await db.update(usersTable).set({ isActivated: false }).where(eq(usersTable.id, id));
     }
-  });
 
-  const [updated] = await db.select({ id: usersTable.id, isActivated: usersTable.isActivated, email: usersTable.email }).from(usersTable).where(eq(usersTable.id, id));
-  if (!updated) { res.status(404).json({ error: "Utilisateur introuvable" }); return; }
+    const [updated] = await db.select({ id: usersTable.id, isActivated: usersTable.isActivated, email: usersTable.email }).from(usersTable).where(eq(usersTable.id, id));
+    if (!updated) { res.status(404).json({ error: "Utilisateur introuvable" }); return; }
 
-  req.log.info({ adminId: req.userId, targetUserId: id, activated }, "[admin] statut activation modifié");
-  res.json(updated);
+    req.log.info({ adminId: req.userId, targetUserId: id, activated }, "[admin] statut activation modifié");
+    res.json(updated);
+  } catch (err) {
+    req.log.error(err, "[admin] erreur activation");
+    res.status(500).json({ error: "Erreur lors de l'activation" });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────

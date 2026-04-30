@@ -212,9 +212,16 @@ export default function DashboardPage() {
   // Toast quand le bonus quotidien vient d'être attribué
   useEffect(() => {
     if (dashboard?.dailyBonusClaimed) {
+      const fcfaAmount = dashboard.dailyBonusAmount ?? 5;
+      const currency = dashboard.currency ?? "FCFA";
+      const rate = dashboard.exchangeRate ?? 1;
+      const localAmount = Math.round(fcfaAmount * rate * 100) / 100;
+      const displayed = currency === "FCFA"
+        ? `${fcfaAmount} FCFA`
+        : `${localAmount.toLocaleString("fr-FR")} ${currency} (≈ ${fcfaAmount} FCFA)`;
       toast({
         title: "🎁 Bonus de connexion !",
-        description: `+${dashboard.dailyBonusAmount ?? 5} FCFA crédités sur ton solde bonus pour ta connexion du jour.`,
+        description: `+${displayed} crédités sur ton solde bonus pour ta connexion du jour.`,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
