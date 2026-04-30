@@ -6,7 +6,7 @@ import {
   Users, TrendingUp, Wallet, Activity, Search, RefreshCw,
   Ban, Trash2, Key, Edit3, ChevronRight, CheckCircle,
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
-  Filter, Eye, DollarSign, Building2, BarChart3
+  Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -251,31 +251,77 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-background rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-border">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <User size={18} className="text-primary" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm">{data?.user.displayName ?? "Chargement..."}</h3>
-              <p className="text-xs text-muted-foreground">{data?.user.email}</p>
-            </div>
-          </div>
+
+        {/* Barre supérieure : Retour + Actions rapides */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+            Retour à la liste
+          </button>
           <div className="flex items-center gap-2">
             {data && (
               <>
-                <button onClick={toggleActivation} disabled={saving} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-colors", data.user.isActivated ? "bg-orange-500/15 text-orange-600 hover:bg-orange-500/25" : "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25")}>
-                  {data.user.isActivated ? "Désactiver" : "Activer"}
+                <button
+                  onClick={toggleActivation}
+                  disabled={saving}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                    data.user.isActivated
+                      ? "bg-orange-500/15 text-orange-600 hover:bg-orange-500/25"
+                      : "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25"
+                  )}
+                >
+                  {saving ? "..." : data.user.isActivated ? "Désactiver" : "✓ Activer"}
                 </button>
-                <button onClick={toggleBlock} disabled={saving} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-colors", data.user.isBanned ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25" : "bg-red-500/15 text-red-600 hover:bg-red-500/25")}>
-                  {data.user.isBanned ? "Débloquer" : "Bloquer"}
+                <button
+                  onClick={toggleBlock}
+                  disabled={saving}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                    data.user.isBanned
+                      ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25"
+                      : "bg-red-500/15 text-red-600 hover:bg-red-500/25"
+                  )}
+                >
+                  {saving ? "..." : data.user.isBanned ? "Débloquer" : "Bloquer"}
                 </button>
               </>
             )}
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">✕</button>
           </div>
         </div>
 
+        {/* En-tête membre */}
+        <div className="flex items-center gap-4 px-5 py-4 border-b border-border">
+          <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-primary font-bold text-lg">
+              {data?.user.displayName?.charAt(0).toUpperCase() ?? "?"}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-base truncate">{data?.user.displayName ?? "Chargement..."}</h3>
+            <p className="text-xs text-muted-foreground truncate">{data?.user.email}</p>
+            <div className="flex items-center gap-2 mt-1.5">
+              {data && (
+                <>
+                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", data.user.isActivated ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600")}>
+                    {data.user.isActivated ? "✓ Activé" : "⏳ Inactif"}
+                  </span>
+                  {data.user.isBanned && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-600">
+                      🚫 Bloqué
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground">{data.user.country}</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Onglets */}
         <div className="flex border-b border-border px-5 gap-1">
           {(["info", "balances", "team", "history"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} className={cn("px-3 py-3 text-xs font-medium border-b-2 transition-colors", tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
