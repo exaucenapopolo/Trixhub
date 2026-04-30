@@ -233,7 +233,8 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
       req.log.error({ errMsg, withdrawalId: w.id }, "[AccountPE] Payout échoué — remboursement en cours");
 
       // Détecter si c'est un problème de solde dans le portefeuille AccountPE
-      const isInsufficientFunds = /insufficient|solde|balance|funds|fonds|wallet|manque/i.test(errMsg);
+      // Note : AccountPE écrit "Insuffiecient" (faute dans leur API)
+      const isInsufficientFunds = /insuffi[sc]ient|solde|balance|funds|fonds|wallet|manque/i.test(errMsg);
 
       // ♻️ Rembourser automatiquement le solde de l'utilisateur
       await db.transaction(async (tx) => {

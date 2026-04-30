@@ -379,35 +379,45 @@ export function getPayoutFee(amountFcfa: number): number {
 export const PAYOUT_FEE_BASE = 550; // frais minimum (pour affichage et validation)
 export const PAYOUT_MIN = 3100;     // montant minimum de retrait côté TRIXHUB
 
+// ── Helper : convertit l'ID court (ex: "MTN") vers le format create_transaction (ex: "mtn_cm")
+export function toPayoutMethodId(methodName: string, countryCode: string): string {
+  return `${methodName.toLowerCase().replace(/\s+/g, "")}_${countryCode.toLowerCase()}`;
+}
+
 export async function createPayout(params: {
   countryCode: string;
   name: string;
   email: string;
   mobile: string;
-  amountToSend: number; // montant FINAL à envoyer à AccountPE (après déduction des frais si applicable)
+  amountToSend: number; // montant FINAL à envoyer (après déduction des frais si applicable)
   currency: string;
   transactionId: string;
-  payoutMethod: string; // id AccountPE (ex: "mtn_cm")
+  payoutMethod: string; // id au format "mtn_cm" ou court "MTN" (sera converti automatiquement)
   description: string;
 }): Promise<{ id: string; status: "pending" | "success" | "failed" }> {
   let token = await getPayoutToken();
 
+  // Normaliser le payout_method au format attendu par create_transaction ("mtn_cm")
+  const payoutMethodId = params.payoutMethod.includes("_")
+    ? params.payoutMethod                                          // déjà au bon format
+    : toPayoutMethodId(params.payoutMethod, params.countryCode);  // convertir "MTN" → "mtn_cm"
+
   const body = {
-    country_code:   params.countryCode,
-    name:           params.name,
-    email:          params.email,
-    mobile:         params.mobile.replace(/\D/g, ""),
-    amount:         Math.max(1, Math.round(params.amountToSend)),
-    currency:       params.currency,
-    transaction_id: params.transactionId,
-    payout_method:  params.payoutMethod,
-    description:    params.description,
+    country_code:      params.countryCode,
+    beneficiary_name:  params.name,
+    beneficiary_email: params.email,
+    mobile_no:         params.mobile.replace(/\D/g, ""),
+    amount:            Math.max(1, Math.round(params.amountToSend)),
+    currency:          params.currency,
+    transaction_id:    params.transactionId,
+    payout_method:     payoutMethodId,
+    description:       params.description,
   };
 
-  console.log("[AccountPE] createPayout →", JSON.stringify({ ...body, email: "***" }));
+  console.log("[AccountPE] createPayout →", JSON.stringify({ ...body, beneficiary_email: "***" }));
 
   async function call(tok: string): Promise<Response> {
-    return fetchWithTimeout(`${PAYOUT_BASE}/create_payout`, {
+    return fetchWithTimeout(`${PAYOUT_BASE}/create_transaction`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify(body),
@@ -424,20 +434,40 @@ export async function createPayout(params: {
   const rawText = await res.text();
   console.log("[AccountPE] createPayout status:", res.status, "body:", rawText.slice(0, 400));
 
-  if (!res.ok) throw new Error(`AccountPE createPayout échoué: status ${res.status} — ${rawText.slice(0, 200)}`);
+  // AccountPE retourne TOUJOURS HTTP 200 — c'est le champ JSON "status" qui indique succès/erreur
+  // Erreur réseau ou auth uniquement
+  if (res.status === 401 || res.status >= 500) {
+    throw new Error(`AccountPE createPayout échoué: status HTTP ${res.status} — ${rawText.slice(0, 200)}`);
+  }
 
   const data = JSON.parse(rawText) as Record<string, unknown>;
-  const inner = (data.data as Record<string, unknown>) ?? data;
+  const jsonStatus = (data.status as number | undefined) ?? 200;
+  const message = (data.message as string | undefined) ?? "";
 
-  const id = (inner.id || inner.payoutId || params.transactionId) as string;
-  const rawStatus = (inner.status ?? 0) as number;
+  // Status JSON 400+ = erreur métier (solde insuffisant, champ invalide, etc.)
+  if (jsonStatus >= 400) {
+    throw new Error(`AccountPE: ${message} (status=${jsonStatus})`);
+  }
+
+  const inner = (data.data as Record<string, unknown>) ?? data;
+  const id = (inner.id || inner.transaction_id || params.transactionId) as string;
+  const rawPayoutStatus = (inner.status ?? inner.payout_status ?? 0) as number | string;
 
   const statusMap: Record<number, "pending" | "success" | "failed"> = {
     0: "pending",
     1: "success",
     2: "failed",
   };
-  const status = statusMap[rawStatus] ?? "pending";
+
+  let status: "pending" | "success" | "failed";
+  if (typeof rawPayoutStatus === "number") {
+    status = statusMap[rawPayoutStatus] ?? "pending";
+  } else {
+    const s = String(rawPayoutStatus).toLowerCase();
+    if (s === "success" || s === "paid" || s === "completed") status = "success";
+    else if (s === "failed" || s === "rejected") status = "failed";
+    else status = "pending";
+  }
 
   return { id, status };
 }
