@@ -28,8 +28,24 @@ function fmtAmount(amount: string | number): string {
   return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " FCFA";
 }
 
+function memberBlock(user: User): string {
+  return (
+    `── Membre ──\n` +
+    `🪪 ${user.displayName || "—"}\n` +
+    `📧 ${user.email}\n` +
+    `📱 ${user.phone}\n` +
+    `🌍 ${user.country}\n` +
+    `🔗 Code : ${user.referralCode}`
+  );
+}
+
+function now(): string {
+  return new Date().toLocaleString("fr-FR", { timeZone: "Africa/Douala" });
+}
+
 /**
- * Envoie un rapport WhatsApp à l'assistance pour la création d'un retrait.
+ * Retraits missions (flux manuel) — notifie l'admin à la création.
+ * Pour les retraits parrainage automatiques, utiliser reportPayoutSuccess ou reportPayoutFailed.
  */
 export async function reportWithdrawalCreated(w: Withdrawal, user: User) {
   const message =
@@ -40,18 +56,79 @@ export async function reportWithdrawalCreated(w: Withdrawal, user: User) {
     `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
     `📞 N° destinataire : ${w.accountNumber}\n` +
     `👤 Titulaire : ${w.accountName}\n\n` +
-    `── Membre ──\n` +
-    `🪪 ${user.displayName || "—"}\n` +
-    `📧 ${user.email}\n` +
-    `📱 ${user.phone}\n` +
-    `🌍 ${user.country}\n` +
-    `🔗 Code : ${user.referralCode}\n\n` +
-    `🕐 ${new Date(w.createdAt).toLocaleString("fr-FR", { timeZone: "Africa/Douala" })}`;
+    memberBlock(user) + "\n\n" +
+    `🕐 ${now()}`;
   return sendWhatsAppToAssistance(message);
 }
 
 /**
- * Envoie un rapport de changement de statut.
+ * Retrait parrainage automatique : AccountPE a accepté ou traitement lancé (pending).
+ * Envoyé uniquement après confirmation de AccountPE.
+ */
+export async function reportPayoutSuccess(
+  w: Withdrawal,
+  user: User,
+  payoutRef: string,
+  payoutStatus: "pending" | "success",
+  amountSent: number,
+  fee: number,
+) {
+  const statusLine = payoutStatus === "success"
+    ? "✅ PAIEMENT CONFIRMÉ PAR ACCOUNTPE"
+    : "🔵 PAIEMENT INITIÉ — EN COURS DE TRAITEMENT";
+
+  const message =
+    `💸 RETRAIT AUTOMATIQUE — #${w.id}\n` +
+    `${statusLine}\n\n` +
+    `💰 Montant demandé : ${fmtAmount(w.amount)}\n` +
+    `💸 Montant envoyé à l'utilisateur : ${fmtAmount(amountSent)}\n` +
+    `🏷️ Frais prélevés : ${fmtAmount(fee)}\n` +
+    `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
+    `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
+    `📞 N° destinataire : ${w.accountNumber}\n` +
+    `👤 Titulaire : ${w.accountName}\n` +
+    `🔑 Réf. AccountPE : ${payoutRef}\n\n` +
+    memberBlock(user) + "\n\n" +
+    `🕐 ${now()}`;
+  return sendWhatsAppToAssistance(message);
+}
+
+/**
+ * Retrait parrainage automatique : AccountPE a refusé ou erreur.
+ * Le solde de l'utilisateur a été restitué automatiquement.
+ */
+export async function reportPayoutFailed(
+  w: Withdrawal,
+  user: User,
+  rawError: string,
+  isInsufficientFunds: boolean,
+  amountRequested: number,
+  totalDebited: number,
+) {
+  const reason = isInsufficientFunds
+    ? "⚠️ SOLDE INSUFFISANT DANS LE PORTEFEUILLE ACCOUNTPE"
+    : "❌ ERREUR TECHNIQUE ACCOUNTPE";
+
+  const message =
+    `🚨 RETRAIT ÉCHOUÉ — #${w.id}\n` +
+    `${reason}\n\n` +
+    `💰 Montant réclamé : ${fmtAmount(amountRequested)}\n` +
+    `💵 Total qui aurait été débité : ${fmtAmount(totalDebited)}\n` +
+    `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
+    `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
+    `📞 N° destinataire : ${w.accountNumber}\n` +
+    `👤 Titulaire : ${w.accountName}\n\n` +
+    (isInsufficientFunds
+      ? `⚡ ACTION REQUISE : recharger le portefeuille AccountPE avant de traiter d'autres retraits.\n\n`
+      : `🔍 Erreur brute : ${rawError.slice(0, 300)}\n\n`) +
+    `♻️ Solde de l'utilisateur restitué automatiquement.\n\n` +
+    memberBlock(user) + "\n\n" +
+    `🕐 ${now()}`;
+  return sendWhatsAppToAssistance(message);
+}
+
+/**
+ * Envoie un rapport de changement de statut (flux admin manuel).
  */
 export async function reportWithdrawalStatusChange(w: Withdrawal, user: User, previousStatus: string, reason?: string | null) {
   const message =
@@ -63,11 +140,7 @@ export async function reportWithdrawalStatusChange(w: Withdrawal, user: User, pr
     `📞 N° destinataire : ${w.accountNumber}\n` +
     `👤 Titulaire : ${w.accountName}\n` +
     (reason ? `\n📝 Motif : ${reason}\n` : "") +
-    `\n── Membre ──\n` +
-    `🪪 ${user.displayName || "—"}\n` +
-    `📧 ${user.email}\n` +
-    `📱 ${user.phone}\n` +
-    `🌍 ${user.country}`;
+    `\n` + memberBlock(user);
   return sendWhatsAppToAssistance(message);
 }
 
@@ -82,6 +155,6 @@ export async function reportWithdrawalProof(w: Withdrawal, user: User, publicUrl
     `👤 ${user.displayName} (${user.email})\n` +
     `📱 ${user.phone}\n\n` +
     `🔗 Capture d'écran :\n${publicUrl}\n\n` +
-    `🕐 ${new Date().toLocaleString("fr-FR", { timeZone: "Africa/Douala" })}`;
+    `🕐 ${now()}`;
   return sendWhatsAppToAssistance(message);
 }

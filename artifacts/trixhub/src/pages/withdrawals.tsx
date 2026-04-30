@@ -231,7 +231,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
     const selectedMethod = payoutMethods.find(m => m.id === values.payoutMethodId);
 
     try {
-      await requestWithdrawal.mutateAsync({
+      const withdrawalResult = await requestWithdrawal.mutateAsync({
         data: {
           amount: safeAmount,
           method: values.payoutMethodId,
@@ -256,19 +256,39 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
       queryClient.invalidateQueries({ queryKey: getGetBalancesQueryKey() });
 
       const received = values.feeMode === "from_balance" ? safeAmount : safeAmount - fee;
-      const feeModeLabel = values.feeMode === "from_balance" ? "frais prélevés sur solde" : "frais déduits du montant";
+      const isConfirmed = (withdrawalResult as { status?: string })?.status === "completed";
       toast({
-        title: "Retrait en cours !",
-        description: `Vous recevrez ${formatLocal(received, user)} (frais ${formatLocal(fee, user)} — ${feeModeLabel}).`,
+        title: isConfirmed ? "Paiement confirmé ✅" : "Paiement envoyé !",
+        description: isConfirmed
+          ? `${formatLocal(received, user)} envoyés sur votre compte Mobile Money.`
+          : `Votre paiement de ${formatLocal(received, user)} est en cours de traitement. Vous le recevrez dans quelques instants.`,
+        duration: 7000,
       });
       onClose();
     } catch (err: unknown) {
-      const errData = (err as { data?: { error?: string; available?: number } })?.data;
+      const errData = (err as { data?: { error?: string; available?: number; code?: string } })?.data;
       if (errData?.available !== undefined) {
+        // Solde utilisateur insuffisant (vérifié côté DB)
         toast({
           title: "Solde insuffisant",
           description: `Votre solde est de ${formatLocal(errData.available, user)}.`,
           variant: "destructive",
+        });
+      } else if (errData?.code === "OPERATOR_INSUFFICIENT_FUNDS") {
+        // Portefeuille AccountPE vide — solde utilisateur restitué automatiquement
+        toast({
+          title: "Paiement temporairement indisponible",
+          description: errData.error ?? "Contactez l'assistance pour finaliser votre retrait.",
+          variant: "destructive",
+          duration: 10000,
+        });
+      } else if (errData?.code === "PAYOUT_FAILED") {
+        // Autre erreur AccountPE — solde restitué
+        toast({
+          title: "Erreur de paiement",
+          description: errData.error ?? "Votre solde a été restitué. Contactez l'assistance.",
+          variant: "destructive",
+          duration: 8000,
         });
       } else {
         toast({ title: "Erreur", description: errData?.error || "Erreur lors de la demande", variant: "destructive" });

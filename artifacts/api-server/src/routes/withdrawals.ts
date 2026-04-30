@@ -7,7 +7,13 @@ import { requireActivation } from "../middlewares/requireActivation";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { withdrawalLimiter } from "../middlewares/rateLimiters";
 import { RequestWithdrawalBody } from "@workspace/api-zod";
-import { reportWithdrawalCreated, reportWithdrawalStatusChange, reportWithdrawalProof } from "../lib/withdrawalReports";
+import {
+  reportWithdrawalCreated,
+  reportWithdrawalStatusChange,
+  reportWithdrawalProof,
+  reportPayoutSuccess,
+  reportPayoutFailed,
+} from "../lib/withdrawalReports";
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
 import {
   createPayout,
@@ -175,62 +181,95 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 
   req.log.info({ userId, amount, totalDebit, fee, feeMode, source: src }, "Withdrawal requested");
 
-  // ─── Payout automatique AccountPE pour les retraits parrainage ───
+  // ─── Payout SYNCHRONE AccountPE pour les retraits parrainage ────────────────
+  // On attend la réponse d'AccountPE avant de notifier l'admin ou de répondre.
+  // Cela garantit que le WhatsApp admin n'est envoyé qu'après confirmation du
+  // partenaire, et que l'utilisateur est immédiatement informé en cas d'échec.
   if (src === "referral") {
     const w = result.withdrawal;
     const countryCode = COUNTRY_CODES[user.country] || "CM";
     const transactionId = `PAY-${Date.now()}-${userId}`;
     const mobile = accountNumber.replace(/\D/g, "");
     const name = user.displayName || accountName;
-    const amountAfterFee = amountSentToAccountPE;
 
-    req.log.info({ transactionId, amount, fee, amountAfterFee, payoutMethod, countryCode }, "[AccountPE] Payout initié");
+    req.log.info({ transactionId, amount, fee, amountSentToAccountPE, payoutMethod, countryCode }, "[AccountPE] Payout initié");
 
-    // Lancer le payout de façon asynchrone (ne bloque pas la réponse HTTP)
-    ;(async () => {
-      try {
-        const { id: payoutRef, status: payoutStatus } = await createPayout({
-          countryCode,
-          name,
-          email: user.email,
-          mobile,
-          amountToSend: amountAfterFee, // montant final après déduction des frais selon feeMode
-          currency: "XAF",
-          transactionId,
-          payoutMethod: payoutMethod!,
-          description: `Retrait parrainage TRIXHUB — ${name} (frais ${fee.toLocaleString("fr-FR")} FCFA ${feeMode === "from_balance" ? "prélevés sur solde" : "déduits"})`,
-        });
+    try {
+      const { id: payoutRef, status: payoutStatus } = await createPayout({
+        countryCode,
+        name,
+        email: user.email,
+        mobile,
+        amountToSend: amountSentToAccountPE,
+        currency: "XAF",
+        transactionId,
+        payoutMethod: payoutMethod!,
+        description: `Retrait parrainage TRIXHUB — ${name} (frais ${fee.toLocaleString("fr-FR")} FCFA ${feeMode === "from_balance" ? "prélevés sur solde" : "déduits"})`,
+      });
 
-        req.log.info({ payoutRef, payoutStatus }, "[AccountPE] Payout créé");
+      req.log.info({ payoutRef, payoutStatus }, "[AccountPE] Payout accepté");
 
-        // Mettre à jour le retrait avec la référence AccountPE
-        await db.update(withdrawalsTable)
-          .set({
-            payoutRef,
-            payoutStatus,
-            status: payoutStatus === "success" ? "completed" : "processing",
-            processedAt: payoutStatus === "success" ? new Date() : undefined,
-          })
-          .where(eq(withdrawalsTable.id, w.id));
+      // Mettre à jour le retrait avec la référence AccountPE
+      const newStatus = payoutStatus === "success" ? "completed" : "processing";
+      await db.update(withdrawalsTable)
+        .set({
+          payoutRef,
+          payoutStatus,
+          status: newStatus,
+          processedAt: payoutStatus === "success" ? new Date() : undefined,
+        })
+        .where(eq(withdrawalsTable.id, w.id));
 
-      } catch (err) {
-        req.log.error({ err, withdrawalId: w.id }, "[AccountPE] Payout échoué");
-        // En cas d'échec AccountPE : on note le statut failed dans la DB
-        // Le retrait reste en "processing" pour traitement manuel par l'admin
-        await db.update(withdrawalsTable)
-          .set({ payoutStatus: "failed" })
-          .where(eq(withdrawalsTable.id, w.id))
-          .catch(() => {});
-      }
-    })();
+      // ✅ Notification WhatsApp admin — uniquement après confirmation AccountPE
+      reportPayoutSuccess(w, user, payoutRef, payoutStatus as "pending" | "success", amountSentToAccountPE, fee).catch((err) => {
+        req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi WhatsApp succès payout");
+      });
 
-    // Notification WhatsApp admin (best-effort)
-    reportWithdrawalCreated(result.withdrawal, user).catch((err) => {
-      req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi rapport retrait Twilio");
-    });
+      res.status(201).json(formatWithdrawal({ ...w, payoutRef, payoutStatus, status: newStatus }));
+      return;
 
-    res.status(201).json(formatWithdrawal(result.withdrawal));
-    return;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      req.log.error({ errMsg, withdrawalId: w.id }, "[AccountPE] Payout échoué — remboursement en cours");
+
+      // Détecter si c'est un problème de solde dans le portefeuille AccountPE
+      const isInsufficientFunds = /insufficient|solde|balance|funds|fonds|wallet|manque/i.test(errMsg);
+
+      // ♻️ Rembourser automatiquement le solde de l'utilisateur
+      await db.transaction(async (tx) => {
+        await tx.update(balancesTable).set({
+          referralBalance: sql`(${balancesTable.referralBalance})::numeric + ${totalDebit.toFixed(2)}::numeric`,
+          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric - ${totalDebit.toFixed(2)}::numeric`,
+        }).where(eq(balancesTable.userId, userId));
+
+        await tx.update(withdrawalsTable).set({
+          payoutStatus: "failed",
+          status: "rejected",
+          rejectionReason: isInsufficientFunds
+            ? "Solde opérateur insuffisant — contactez l'assistance"
+            : "Erreur technique lors du paiement — contactez l'assistance",
+          processedAt: new Date(),
+        }).where(eq(withdrawalsTable.id, w.id));
+      }).catch((dbErr: unknown) => {
+        req.log.error({ dbErr }, "[AccountPE] Remboursement solde échoué — intervention manuelle requise");
+      });
+
+      // 🚨 Notification WhatsApp admin avec la raison exacte de l'échec
+      reportPayoutFailed(w, user, errMsg, isInsufficientFunds, amount, totalDebit).catch((notifErr) => {
+        req.log.warn({ err: notifErr }, "Échec envoi WhatsApp échec payout");
+      });
+
+      // Informer l'utilisateur selon la nature de l'échec
+      const userMessage = isInsufficientFunds
+        ? "Paiement temporairement indisponible : portefeuille opérateur insuffisant. Votre solde a été restitué. Contactez l'assistance pour être traité en priorité."
+        : "Une erreur est survenue lors du paiement. Votre solde a été restitué automatiquement. Contactez l'assistance si le problème persiste.";
+
+      res.status(503).json({
+        error: userMessage,
+        code: isInsufficientFunds ? "OPERATOR_INSUFFICIENT_FUNDS" : "PAYOUT_FAILED",
+      });
+      return;
+    }
   }
 
   // Retraits missions : flux manuel existant
