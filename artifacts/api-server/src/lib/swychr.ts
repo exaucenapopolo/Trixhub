@@ -546,4 +546,30 @@ export const COUNTRY_CODES: Record<string, string> = {
   "Ouganda": "UG",
 };
 
+/**
+ * Devise ISO pour chaque pays supporté.
+ * Le montant FCFA sera converti dans cette devise avant d'être envoyé
+ * au bon portefeuille de notre partenaire de paiement.
+ */
+export const COUNTRY_CURRENCIES: Record<string, string> = {
+  "Bénin":            "XOF",
+  "Burkina Faso":     "XOF",
+  "Cameroun":         "XAF",
+  "Côte d'Ivoire":    "XOF",
+  "Congo-Brazzaville":"XAF",
+  "RD Congo":         "CDF",
+  "Gabon":            "XAF",
+  "Ghana":            "GHS",
+  "Guinée":           "GNF",
+  "Kenya":            "KES",
+  "Mali":             "XOF",
+  "Niger":            "XOF",
+  "Nigeria":          "NGN",
+  "Rwanda":           "RWF",
+  "Sénégal":          "XOF",
+  "Togo":             "XOF",
+  "Tanzanie":         "TZS",
+  "Ouganda":          "UGX",
+};
+
 export { ACCOUNTPE };

@@ -8,6 +8,7 @@ export const CURRENCY_RATES: Record<string, number> = {
   JPY: 0.248,
   NGN: 2.72,
   GHS: 0.0248,
+  GNF: 8.65,
   KES: 0.213,
   MAD: 0.0168,
   TND: 0.00512,

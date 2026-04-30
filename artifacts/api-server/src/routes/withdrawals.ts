@@ -19,8 +19,10 @@ import {
   createPayout,
   getPayoutFee,
   COUNTRY_CODES,
+  COUNTRY_CURRENCIES,
   PAYOUT_MIN,
 } from "../lib/swychr";
+import { CURRENCY_RATES } from "../lib/currency";
 
 const MIN_REFERRAL = PAYOUT_MIN; // 3100 FCFA — aligne avec AccountPE
 const MIN_TASK = 3500;
@@ -187,12 +189,20 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
   // partenaire, et que l'utilisateur est immédiatement informé en cas d'échec.
   if (src === "referral") {
     const w = result.withdrawal;
-    const countryCode = COUNTRY_CODES[user.country] || "CM";
+    const countryCode  = COUNTRY_CODES[user.country]      || "CM";
+    const currency     = COUNTRY_CURRENCIES[user.country] || "XAF";
+    // Convertir le montant FCFA → devise locale du portefeuille AccountPE du pays
+    const fxRate             = CURRENCY_RATES[currency] ?? 1;
+    const amountLocalCurrency = Math.round(amountSentToAccountPE * fxRate);
+
     const transactionId = `PAY-${Date.now()}-${userId}`;
     const mobile = accountNumber.replace(/\D/g, "");
     const name = user.displayName || accountName;
 
-    req.log.info({ transactionId, amount, fee, amountSentToAccountPE, payoutMethod, countryCode }, "[AccountPE] Payout initié");
+    req.log.info(
+      { transactionId, amount, fee, amountSentToAccountPE, amountLocalCurrency, currency, payoutMethod, countryCode },
+      "[AccountPE] Payout initié",
+    );
 
     try {
       const { id: payoutRef, status: payoutStatus } = await createPayout({
@@ -200,8 +210,8 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
         name,
         email: user.email,
         mobile,
-        amountToSend: amountSentToAccountPE,
-        currency: "XAF",
+        amountToSend: amountLocalCurrency,
+        currency,
         transactionId,
         payoutMethod: payoutMethod!,
         description: `Retrait parrainage TRIXHUB — ${name} (frais ${fee.toLocaleString("fr-FR")} FCFA ${feeMode === "from_balance" ? "prélevés sur solde" : "déduits"})`,
