@@ -278,11 +278,22 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
   return arr;
 }
 
-// ── Payout : créer un virement vers le membre ──────────────────────
-// Frais : 550 FCFA déduits du montant avant envoi à AccountPE.
-// Ex : membre demande 3100 → on envoie 2550 à AccountPE.
-export const PAYOUT_FEE = 550;
-export const PAYOUT_MIN = 3100; // minimum côté TRIXHUB (3100 - 550 = 2550 envoyé)
+// ── Barème de frais progressif (en FCFA, basé sur le montant demandé) ──────
+// < 10 000 FCFA       → 550 FCFA
+// 10 000 – 19 999     → 750 FCFA
+// 20 000 – 49 999     → 1 000 FCFA
+// 50 000 – 99 999     → 1 500 FCFA
+// ≥ 100 000           → 2 000 FCFA
+export function getPayoutFee(amountFcfa: number): number {
+  if (amountFcfa < 10_000)  return 550;
+  if (amountFcfa < 20_000)  return 750;
+  if (amountFcfa < 50_000)  return 1_000;
+  if (amountFcfa < 100_000) return 1_500;
+  return 2_000;
+}
+
+export const PAYOUT_FEE_BASE = 550; // frais minimum (pour affichage et validation)
+export const PAYOUT_MIN = 3100;     // montant minimum de retrait côté TRIXHUB
 
 export async function createPayout(params: {
   countryCode: string;
@@ -297,7 +308,8 @@ export async function createPayout(params: {
 }): Promise<{ id: string; status: "pending" | "success" | "failed" }> {
   let token = await getPayoutToken();
 
-  const amountToSend = Math.max(0, params.amount - PAYOUT_FEE);
+  const fee = getPayoutFee(params.amount);
+  const amountToSend = Math.max(0, params.amount - fee);
 
   const body = {
     country_code:   params.countryCode,

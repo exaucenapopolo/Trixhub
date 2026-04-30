@@ -11,8 +11,8 @@ import { reportWithdrawalCreated, reportWithdrawalStatusChange, reportWithdrawal
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
 import {
   createPayout,
+  getPayoutFee,
   COUNTRY_CODES,
-  PAYOUT_FEE,
   PAYOUT_MIN,
 } from "../lib/swychr";
 
@@ -164,11 +164,12 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     const w = result.withdrawal;
     const countryCode = COUNTRY_CODES[user.country] || "CM";
     const transactionId = `PAY-${Date.now()}-${userId}`;
-    const amountAfterFee = amount - PAYOUT_FEE;
+    const fee = getPayoutFee(amount);
+    const amountAfterFee = amount - fee;
     const mobile = accountNumber.replace(/\D/g, "");
     const name = user.displayName || accountName;
 
-    req.log.info({ transactionId, amount, amountAfterFee, payoutMethod, countryCode }, "[AccountPE] Payout initié");
+    req.log.info({ transactionId, amount, fee, amountAfterFee, payoutMethod, countryCode }, "[AccountPE] Payout initié");
 
     // Lancer le payout de façon asynchrone (ne bloque pas la réponse HTTP)
     ;(async () => {
