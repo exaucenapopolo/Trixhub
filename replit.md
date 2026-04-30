@@ -138,7 +138,7 @@ VALUES (sha256(content_of_sql_file), unix_timestamp_ms_from_journal);
 ```
 The `created_at` value comes from `lib/db/migrations/meta/_journal.json` entries[].when.
 
-**Production:** The `artifact.toml` build command runs `drizzle-kit migrate` before building the API server, ensuring the production DB schema is always up to date.
+**Production:** The `artifact.toml` build command runs `drizzle-kit push --force` before building the API server. This command diffs the current schema against the existing DB and only applies what's missing — safe on an existing production database (won't fail if tables already exist).
 
 ## Auth Flow
 
