@@ -279,17 +279,23 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
 }
 
 // ── Barème de frais progressif (en FCFA, basé sur le montant demandé) ──────
-// < 10 000 FCFA       → 550 FCFA
-// 10 000 – 19 999     → 750 FCFA
-// 20 000 – 49 999     → 1 000 FCFA
-// 50 000 – 99 999     → 1 500 FCFA
-// ≥ 100 000           → 2 000 FCFA
+// < 10 000 FCFA         → 550 FCFA
+// 10 000 – 19 999       → 750 FCFA
+// 20 000 – 49 999       → 1 000 FCFA
+// 50 000 – 99 999       → 1 500 FCFA
+// 100 000 – 199 999     → 2 000 FCFA
+// 200 000 – 499 999     → 2 500 FCFA
+// 500 000 – 999 999     → 3 000 FCFA
+// ≥ 1 000 000           → 4 000 FCFA
 export function getPayoutFee(amountFcfa: number): number {
-  if (amountFcfa < 10_000)  return 550;
-  if (amountFcfa < 20_000)  return 750;
-  if (amountFcfa < 50_000)  return 1_000;
-  if (amountFcfa < 100_000) return 1_500;
-  return 2_000;
+  if (amountFcfa < 10_000)   return 550;
+  if (amountFcfa < 20_000)   return 750;
+  if (amountFcfa < 50_000)   return 1_000;
+  if (amountFcfa < 100_000)  return 1_500;
+  if (amountFcfa < 200_000)  return 2_000;
+  if (amountFcfa < 500_000)  return 2_500;
+  if (amountFcfa < 1_000_000) return 3_000;
+  return 4_000;
 }
 
 export const PAYOUT_FEE_BASE = 550; // frais minimum (pour affichage et validation)
@@ -300,7 +306,7 @@ export async function createPayout(params: {
   name: string;
   email: string;
   mobile: string;
-  amount: number;       // montant DEMANDÉ par le membre (avant déduction frais)
+  amountToSend: number; // montant FINAL à envoyer à AccountPE (après déduction des frais si applicable)
   currency: string;
   transactionId: string;
   payoutMethod: string; // id AccountPE (ex: "mtn_cm")
@@ -308,15 +314,12 @@ export async function createPayout(params: {
 }): Promise<{ id: string; status: "pending" | "success" | "failed" }> {
   let token = await getPayoutToken();
 
-  const fee = getPayoutFee(params.amount);
-  const amountToSend = Math.max(0, params.amount - fee);
-
   const body = {
     country_code:   params.countryCode,
     name:           params.name,
     email:          params.email,
     mobile:         params.mobile.replace(/\D/g, ""),
-    amount:         amountToSend,
+    amount:         Math.max(1, Math.round(params.amountToSend)),
     currency:       params.currency,
     transaction_id: params.transactionId,
     payout_method:  params.payoutMethod,

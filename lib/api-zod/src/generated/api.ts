@@ -361,6 +361,11 @@ export const ListWithdrawalsResponseItem = zod.object({
   whatsappNumber: zod.string().nullish(),
   source: zod.string(),
   status: zod.string(),
+  feeMode: zod
+    .string()
+    .nullish()
+    .describe("Mode de paiement des frais: from_amount | from_balance"),
+  feeAmount: zod.number().nullish().describe("Frais prélevés en FCFA"),
   payoutStatus: zod
     .string()
     .nullish()
@@ -394,6 +399,12 @@ export const RequestWithdrawalBody = zod.object({
     .optional()
     .describe(
       "ID AccountPE de la méthode payout (ex: mtn_cm) — obligatoire pour retraits parrainage",
+    ),
+  feeMode: zod
+    .enum(["from_amount", "from_balance"])
+    .optional()
+    .describe(
+      "Mode de paiement des frais: 'from_amount' (frais déduits du montant reçu) ou 'from_balance' (frais prélevés séparément sur le solde parrainage)",
     ),
 });
 

@@ -13,6 +13,9 @@ export const withdrawalsTable = pgTable("withdrawals", {
   source: text("source").notNull().default("referral"), // "referral" | "task"
   status: text("status").notNull().default("pending"), // "pending", "processing", "completed", "rejected"
   rejectionReason: text("rejection_reason"),
+  // Frais de retrait
+  feeMode: text("fee_mode").notNull().default("from_amount"), // "from_amount" | "from_balance"
+  feeAmount: integer("fee_amount"),       // montant des frais prélevés (FCFA, pour traçabilité)
   // Payout automatique AccountPE (source=referral uniquement)
   payoutRef: text("payout_ref"),          // id/référence renvoyé par create_payout AccountPE
   payoutStatus: text("payout_status"),    // "pending" | "success" | "failed" (statut chez AccountPE)

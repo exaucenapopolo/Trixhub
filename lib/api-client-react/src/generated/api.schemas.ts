@@ -169,6 +169,17 @@ export interface ActivateChildResponse {
   message: string;
 }
 
+/**
+ * Mode de paiement des frais: 'from_amount' (frais déduits du montant reçu) ou 'from_balance' (frais prélevés séparément sur le solde parrainage)
+ */
+export type WithdrawalBodyFeeMode =
+  (typeof WithdrawalBodyFeeMode)[keyof typeof WithdrawalBodyFeeMode];
+
+export const WithdrawalBodyFeeMode = {
+  from_amount: "from_amount",
+  from_balance: "from_balance",
+} as const;
+
 export interface WithdrawalBody {
   amount: number;
   /** ID méthode de paiement AccountPE (ex: mtn_cm, orange_cm) ou id interne pour tâches */
@@ -183,6 +194,8 @@ export interface WithdrawalBody {
   whatsappNumber?: string;
   /** ID AccountPE de la méthode payout (ex: mtn_cm) — obligatoire pour retraits parrainage */
   payoutMethod?: string;
+  /** Mode de paiement des frais: 'from_amount' (frais déduits du montant reçu) ou 'from_balance' (frais prélevés séparément sur le solde parrainage) */
+  feeMode?: WithdrawalBodyFeeMode;
 }
 
 export interface Withdrawal {
@@ -195,6 +208,16 @@ export interface Withdrawal {
   whatsappNumber?: string | null;
   source: string;
   status: string;
+  /**
+   * Mode de paiement des frais: from_amount | from_balance
+   * @nullable
+   */
+  feeMode?: string | null;
+  /**
+   * Frais prélevés en FCFA
+   * @nullable
+   */
+  feeAmount?: number | null;
   /**
    * Statut AccountPE payout: pending | success | failed
    * @nullable

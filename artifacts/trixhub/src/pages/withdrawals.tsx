@@ -15,10 +15,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import {
   Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle,
   Users, ChevronRight, Upload, ImageIcon, Loader2, ShieldCheck, Zap,
-  Star, Phone, MessageCircle,
+  Star, Phone, MessageCircle, CreditCard, Coins,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -78,11 +80,14 @@ const MIN_REFERRAL_DEFAULT = 3100;
 
 // Barème progressif des frais (en FCFA, miroir du backend)
 function getPayoutFeeLocal(amountFcfa: number): number {
-  if (amountFcfa < 10_000)  return 550;
-  if (amountFcfa < 20_000)  return 750;
-  if (amountFcfa < 50_000)  return 1_000;
-  if (amountFcfa < 100_000) return 1_500;
-  return 2_000;
+  if (amountFcfa < 10_000)   return 550;
+  if (amountFcfa < 20_000)   return 750;
+  if (amountFcfa < 50_000)   return 1_000;
+  if (amountFcfa < 100_000)  return 1_500;
+  if (amountFcfa < 200_000)  return 2_000;
+  if (amountFcfa < 500_000)  return 2_500;
+  if (amountFcfa < 1_000_000) return 3_000;
+  return 4_000;
 }
 
 export default function WithdrawalsPage() {
@@ -114,6 +119,7 @@ export default function WithdrawalsPage() {
     accountNumber: z.string().min(8, "Numéro Mobile Money requis (min. 8 chiffres)"),
     accountName: z.string().min(3, "Nom du titulaire requis"),
     whatsappNumber: z.string().min(8, "Numéro WhatsApp obligatoire"),
+    feeMode: z.enum(["from_amount", "from_balance"]).default("from_amount"),
   });
 
   type FormValues = z.infer<typeof schema>;
@@ -129,6 +135,7 @@ export default function WithdrawalsPage() {
       accountNumber: user?.phone ?? "",
       accountName: user?.displayName ?? "",
       whatsappNumber: user?.phone ?? "",
+      feeMode: "from_amount",
     },
   });
 
@@ -165,12 +172,14 @@ export default function WithdrawalsPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (values.amount > referralBalance) {
-      toast({
-        title: "Solde insuffisant",
-        description: `Votre solde parrainage est de ${formatLocal(referralBalance, user)}. Vous avez demandé ${formatLocal(values.amount, user)}.`,
-        variant: "destructive",
-      });
+    const fee = getPayoutFeeLocal(values.amount);
+    const debitTotal = values.feeMode === "from_balance" ? values.amount + fee : values.amount;
+
+    if (debitTotal > referralBalance) {
+      const msg = values.feeMode === "from_balance"
+        ? `Il vous faut ${formatLocal(debitTotal, user)} (montant + frais ${fee.toLocaleString("fr-FR")} FCFA) mais votre solde est de ${formatLocal(referralBalance, user)}.`
+        : `Votre solde parrainage est de ${formatLocal(referralBalance, user)}. Vous avez demandé ${formatLocal(values.amount, user)}.`;
+      toast({ title: "Solde insuffisant", description: msg, variant: "destructive" });
       return;
     }
 
@@ -186,6 +195,7 @@ export default function WithdrawalsPage() {
           source: "referral",
           whatsappNumber: values.whatsappNumber,
           payoutMethod: values.payoutMethodId,
+          feeMode: values.feeMode,
         },
       });
 
@@ -200,10 +210,11 @@ export default function WithdrawalsPage() {
 
       queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetBalancesQueryKey() });
-      const fee = getPayoutFeeLocal(values.amount);
+      const received = values.feeMode === "from_balance" ? values.amount : values.amount - fee;
+      const feeModeLabel = values.feeMode === "from_balance" ? "frais prélevés sur solde" : "frais déduits du montant";
       toast({
         title: "Retrait en cours !",
-        description: `Votre virement de ${formatLocal(values.amount - fee, user)} (après ${fee.toLocaleString("fr-FR")} FCFA de frais) a été lancé automatiquement.`,
+        description: `Vous recevrez ${formatLocal(received, user)} (${fee.toLocaleString("fr-FR")} FCFA de frais — ${feeModeLabel}).`,
       });
       form.reset();
       setDialogOpen(false);
@@ -267,8 +278,17 @@ export default function WithdrawalsPage() {
   };
 
   const watchedAmount = form.watch("amount");
+  const watchedFeeMode = form.watch("feeMode");
   const currentFee = getPayoutFeeLocal(watchedAmount || 0);
-  const amountAfterFee = Math.max(0, (watchedAmount || 0) - currentFee);
+  // from_amount : l'utilisateur reçoit (amount - fee), solde débité de amount
+  // from_balance : l'utilisateur reçoit amount, solde débité de (amount + fee)
+  const amountReceived = watchedFeeMode === "from_balance"
+    ? (watchedAmount || 0)
+    : Math.max(0, (watchedAmount || 0) - currentFee);
+  const totalDebit = watchedFeeMode === "from_balance"
+    ? (watchedAmount || 0) + currentFee
+    : (watchedAmount || 0);
+  const hasEnoughForFromBalance = referralBalance >= totalDebit;
 
   return (
     <Layout>
@@ -521,15 +541,89 @@ export default function WithdrawalsPage() {
                         data-testid="input-withdrawal-amount"
                       />
                     </FormControl>
-                    {watchedAmount >= MIN_REFERRAL && (
-                      <p className="text-[11px] text-muted-foreground">
-                        Vous recevrez <strong className="text-foreground">{formatLocal(amountAfterFee, user)}</strong>{" "}
-                        (après <strong>{currentFee.toLocaleString("fr-FR")} FCFA</strong> de frais AccountPe)
-                      </p>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                {/* ─── Mode de paiement des frais ─── */}
+                {watchedAmount >= MIN_REFERRAL && (
+                  <FormField control={form.control} name="feeMode" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold">Comment payer les frais ?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="grid grid-cols-1 gap-2 mt-1"
+                        >
+                          {/* Option 1 : frais déduits du montant reçu */}
+                          <Label
+                            htmlFor="fee-from-amount"
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              field.value === "from_amount"
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                          >
+                            <RadioGroupItem value="from_amount" id="fee-from-amount" className="mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <CreditCard size={14} className="text-primary shrink-0" />
+                                <span className="text-sm font-medium">Déduire du montant reçu</span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                Vous demandez <strong>{(watchedAmount || 0).toLocaleString("fr-FR")} FCFA</strong>,
+                                vous recevrez <strong className="text-foreground">{formatLocal(amountReceived, user)}</strong>.
+                                Votre solde est débité de <strong>{(watchedAmount || 0).toLocaleString("fr-FR")} FCFA</strong>.
+                              </p>
+                            </div>
+                          </Label>
+
+                          {/* Option 2 : frais prélevés sur le solde */}
+                          <Label
+                            htmlFor="fee-from-balance"
+                            className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                              !hasEnoughForFromBalance && field.value !== "from_balance"
+                                ? "opacity-50 cursor-not-allowed"
+                                : "cursor-pointer"
+                            } ${
+                              field.value === "from_balance"
+                                ? "border-emerald-500 bg-emerald-500/5"
+                                : "border-border hover:border-emerald-500/50"
+                            }`}
+                          >
+                            <RadioGroupItem
+                              value="from_balance"
+                              id="fee-from-balance"
+                              className="mt-0.5"
+                              disabled={!hasEnoughForFromBalance}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Coins size={14} className="text-emerald-500 shrink-0" />
+                                <span className="text-sm font-medium">Prélever sur mon solde</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-semibold">Recommandé</span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                Vous recevrez le montant plein{" "}
+                                <strong className="text-foreground">{formatLocal(watchedAmount || 0, user)}</strong>.
+                                Votre solde est débité de{" "}
+                                <strong>{totalDebit.toLocaleString("fr-FR")} FCFA</strong>{" "}
+                                (montant + <strong>{currentFee.toLocaleString("fr-FR")} FCFA</strong> de frais).
+                                {!hasEnoughForFromBalance && (
+                                  <span className="block text-amber-500 mt-0.5">
+                                    Solde insuffisant — il vous manque{" "}
+                                    {(totalDebit - referralBalance).toLocaleString("fr-FR")} FCFA.
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </Label>
+                        </RadioGroup>
+                      </FormControl>
+                    </FormItem>
+                  )} />
+                )}
 
                 {/* Méthode de paiement (dynamique depuis AccountPE) */}
                 <FormField control={form.control} name="payoutMethodId" render={({ field }) => (
@@ -606,13 +700,16 @@ export default function WithdrawalsPage() {
                   <div className="text-xs text-foreground space-y-1">
                     <p>Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.</p>
                     <p className="text-muted-foreground">
-                      Frais selon le montant :
+                      Barème des frais :
                       <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5 ml-1">
-                        <span>moins de 10 000 FCFA → <strong>550 FCFA</strong></span>
-                        <span>10 000–19 999 → <strong>750 FCFA</strong></span>
-                        <span>20 000–49 999 → <strong>1 000 FCFA</strong></span>
-                        <span>50 000–99 999 → <strong>1 500 FCFA</strong></span>
-                        <span>100 000+ → <strong>2 000 FCFA</strong></span>
+                        <span>{'<'} 10 000 → <strong>550 FCFA</strong></span>
+                        <span>10–19 999 → <strong>750</strong></span>
+                        <span>20–49 999 → <strong>1 000</strong></span>
+                        <span>50–99 999 → <strong>1 500</strong></span>
+                        <span>100–199 999 → <strong>2 000</strong></span>
+                        <span>200–499 999 → <strong>2 500</strong></span>
+                        <span>500–999 999 → <strong>3 000</strong></span>
+                        <span>1 000 000+ → <strong>4 000 FCFA</strong></span>
                       </span>
                     </p>
                   </div>

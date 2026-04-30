@@ -1102,6 +1102,10 @@ components:
         payoutMethod:
           type: string
           description: "ID AccountPE de la méthode payout (ex: mtn_cm) — obligatoire pour retraits parrainage"
+        feeMode:
+          type: string
+          enum: [from_amount, from_balance]
+          description: "Mode de paiement des frais: 'from_amount' (frais déduits du montant reçu) ou 'from_balance' (frais prélevés séparément sur le solde parrainage)"
       required: [amount, method, accountNumber, accountName, source]
 
     Withdrawal:
@@ -1123,6 +1127,12 @@ components:
           type: string
         status:
           type: string
+        feeMode:
+          type: ["string", "null"]
+          description: "Mode de paiement des frais: from_amount | from_balance"
+        feeAmount:
+          type: ["integer", "null"]
+          description: "Frais prélevés en FCFA"
         payoutStatus:
           type: ["string", "null"]
           description: "Statut AccountPE payout: pending | success | failed"

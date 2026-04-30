@@ -9,11 +9,14 @@ const router: IRouter = Router();
 
 // Barème de frais : paliers visibles à tous (pour l'UI)
 const PAYOUT_FEE_TIERS = [
-  { upTo: 9_999,   fee: 550 },
-  { upTo: 19_999,  fee: 750 },
-  { upTo: 49_999,  fee: 1_000 },
-  { upTo: 99_999,  fee: 1_500 },
-  { upTo: Infinity, fee: 2_000 },
+  { upTo: 9_999,     fee: 550 },
+  { upTo: 19_999,    fee: 750 },
+  { upTo: 49_999,    fee: 1_000 },
+  { upTo: 99_999,    fee: 1_500 },
+  { upTo: 199_999,   fee: 2_000 },
+  { upTo: 499_999,   fee: 2_500 },
+  { upTo: 999_999,   fee: 3_000 },
+  { upTo: Infinity,  fee: 4_000 },
 ];
 
 router.get("/config/platform", async (_req, res): Promise<void> => {

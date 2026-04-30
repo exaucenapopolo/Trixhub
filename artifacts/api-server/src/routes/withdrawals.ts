@@ -44,6 +44,8 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
     whatsappNumber: w.whatsappNumber ?? null,
     source: w.source ?? "referral",
     status: w.status,
+    feeMode: w.feeMode ?? "from_amount",
+    feeAmount: w.feeAmount ?? null,
     rejectionReason: w.rejectionReason ?? null,
     proofUrl: w.proofUrl ?? null,
     proofUploadedAt: w.proofUploadedAt ? w.proofUploadedAt.toISOString() : null,
@@ -69,9 +71,10 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     return;
   }
 
-  const { amount, method, accountNumber, accountName, source, whatsappNumber, payoutMethod } = parsed.data;
+  const { amount, method, accountNumber, accountName, source, whatsappNumber, payoutMethod, feeMode: rawFeeMode } = parsed.data;
   const src = source === "task" ? "task" : "referral";
   const minAmount = src === "task" ? MIN_TASK : MIN_REFERRAL;
+  const feeMode: "from_amount" | "from_balance" = rawFeeMode === "from_balance" ? "from_balance" : "from_amount";
 
   if (amount < minAmount) {
     res.status(400).json({
@@ -98,32 +101,43 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     return;
   }
 
+  const fee = getPayoutFee(amount);
+
+  // ─── Calcul du montant total à débiter du solde ───────────────────────────
+  // from_amount : on débite `amount`, AccountPE reçoit `amount - fee`, l'utilisateur reçoit `amount - fee`
+  // from_balance : on débite `amount + fee`, AccountPE reçoit `amount`, l'utilisateur reçoit `amount`
+  const totalDebit = feeMode === "from_balance" ? amount + fee : amount;
+  const amountSentToAccountPE = feeMode === "from_balance" ? amount : amount - fee;
+
   const sourceColumn = src === "task" ? balancesTable.taskBalance : balancesTable.referralBalance;
   const userId = req.userId!;
 
   type TxResult =
     | { ok: true; withdrawal: typeof withdrawalsTable.$inferSelect }
-    | { ok: false; available: number };
+    | { ok: false; available: number; reason: string };
 
   const result = await db.transaction(async (tx): Promise<TxResult> => {
     const decrementSql = src === "task"
-      ? { taskBalance: sql`(${balancesTable.taskBalance})::numeric - ${amount.toFixed(2)}::numeric`,
-          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${amount.toFixed(2)}::numeric` }
-      : { referralBalance: sql`(${balancesTable.referralBalance})::numeric - ${amount.toFixed(2)}::numeric`,
-          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${amount.toFixed(2)}::numeric` };
+      ? { taskBalance: sql`(${balancesTable.taskBalance})::numeric - ${totalDebit.toFixed(2)}::numeric`,
+          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${totalDebit.toFixed(2)}::numeric` }
+      : { referralBalance: sql`(${balancesTable.referralBalance})::numeric - ${totalDebit.toFixed(2)}::numeric`,
+          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${totalDebit.toFixed(2)}::numeric` };
 
     const updated = await tx.update(balancesTable)
       .set(decrementSql)
       .where(and(
         eq(balancesTable.userId, userId),
-        gte(sql`(${sourceColumn})::numeric`, sql`${amount.toFixed(2)}::numeric`),
+        gte(sql`(${sourceColumn})::numeric`, sql`${totalDebit.toFixed(2)}::numeric`),
       ))
       .returning();
 
     if (updated.length === 0) {
       const [b] = await tx.select().from(balancesTable).where(eq(balancesTable.userId, userId));
       const available = b ? parseFloat(src === "task" ? b.taskBalance : b.referralBalance) : 0;
-      return { ok: false, available };
+      const reason = feeMode === "from_balance"
+        ? `Solde insuffisant pour couvrir le montant + les frais (${fee.toLocaleString("fr-FR")} FCFA). Il vous faut au moins ${totalDebit.toLocaleString("fr-FR")} FCFA.`
+        : `Solde ${src === "task" ? "missions" : "parrainage"} insuffisant`;
+      return { ok: false, available, reason };
     }
 
     const [withdrawal] = await tx.insert(withdrawalsTable).values({
@@ -134,14 +148,16 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
       accountName,
       whatsappNumber: whatsappNumber ?? null,
       source: src,
-      status: src === "referral" ? "processing" : "pending", // parrainage → AccountPE traite
+      feeMode,
+      feeAmount: fee,
+      status: src === "referral" ? "processing" : "pending",
     }).returning();
 
     await tx.insert(transactionsTable).values({
       userId,
       type: "withdrawal",
-      amount: `-${amount.toFixed(2)}`,
-      description: `Retrait ${src === "task" ? "missions" : "parrainage"} via ${method}`,
+      amount: `-${totalDebit.toFixed(2)}`,
+      description: `Retrait ${src === "task" ? "missions" : "parrainage"} via ${method} (frais ${feeMode === "from_balance" ? "sur solde" : "déduits"} : ${fee.toLocaleString("fr-FR")} FCFA)`,
       status: "pending",
     });
 
@@ -150,24 +166,23 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 
   if (!result.ok) {
     res.status(400).json({
-      error: `Solde ${src === "task" ? "missions" : "parrainage"} insuffisant`,
+      error: result.reason,
       available: result.available,
       source: src,
     });
     return;
   }
 
-  req.log.info({ userId, amount, source: src }, "Withdrawal requested");
+  req.log.info({ userId, amount, totalDebit, fee, feeMode, source: src }, "Withdrawal requested");
 
   // ─── Payout automatique AccountPE pour les retraits parrainage ───
   if (src === "referral") {
     const w = result.withdrawal;
     const countryCode = COUNTRY_CODES[user.country] || "CM";
     const transactionId = `PAY-${Date.now()}-${userId}`;
-    const fee = getPayoutFee(amount);
-    const amountAfterFee = amount - fee;
     const mobile = accountNumber.replace(/\D/g, "");
     const name = user.displayName || accountName;
+    const amountAfterFee = amountSentToAccountPE;
 
     req.log.info({ transactionId, amount, fee, amountAfterFee, payoutMethod, countryCode }, "[AccountPE] Payout initié");
 
@@ -179,11 +194,11 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
           name,
           email: user.email,
           mobile,
-          amount,
+          amountToSend: amountAfterFee, // montant final après déduction des frais selon feeMode
           currency: "XAF",
           transactionId,
           payoutMethod: payoutMethod!,
-          description: `Retrait parrainage TRIXHUB — ${name}`,
+          description: `Retrait parrainage TRIXHUB — ${name} (frais ${fee.toLocaleString("fr-FR")} FCFA ${feeMode === "from_balance" ? "prélevés sur solde" : "déduits"})`,
         });
 
         req.log.info({ payoutRef, payoutStatus }, "[AccountPE] Payout créé");
