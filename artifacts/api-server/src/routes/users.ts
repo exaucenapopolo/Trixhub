@@ -9,7 +9,6 @@ import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus";
 import {
   uploadAvatarImage,
   deleteAvatarObject,
-  getPublicAvatarUrl,
   ALLOWED_AVATAR_TYPES,
   AVATAR_MAX_SIZE,
 } from "../lib/uploadAvatar";
@@ -128,7 +127,7 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
       ? {
           name: sponsor.displayName ?? sponsor.email.split("@")[0],
           referralCode: sponsor.referralCode,
-          avatarUrl: sponsor.avatarUrl ? getPublicAvatarUrl(req, sponsor.avatarUrl) : null,
+          avatarUrl: sponsor.avatarUrl ?? null,
         }
       : null,
   });
