@@ -69,9 +69,9 @@ const STATUS_CONFIG = {
 };
 
 const PAYOUT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending: { label: "AccountPE : en attente", color: "text-amber-500" },
-  success: { label: "AccountPE : envoyé ✓", color: "text-green-500" },
-  failed: { label: "AccountPE : échec", color: "text-red-500" },
+  pending: { label: "Partenaire : en attente", color: "text-amber-500" },
+  success: { label: "Partenaire : envoyé ✓", color: "text-green-500" },
+  failed: { label: "Partenaire : échec", color: "text-red-500" },
 };
 
 const MIN_REFERRAL_DEFAULT = 3100;
@@ -564,7 +564,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
               <div className="flex items-start gap-2 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                 <Zap size={14} className="text-emerald-500 mt-0.5 shrink-0" />
                 <div className="text-xs text-foreground space-y-1.5">
-                  <p>Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.</p>
+                  <p>Virement <strong>automatique en moins de 1 minute</strong> via notre partenaire de paiement.</p>
                   <div className="flex flex-col gap-1 pt-0.5">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Frais de traitement</span>
@@ -743,7 +743,7 @@ export default function WithdrawalsPage() {
             <div>
               <p className="text-sm font-semibold text-foreground">Paiement automatique en 1 minute</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Dès que votre demande est envoyée, le virement Mobile Money est déclenché automatiquement via AccountPe.
+                Dès que votre demande est envoyée, le virement Mobile Money est déclenché automatiquement via notre partenaire de paiement.
                 Frais de traitement à partir de <strong>{formatLocal(550, user)}</strong>. Si rien reçu après 5 minutes, contactez l'assistance.
               </p>
             </div>
