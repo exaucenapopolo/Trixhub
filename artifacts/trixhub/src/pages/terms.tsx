@@ -131,8 +131,35 @@ export default function TermsPage() {
             </section>
 
             <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">9b. Recrutement honnête — obligation de vérité</h2>
+              <p>
+                Tout membre qui parraine d'autres personnes s'engage à leur présenter TRIXHUB de manière <strong className="text-foreground">honnête, complète et sans exagération</strong>. Le parrainage sur TRIXHUB n'est pas un droit de tromper autrui pour encaisser une commission.
+              </p>
+              <p className="mt-2 font-medium text-foreground">Sont strictement interdits lors du recrutement de filleuls :</p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Promettre des gains faciles, rapides ou en grande quantité sans effort réel</li>
+                <li>Affirmer que la plateforme rémunère automatiquement sans travail ni engagement</li>
+                <li>Mentir sur le montant, la fréquence ou la garantie des gains potentiels</li>
+                <li>Exercer une pression, un harcèlement ou une manipulation sur une personne pour la forcer à s'inscrire ou à activer son compte</li>
+                <li>Faire croire qu'il s'agit d'un système d'enrichissement rapide ou d'un investissement</li>
+                <li>Omettre volontairement d'informer un futur membre que les gains dépendent de son propre travail et ne sont pas garantis</li>
+              </ul>
+              <p className="mt-3">
+                <strong className="text-foreground">Le rôle d'un bon parrain sur TRIXHUB est d'expliquer clairement la plateforme</strong> : ce qu'elle offre, comment elle fonctionne, et ce que le futur membre devra faire pour gagner. Un membre trompé est un membre déçu — et cela nuit à toute la communauté.
+              </p>
+            </section>
+
+            <section>
               <h2 className="text-lg font-semibold text-foreground mb-2">10. Suspension et résiliation</h2>
-              <p>TRIXHUB se réserve le droit de suspendre ou de supprimer tout compte en cas de violation des présentes conditions, sans préavis et sans remboursement des soldes éventuels.</p>
+              <p>
+                TRIXHUB se réserve le droit de <strong className="text-foreground">suspendre ou de supprimer définitivement</strong> tout compte en cas de violation des présentes conditions, et notamment en cas de recrutement frauduleux ou de tromperie envers d'autres membres.
+              </p>
+              <p className="mt-2">
+                <strong className="text-foreground">⚠️ La présence d'un solde dans le compte ne protège pas contre la suspension.</strong> En cas de violation avérée, le compte peut être fermé immédiatement, sans préavis, et sans remboursement d'aucun solde (parrainage, activités, bonus ou autre). Les gains accumulés via des pratiques frauduleuses sont définitivement perdus.
+              </p>
+              <p className="mt-2">
+                Les signalements de membres abusifs peuvent être effectués depuis la page de support de la plateforme. TRIXHUB s'engage à traiter chaque signalement sérieusement et à protéger ses membres contre les recruteurs malhonnêtes.
+              </p>
             </section>
 
             <section>
