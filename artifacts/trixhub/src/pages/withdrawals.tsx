@@ -16,7 +16,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import {
   Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle,
   Users, ChevronRight, Upload, ImageIcon, Loader2, ShieldCheck, Zap,
@@ -78,6 +77,18 @@ const PAYOUT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 
 const MIN_REFERRAL_DEFAULT = 3100;
 
+// Schéma de base défini UNE SEULE FOIS hors du composant
+// La validation du minimum est faite manuellement dans onSubmit
+const withdrawalSchema = z.object({
+  amount: z.number({ coerce: true }).min(1, "Montant invalide"),
+  payoutMethodId: z.string().min(1, "Choisissez une méthode"),
+  accountNumber: z.string().min(8, "Numéro Mobile Money requis (min. 8 chiffres)"),
+  accountName: z.string().min(3, "Nom du titulaire requis"),
+  whatsappNumber: z.string().min(8, "Numéro WhatsApp obligatoire"),
+  feeMode: z.enum(["from_amount", "from_balance"]),
+});
+type WithdrawalFormValues = z.infer<typeof withdrawalSchema>;
+
 // Barème progressif des frais (en FCFA, miroir du backend)
 function getPayoutFeeLocal(amountFcfa: number): number {
   if (amountFcfa < 10_000)   return 550;
@@ -113,28 +124,17 @@ export default function WithdrawalsPage() {
   const MIN_REFERRAL = platformConfig?.minimumWithdrawal ?? MIN_REFERRAL_DEFAULT;
   const payoutMethods = payoutMethodsData?.methods ?? [];
 
-  const schema = z.object({
-    amount: z.number({ coerce: true }).min(MIN_REFERRAL, `Minimum ${MIN_REFERRAL.toLocaleString("fr-FR")} FCFA`),
-    payoutMethodId: z.string().min(1, "Choisissez une méthode"),
-    accountNumber: z.string().min(8, "Numéro Mobile Money requis (min. 8 chiffres)"),
-    accountName: z.string().min(3, "Nom du titulaire requis"),
-    whatsappNumber: z.string().min(8, "Numéro WhatsApp obligatoire"),
-    feeMode: z.enum(["from_amount", "from_balance"]).default("from_amount"),
-  });
-
-  type FormValues = z.infer<typeof schema>;
-
   const referralBalance = balances?.referralBalance ?? 0;
   const canWithdraw = referralBalance >= MIN_REFERRAL;
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<WithdrawalFormValues>({
+    resolver: zodResolver(withdrawalSchema),
     defaultValues: {
-      amount: MIN_REFERRAL,
+      amount: MIN_REFERRAL_DEFAULT,
       payoutMethodId: "",
-      accountNumber: user?.phone ?? "",
-      accountName: user?.displayName ?? "",
-      whatsappNumber: user?.phone ?? "",
+      accountNumber: "",
+      accountName: "",
+      whatsappNumber: "",
       feeMode: "from_amount",
     },
   });
@@ -160,6 +160,7 @@ export default function WithdrawalsPage() {
       accountNumber: user?.phone ?? "",
       accountName: user?.displayName ?? "",
       whatsappNumber: user?.phone ?? "",
+      feeMode: "from_amount",
     });
     setDialogOpen(true);
   };
@@ -171,7 +172,12 @@ export default function WithdrawalsPage() {
     if (fav.payoutMethodId) form.setValue("payoutMethodId", fav.payoutMethodId);
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: WithdrawalFormValues) => {
+    if (values.amount < MIN_REFERRAL) {
+      form.setError("amount", { message: `Minimum ${MIN_REFERRAL.toLocaleString("fr-FR")} FCFA` });
+      return;
+    }
+
     const fee = getPayoutFeeLocal(values.amount);
     const debitTotal = values.feeMode === "from_balance" ? values.amount + fee : values.amount;
 
@@ -557,15 +563,18 @@ export default function WithdrawalsPage() {
                           className="grid grid-cols-1 gap-2 mt-1"
                         >
                           {/* Option 1 : frais déduits du montant reçu */}
-                          <Label
-                            htmlFor="fee-from-amount"
-                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => field.onChange("from_amount")}
+                            onKeyDown={e => e.key === "Enter" && field.onChange("from_amount")}
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors select-none ${
                               field.value === "from_amount"
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:border-primary/50"
                             }`}
                           >
-                            <RadioGroupItem value="from_amount" id="fee-from-amount" className="mt-0.5" />
+                            <RadioGroupItem value="from_amount" className="mt-0.5 pointer-events-none" />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <CreditCard size={14} className="text-primary shrink-0" />
@@ -577,13 +586,16 @@ export default function WithdrawalsPage() {
                                 Votre solde est débité de <strong>{(watchedAmount || 0).toLocaleString("fr-FR")} FCFA</strong>.
                               </p>
                             </div>
-                          </Label>
+                          </div>
 
                           {/* Option 2 : frais prélevés sur le solde */}
-                          <Label
-                            htmlFor="fee-from-balance"
-                            className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                              !hasEnoughForFromBalance && field.value !== "from_balance"
+                          <div
+                            role="button"
+                            tabIndex={hasEnoughForFromBalance ? 0 : -1}
+                            onClick={() => hasEnoughForFromBalance && field.onChange("from_balance")}
+                            onKeyDown={e => e.key === "Enter" && hasEnoughForFromBalance && field.onChange("from_balance")}
+                            className={`flex items-start gap-3 p-3 rounded-lg border transition-colors select-none ${
+                              !hasEnoughForFromBalance
                                 ? "opacity-50 cursor-not-allowed"
                                 : "cursor-pointer"
                             } ${
@@ -594,8 +606,7 @@ export default function WithdrawalsPage() {
                           >
                             <RadioGroupItem
                               value="from_balance"
-                              id="fee-from-balance"
-                              className="mt-0.5"
+                              className="mt-0.5 pointer-events-none"
                               disabled={!hasEnoughForFromBalance}
                             />
                             <div className="flex-1 min-w-0">
@@ -613,12 +624,12 @@ export default function WithdrawalsPage() {
                                 {!hasEnoughForFromBalance && (
                                   <span className="block text-amber-500 mt-0.5">
                                     Solde insuffisant — il vous manque{" "}
-                                    {(totalDebit - referralBalance).toLocaleString("fr-FR")} FCFA.
+                                    {Math.max(0, totalDebit - referralBalance).toLocaleString("fr-FR")} FCFA.
                                   </span>
                                 )}
                               </p>
                             </div>
-                          </Label>
+                          </div>
                         </RadioGroup>
                       </FormControl>
                     </FormItem>
