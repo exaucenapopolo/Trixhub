@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard, Users, CheckSquare, Wallet, User, LogOut,
   Menu, Sun, Moon, ChevronDown, PlayCircle, HelpCircle, Compass,
-  Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink
+  Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink, ShieldCheck
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 import PartnersFooter from "@/components/PartnersFooter";
@@ -15,6 +15,7 @@ import { formatLocal, type CurrencyTarget } from "@/lib/currency";
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
 
@@ -58,6 +59,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const logoutMutation = useLogout();
 
+  const isAdmin = !!(user && (user.isAdmin || ADMIN_EMAILS.includes(user.email)));
   const displayName = user?.displayName || user?.email?.split("@")[0] || "Membre";
   const initials = displayName.charAt(0).toUpperCase();
   const avatarSrc = resolveAvatarUrl(user?.avatarUrl);
@@ -214,6 +216,23 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">NEW</span>
           </Link>
         </div>
+
+        {/* Lien Admin — visible uniquement pour les admins */}
+        {isAdmin && (
+          <div className="mt-2 pt-2 border-t border-sidebar-border/50">
+            <Link href="/admin"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                location === "/admin" ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
+              )}
+              data-testid="link-admin">
+              <ShieldCheck size={17} />
+              <span className="flex-1">Admin</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-500">ADMIN</span>
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* User area */}

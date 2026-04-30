@@ -14,6 +14,7 @@ import storageRouter from "./storage";
 import activitiesRouter from "./activities";
 import activityWithdrawalsRouter from "./activityWithdrawals";
 import activitySchedulesRouter from "./activitySchedules";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(storageRouter);
 router.use(activitiesRouter);
 router.use(activityWithdrawalsRouter);
 router.use(activitySchedulesRouter);
+router.use(adminRouter);
 
 export default router;
