@@ -218,14 +218,23 @@ export interface Task {
   url?: string | null;
 }
 
+export interface PayoutFeeTier {
+  /** Montant maximum du palier (en FCFA). Infinity = pas de limite. */
+  upTo: number;
+  /** Frais en FCFA pour ce palier */
+  fee: number;
+}
+
 export interface PlatformConfig {
   activationFee: number;
   level1Commission: number;
   level2Commission: number;
   level3Commission: number;
   minimumWithdrawal: number;
-  /** Frais AccountPE déduits du montant envoyé (550 FCFA) */
-  payoutFee?: number;
+  /** Frais minimum (palier < 10 000 FCFA) */
+  payoutFeeBase?: number;
+  /** Barème progressif des frais de retrait */
+  payoutFeeTiers?: PayoutFeeTier[];
   currency: string;
 }
 

@@ -1153,6 +1153,17 @@ components:
           type: ["string", "null"]
       required: [id, title, description, reward, type, isCompleted]
 
+    PayoutFeeTier:
+      type: object
+      properties:
+        upTo:
+          type: number
+          description: "Montant maximum du palier (en FCFA). Infinity = pas de limite."
+        fee:
+          type: number
+          description: "Frais en FCFA pour ce palier"
+      required: [upTo, fee]
+
     PlatformConfig:
       type: object
       properties:
@@ -1166,9 +1177,14 @@ components:
           type: number
         minimumWithdrawal:
           type: number
-        payoutFee:
+        payoutFeeBase:
           type: number
-          description: "Frais AccountPE déduits du montant envoyé (550 FCFA)"
+          description: "Frais minimum (palier < 10 000 FCFA)"
+        payoutFeeTiers:
+          type: array
+          description: "Barème progressif des frais de retrait"
+          items:
+            $ref: "#/components/schemas/PayoutFeeTier"
         currency:
           type: string
       required: [activationFee, level1Commission, level2Commission, level3Commission, minimumWithdrawal, currency]

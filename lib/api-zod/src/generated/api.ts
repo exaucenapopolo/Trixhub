@@ -439,10 +439,23 @@ export const GetPlatformConfigResponse = zod.object({
   level2Commission: zod.number(),
   level3Commission: zod.number(),
   minimumWithdrawal: zod.number(),
-  payoutFee: zod
+  payoutFeeBase: zod
     .number()
     .optional()
-    .describe("Frais AccountPE déduits du montant envoyé (550 FCFA)"),
+    .describe("Frais minimum (palier < 10 000 FCFA)"),
+  payoutFeeTiers: zod
+    .array(
+      zod.object({
+        upTo: zod
+          .number()
+          .describe(
+            "Montant maximum du palier (en FCFA). Infinity = pas de limite.",
+          ),
+        fee: zod.number().describe("Frais en FCFA pour ce palier"),
+      }),
+    )
+    .optional()
+    .describe("Barème progressif des frais de retrait"),
   currency: zod.string(),
 });
 

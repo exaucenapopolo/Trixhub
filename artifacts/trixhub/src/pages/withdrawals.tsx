@@ -75,7 +75,15 @@ const PAYOUT_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
 };
 
 const MIN_REFERRAL_DEFAULT = 3100;
-const PAYOUT_FEE_DEFAULT = 550;
+
+// Barème progressif des frais (en FCFA, miroir du backend)
+function getPayoutFeeLocal(amountFcfa: number): number {
+  if (amountFcfa < 10_000)  return 550;
+  if (amountFcfa < 20_000)  return 750;
+  if (amountFcfa < 50_000)  return 1_000;
+  if (amountFcfa < 100_000) return 1_500;
+  return 2_000;
+}
 
 export default function WithdrawalsPage() {
   const { user } = useAuth();
@@ -98,7 +106,6 @@ export default function WithdrawalsPage() {
   const { toast } = useToast();
 
   const MIN_REFERRAL = platformConfig?.minimumWithdrawal ?? MIN_REFERRAL_DEFAULT;
-  const PAYOUT_FEE = platformConfig?.payoutFee ?? PAYOUT_FEE_DEFAULT;
   const payoutMethods = payoutMethodsData?.methods ?? [];
 
   const schema = z.object({
@@ -193,9 +200,10 @@ export default function WithdrawalsPage() {
 
       queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetBalancesQueryKey() });
+      const fee = getPayoutFeeLocal(values.amount);
       toast({
         title: "Retrait en cours !",
-        description: `Votre virement de ${formatLocal(values.amount - PAYOUT_FEE, user)} (après 550 FCFA de frais) a été lancé automatiquement.`,
+        description: `Votre virement de ${formatLocal(values.amount - fee, user)} (après ${fee.toLocaleString("fr-FR")} FCFA de frais) a été lancé automatiquement.`,
       });
       form.reset();
       setDialogOpen(false);
@@ -259,7 +267,8 @@ export default function WithdrawalsPage() {
   };
 
   const watchedAmount = form.watch("amount");
-  const amountAfterFee = Math.max(0, (watchedAmount || 0) - PAYOUT_FEE);
+  const currentFee = getPayoutFeeLocal(watchedAmount || 0);
+  const amountAfterFee = Math.max(0, (watchedAmount || 0) - currentFee);
 
   return (
     <Layout>
@@ -514,7 +523,8 @@ export default function WithdrawalsPage() {
                     </FormControl>
                     {watchedAmount >= MIN_REFERRAL && (
                       <p className="text-[11px] text-muted-foreground">
-                        Vous recevrez <strong className="text-foreground">{formatLocal(amountAfterFee, user)}</strong> (après 550 FCFA de frais AccountPe)
+                        Vous recevrez <strong className="text-foreground">{formatLocal(amountAfterFee, user)}</strong>{" "}
+                        (après <strong>{currentFee.toLocaleString("fr-FR")} FCFA</strong> de frais AccountPe)
                       </p>
                     )}
                     <FormMessage />
@@ -593,10 +603,19 @@ export default function WithdrawalsPage() {
                 {/* Info frais */}
                 <div className="flex items-start gap-2 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                   <Zap size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-                  <p className="text-xs text-foreground">
-                    Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.
-                    Frais : 550 FCFA déduits du montant envoyé.
-                  </p>
+                  <div className="text-xs text-foreground space-y-1">
+                    <p>Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.</p>
+                    <p className="text-muted-foreground">
+                      Frais selon le montant :
+                      <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5 ml-1">
+                        <span>moins de 10 000 FCFA → <strong>550 FCFA</strong></span>
+                        <span>10 000–19 999 → <strong>750 FCFA</strong></span>
+                        <span>20 000–49 999 → <strong>1 000 FCFA</strong></span>
+                        <span>50 000–99 999 → <strong>1 500 FCFA</strong></span>
+                        <span>100 000+ → <strong>2 000 FCFA</strong></span>
+                      </span>
+                    </p>
+                  </div>
                 </div>
 
                 <Button
