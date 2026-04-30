@@ -559,28 +559,25 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
               </FormItem>
             )} />
 
-            {/* Info frais */}
-            <div className="flex items-start gap-2 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-              <Zap size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-              <div className="text-xs text-foreground space-y-1">
-                <p>Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.</p>
-                <p className="text-muted-foreground">
-                  Barème des frais (montants en FCFA — devise interne) :
-                  <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5 ml-1">
-                    <span>{'<'} 10 000 → <strong>550 FCFA</strong></span>
-                    <span>10–19 999 → <strong>750</strong></span>
-                    <span>20–49 999 → <strong>1 000</strong></span>
-                    <span>50–99 999 → <strong>1 500</strong></span>
-                    <span>100–199 999 → <strong>2 000</strong></span>
-                    <span>200–499 999 → <strong>2 500</strong></span>
-                    <span>≥ 500 000 → <strong>3 000–4 000 FCFA</strong></span>
-                  </span>
-                </p>
-                <p className="text-muted-foreground/80">
-                  Frais calculés sur votre montant actuel : <strong className="text-foreground">{formatLocal(currentFee, user)}</strong>
-                </p>
+            {/* Info frais — dynamique selon le montant saisi */}
+            {safeAmount > 0 && (
+              <div className="flex items-start gap-2 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                <Zap size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                <div className="text-xs text-foreground space-y-1.5">
+                  <p>Virement <strong>automatique en moins de 1 minute</strong> via AccountPe.</p>
+                  <div className="flex flex-col gap-1 pt-0.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Frais de traitement</span>
+                      <span className="font-semibold text-amber-500">{formatLocal(currentFee, user)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-emerald-500/20 pt-1">
+                      <span className="text-muted-foreground">Vous recevrez</span>
+                      <span className="font-bold text-emerald-500">{formatLocal(amountReceived, user)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <Button
               type="submit"
