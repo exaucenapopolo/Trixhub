@@ -13,6 +13,7 @@ import { requireActivation } from "../middlewares/requireActivation";
 import { extractWhatsAppStatusViewCount } from "../lib/ocr";
 import { uploadSurpriseShot } from "../lib/uploadSurpriseShot";
 import { sendWhatsAppWithMedia } from "../lib/twilio";
+import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
 import {
   awardActivityPoints,
   convertWeeklyPointsToBalance,
@@ -741,6 +742,10 @@ router.post(
         // Notification admin via Twilio (fire & forget, non bloquant)
         const doubalaTime = new Date(Date.now() + 60 * 60 * 1000);
         const dateStr = doubalaTime.toISOString().slice(0, 16).replace("T", " ") + " Douala";
+
+        // URL permanente vers notre API (accessible indéfiniment via token)
+        const permanentUrl = `${getPublicBaseUrl(req)}/api/storage/surprises/${token}`;
+
         const adminMsg =
           `🎯 *ACTIVITÉ SURPRISE — TRIXHUB*\n\n` +
           `👤 ${user?.displayName ?? "Inconnu"}\n` +
@@ -749,6 +754,7 @@ router.post(
           `🆔 User #${userId}\n\n` +
           `👁 Vues détectées : *${viewCount}*\n` +
           `🏆 Points attribués : *${rawPoints}*\n\n` +
+          `🔗 Lien permanent : ${permanentUrl}\n\n` +
           `⏰ ${dateStr}`;
 
         void sendWhatsAppWithMedia(adminMsg, signedUrl).catch((err) => {

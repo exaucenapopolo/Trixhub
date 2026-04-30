@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "crypto";
 import { objectStorageClient } from "./objectStorage";
+import { getPublicBaseUrl } from "./getPublicBaseUrl";
 
 function getPrivateObjectDir(): string {
   const dir = process.env.PRIVATE_OBJECT_DIR || "";
@@ -56,11 +57,6 @@ export function getPublicProofUrl(
   withdrawalId: number,
   token: string,
 ): string {
-  const path = `/api/storage/proofs/${withdrawalId}/${token}`;
-  const explicit = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-  if (explicit) return `${explicit}${path}`;
-  const replitDomain = process.env.REPLIT_DEV_DOMAIN;
-  if (replitDomain) return `https://${replitDomain}${path}`;
-  const host = req.get("host");
-  return `${req.protocol}://${host}${path}`;
+  const base = getPublicBaseUrl(req);
+  return `${base}/api/storage/proofs/${withdrawalId}/${token}`;
 }

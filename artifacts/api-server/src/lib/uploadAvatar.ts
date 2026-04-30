@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "crypto";
 import { objectStorageClient } from "./objectStorage";
+import { getPublicBaseUrl } from "./getPublicBaseUrl";
 
 function getPrivateObjectDir(): string {
   const dir = process.env.PRIVATE_OBJECT_DIR || "";
@@ -92,11 +93,6 @@ export function getPublicAvatarUrl(
   req: { protocol: string; get: (h: string) => string | undefined },
   filename: string,
 ): string {
-  const path = `/api/storage/avatars/${filename}`;
-  const explicit = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "");
-  if (explicit) return `${explicit}${path}`;
-  const replitDomain = process.env.REPLIT_DEV_DOMAIN;
-  if (replitDomain) return `https://${replitDomain}${path}`;
-  const host = req.get("host");
-  return `${req.protocol}://${host}${path}`;
+  const base = getPublicBaseUrl(req);
+  return `${base}/api/storage/avatars/${filename}`;
 }
