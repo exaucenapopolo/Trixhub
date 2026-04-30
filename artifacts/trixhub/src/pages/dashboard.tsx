@@ -432,7 +432,7 @@ export default function DashboardPage() {
         </div>
 
         {/* PETITES STATS */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <div className="bg-card border border-card-border rounded-xl p-3.5">
             <div className="flex items-center gap-2 mb-1.5">
               <Zap className="w-3.5 h-3.5 text-orange-500" />
@@ -447,14 +447,30 @@ export default function DashboardPage() {
             </div>
             <p className="text-base md:text-lg font-bold tabular-nums amount-display">{formatLocal(dashboard?.withdrawnAmount ?? 0, user)}</p>
           </div>
-          <div className="bg-card border border-card-border rounded-xl p-3.5">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">En attente</span>
-            </div>
-            <p className="text-base md:text-lg font-bold tabular-nums amount-display">{formatLocal(dashboard?.inactiveBalance ?? 0, user)}</p>
-          </div>
         </div>
+
+        {/* GAINS POTENTIELS (inactiveBalance) — bloc dédié */}
+        {(dashboard?.inactiveBalance ?? 0) > 0 && (
+          <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Clock className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 dark:text-amber-400">Gains potentiels</span>
+                {(dashboard?.inactiveReferrals ?? 0) > 0 && (
+                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-full">
+                    {dashboard?.inactiveReferrals} filleul{(dashboard?.inactiveReferrals ?? 0) > 1 ? "s" : ""} inactif{(dashboard?.inactiveReferrals ?? 0) > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+              <p className="text-lg font-bold tabular-nums text-foreground">{formatLocal(dashboard?.inactiveBalance ?? 0, user)}</p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-300/80 mt-1 leading-snug">
+                Ces gains te seront versés automatiquement dès que tes filleuls activent leur compte — que ce soit eux-mêmes, un parrain ou un admin.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* MON ÉQUIPE */}
         <div className="bg-card border border-card-border rounded-2xl p-5">
