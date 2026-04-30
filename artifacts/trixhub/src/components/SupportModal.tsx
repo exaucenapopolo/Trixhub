@@ -79,21 +79,29 @@ interface SupportModalProps {
 
 type Step = "pick" | "detail" | "done";
 
+function validateWhatsApp(v: string): boolean {
+  const digits = v.replace(/[\s\-().+]/g, "");
+  return digits.length >= 8 && digits.length <= 15 && /^\d+$/.test(digits);
+}
+
 export default function SupportModal({ open, onClose }: SupportModalProps) {
   const [step, setStep] = useState<Step>("pick");
   const [selectedId, setSelectedId] = useState<ProblemId | null>(null);
+  const [whatsapp, setWhatsapp] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
 
   const selected = PROBLEM_TYPES.find((t) => t.id === selectedId);
+  const whatsappOk = validateWhatsApp(whatsapp);
+  const canSend = whatsappOk && message.trim().length >= 5;
 
   function handleClose() {
     onClose();
-    // Reset après fermeture (délai pour éviter flash)
     setTimeout(() => {
       setStep("pick");
       setSelectedId(null);
+      setWhatsapp("");
       setMessage("");
     }, 300);
   }
@@ -104,12 +112,11 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
   }
 
   async function handleSend() {
-    if (!selected) return;
-    const finalMessage = message.trim();
-    if (finalMessage.length < 5) {
-      toast({ title: "Message trop court", description: "Décris ton problème en quelques mots.", variant: "destructive" });
-      return;
-    }
+    if (!selected || !canSend) return;
+    const finalMessage =
+      `📱 WhatsApp de contact : ${whatsapp.trim()}\n\n` +
+      `📝 Message :\n${message.trim()}`;
+
     setSending(true);
     try {
       const token = localStorage.getItem(TOKEN_KEY);
@@ -215,10 +222,48 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
                 <span className={cn("text-sm font-bold", selected.color)}>{selected.label}</span>
               </div>
 
+              {/* Champ WhatsApp — obligatoire */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
+                  Ton numéro WhatsApp <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    className={cn(
+                      "w-full rounded-2xl border bg-muted/30 px-4 py-3 text-sm text-foreground transition-all",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50",
+                      "placeholder:text-muted-foreground",
+                      whatsapp && !whatsappOk
+                        ? "border-red-400 focus:ring-red-400/40"
+                        : whatsappOk
+                        ? "border-green-400 focus:ring-green-400/40"
+                        : "border-border"
+                    )}
+                    placeholder="Ex : +237 6XX XX XX XX"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    autoFocus
+                    data-testid="support-whatsapp-input"
+                  />
+                  {whatsappOk && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                  )}
+                </div>
+                {whatsapp && !whatsappOk && (
+                  <p className="text-[11px] text-red-500 mt-1 ml-1">
+                    Numéro invalide — inclus l'indicatif pays (ex : +237…)
+                  </p>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-1 ml-1">
+                  C'est ce numéro que l'admin utilisera pour te recontacter sur WhatsApp.
+                </p>
+              </div>
+
               {/* Zone de texte */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
-                  Décris ton problème
+                  Décris ton problème <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   className={cn(
@@ -226,7 +271,7 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
                     "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50",
                     "resize-none transition-all placeholder:text-muted-foreground"
                   )}
-                  rows={5}
+                  rows={4}
                   placeholder={
                     selected.id === "parrain"
                       ? "Ex : Mon parrain m'a promis que je gagnerais 10 000 FCFA en 2 jours. Ce n'est pas vrai..."
@@ -239,7 +284,6 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   maxLength={1000}
-                  autoFocus
                   data-testid="support-message-input"
                 />
                 <p className="text-[10px] text-muted-foreground text-right mt-1">{message.length}/1000</p>
@@ -248,17 +292,17 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
               <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-muted/30 rounded-xl px-3 py-2.5">
                 <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-primary" />
                 <span>
-                  Ton message sera transmis directement à l'administrateur via WhatsApp avec tes informations de compte.
-                  Réponds-lui sur le numéro WhatsApp de TRIXHUB.
+                  Ton message sera transmis à l'admin avec ton nom, email et pays.
+                  Il te répondra directement sur ton numéro WhatsApp.
                 </span>
               </div>
 
               <button
                 onClick={handleSend}
-                disabled={sending || message.trim().length < 5}
+                disabled={sending || !canSend}
                 className={cn(
                   "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all shadow-sm",
-                  sending || message.trim().length < 5
+                  sending || !canSend
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
                     : "bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.98]"
                 )}
@@ -278,7 +322,7 @@ export default function SupportModal({ open, onClose }: SupportModalProps) {
               </button>
 
               <button
-                onClick={() => { setStep("pick"); setMessage(""); }}
+                onClick={() => { setStep("pick"); setMessage(""); setWhatsapp(""); }}
                 className="w-full text-xs text-muted-foreground hover:text-foreground text-center py-1.5 transition-colors"
               >
                 ← Changer de catégorie
