@@ -480,8 +480,18 @@ export const GetPayoutMethodsResponse = zod.object({
       id: zod.string(),
       name: zod.string(),
       country: zod.string(),
+      mobileFormat: zod
+        .string()
+        .optional()
+        .describe('Format du numéro mobile (ex. \"2376XXXXXXXX\")'),
     }),
   ),
+  fallback: zod
+    .boolean()
+    .optional()
+    .describe(
+      "true si les méthodes sont issues du fallback (AccountPE indisponible)",
+    ),
 });
 
 /**

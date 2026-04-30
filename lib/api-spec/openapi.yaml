@@ -1208,6 +1208,9 @@ components:
           type: string
         country:
           type: string
+        mobileFormat:
+          type: string
+          description: Format du numéro mobile (ex. "2376XXXXXXXX")
       required: [id, name, country]
 
     PayoutMethodsResponse:
@@ -1219,6 +1222,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PayoutMethod"
+        fallback:
+          type: boolean
+          description: true si les méthodes sont issues du fallback (AccountPE indisponible)
       required: [countryCode, methods]
 
     CurrencyRates:

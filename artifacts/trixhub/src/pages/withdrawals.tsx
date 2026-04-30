@@ -3,6 +3,7 @@ import {
   useGetPayoutMethods, useGetPlatformConfig,
   getListWithdrawalsQueryKey, getGetBalancesQueryKey,
   getGetPayoutMethodsQueryKey, getGetPlatformConfigQueryKey,
+  type GetPayoutMethodsQueryResult,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatLocal } from "@/lib/currency";
@@ -140,16 +141,15 @@ interface WithdrawalDialogContentProps {
   referralBalance: number;
   minReferral: number;
   user: ReturnType<typeof useAuth>["user"];
+  payoutMethodsData: GetPayoutMethodsQueryResult | undefined;
+  loadingMethods: boolean;
 }
 
-function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, user }: WithdrawalDialogContentProps) {
+function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, user, payoutMethodsData, loadingMethods }: WithdrawalDialogContentProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [savedNumbers, setSavedNumbers] = useState<SavedNumber[]>([]);
 
-  const { data: payoutMethodsData, isLoading: loadingMethods } = useGetPayoutMethods({
-    query: { queryKey: getGetPayoutMethodsQueryKey(), enabled: open },
-  });
   const requestWithdrawal = useRequestWithdrawal();
 
   // Stabiliser le tableau de méthodes pour éviter les re-renders inutiles
@@ -465,22 +465,34 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
                     ))}
                   </SelectContent>
                 </Select>
+                {payoutMethodsData?.fallback && !loadingMethods && (
+                  <p className="text-[11px] text-amber-500/90 flex items-center gap-1 mt-1">
+                    <AlertCircle size={11} /> Liste de base — vérifiez que la méthode correspond bien à votre opérateur.
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
 
             {/* Numéro Mobile Money */}
-            <FormField control={form.control} name="accountNumber" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1.5">
-                  <Phone size={13} /> Numéro Mobile Money
-                </FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="+237 6XX XX XX XX" data-testid="input-withdrawal-account" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormField control={form.control} name="accountNumber" render={({ field }) => {
+              const selectedMethod = payoutMethods.find(m => m.id === form.watch("payoutMethodId"));
+              const formatHint = selectedMethod?.mobileFormat ?? "+237 6XX XX XX XX";
+              return (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1.5">
+                    <Phone size={13} /> Numéro Mobile Money
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder={formatHint} data-testid="input-withdrawal-account" />
+                  </FormControl>
+                  {selectedMethod?.mobileFormat && (
+                    <p className="text-[11px] text-muted-foreground">Format : {selectedMethod.mobileFormat}</p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
 
             {/* Nom du titulaire */}
             <FormField control={form.control} name="accountName" render={({ field }) => (
@@ -561,6 +573,16 @@ export default function WithdrawalsPage() {
   const { data: balances } = useGetBalances({ query: { queryKey: getGetBalancesQueryKey() } });
   const { data: platformConfig } = useGetPlatformConfig({
     query: { queryKey: getGetPlatformConfigQueryKey() },
+  });
+
+  // Prefetch des méthodes dès le chargement de la page — pas seulement à l'ouverture du dialog.
+  // staleTime: 30 min → pas de re-fetch inutile entre les ouvertures du dialog.
+  const { data: payoutMethodsData, isLoading: loadingMethods } = useGetPayoutMethods({
+    query: {
+      queryKey: getGetPayoutMethodsQueryKey(),
+      staleTime: 30 * 60 * 1000,
+      retry: 2,
+    },
   });
   const { toast } = useToast();
 
@@ -819,6 +841,8 @@ export default function WithdrawalsPage() {
               referralBalance={referralBalance}
               minReferral={MIN_REFERRAL}
               user={user}
+              payoutMethodsData={payoutMethodsData}
+              loadingMethods={loadingMethods}
             />
           </PageErrorBoundary>
         </Dialog>

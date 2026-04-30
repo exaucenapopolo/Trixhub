@@ -1,12 +1,29 @@
 const PAYIN_BASE  = "https://api.accountpe.com/api/payin";
 const PAYOUT_BASE = "https://api.accountpe.com/api/payout";
-const TOKEN_TTL_MS = 25 * 60 * 1000; // 25 minutes
+const TOKEN_TTL_MS = 25 * 60 * 1000;       // 25 minutes
+const FETCH_TIMEOUT_MS = 10_000;            // 10 secondes max par appel HTTP
+const METHODS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes pour les méthodes
 
 const ACCOUNTPE = {
   email: process.env.SWYCHR_USERNAME || "",
   password: process.env.SWYCHR_PASSWORD || "",
   webhookSecret: process.env.SWYCHR_WEBHOOK_SECRET || "",
 };
+
+// ── Helper : fetch avec timeout ─────────────────────────────────────
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(tid);
+  }
+}
 
 // ── Pay-in token cache ──────────────────────────────────────────────
 let tokenCache: {
@@ -28,7 +45,7 @@ export async function getAccountPeToken(): Promise<string> {
   tokenCache.inFlight = (async () => {
     try {
       console.log("[AccountPE] Auth payin →", `${PAYIN_BASE}/admin/auth`);
-      const res = await fetch(`${PAYIN_BASE}/admin/auth`, {
+      const res = await fetchWithTimeout(`${PAYIN_BASE}/admin/auth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: ACCOUNTPE.email, password: ACCOUNTPE.password }),
@@ -80,7 +97,7 @@ export async function getPayoutToken(): Promise<string> {
   payoutTokenCache.inFlight = (async () => {
     try {
       console.log("[AccountPE] Auth payout →", `${PAYOUT_BASE}/admin/auth`);
-      const res = await fetch(`${PAYOUT_BASE}/admin/auth`, {
+      const res = await fetchWithTimeout(`${PAYOUT_BASE}/admin/auth`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: ACCOUNTPE.email, password: ACCOUNTPE.password }),
@@ -142,7 +159,7 @@ export async function createPaymentLink(params: {
   console.log("[AccountPE] createPaymentLink →", JSON.stringify({ ...body, email: "***" }));
 
   async function call(tok: string): Promise<Response> {
-    return fetch(`${PAYIN_BASE}/create_payment_links`, {
+    return fetchWithTimeout(`${PAYIN_BASE}/create_payment_links`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify(body),
@@ -186,7 +203,7 @@ export async function checkPaymentStatus(transactionId: string): Promise<{
   let token = await getAccountPeToken();
 
   async function call(tok: string): Promise<Response> {
-    return fetch(`${PAYIN_BASE}/payment_link_status`, {
+    return fetchWithTimeout(`${PAYIN_BASE}/payment_link_status`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify({ transaction_id: transactionId }),
@@ -237,9 +254,10 @@ export interface PayoutMethod {
   id: string;
   name: string;
   country: string;
+  mobileFormat?: string;
 }
 
-// Cache mémoire 5 min pour éviter trop d'appels
+// Cache mémoire 30 min — survit à tous les appels de la session serveur
 const payoutMethodsCache: Record<string, { methods: PayoutMethod[]; expiresAt: number }> = {};
 
 export async function getPayoutMethods(countryCode: string): Promise<PayoutMethod[]> {
@@ -252,7 +270,7 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
   let token = await getPayoutToken();
 
   async function call(tok: string): Promise<Response> {
-    return fetch(`${PAYOUT_BASE}/payout_methods`, {
+    return fetchWithTimeout(`${PAYOUT_BASE}/payout_methods`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify({ country_code: countryCode }),
@@ -272,10 +290,43 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
   if (!res.ok) throw new Error(`AccountPE getPayoutMethods échoué: status ${res.status} — ${rawText.slice(0, 200)}`);
 
   const data = JSON.parse(rawText) as Record<string, unknown>;
-  const arr = (data.data as PayoutMethod[]) ?? [];
 
-  payoutMethodsCache[countryCode] = { methods: arr, expiresAt: now + 5 * 60 * 1000 };
+  // Structure réelle de l'API AccountPE :
+  // { data: { payment_methods: [{ payment_method: "MTN", ... }, ...] } }
+  const inner = (data.data as Record<string, unknown>) ?? {};
+  const rawMethods = (inner.payment_methods as Array<Record<string, string>>) ?? [];
+
+  const arr: PayoutMethod[] = rawMethods.map(m => ({
+    id: m.payment_method,              // ex: "MTN", "Orange" — utilisé tel quel dans createPayout
+    name: m.payment_method,            // affiché à l'utilisateur
+    country: countryCode,
+    mobileFormat: m.mobile_format,
+  }));
+
+  console.log("[AccountPE] getPayoutMethods:", countryCode, "→", arr.length, "méthodes:", arr.map(m => m.id).join(", "));
+  payoutMethodsCache[countryCode] = { methods: arr, expiresAt: now + METHODS_CACHE_TTL_MS };
   return arr;
+}
+
+// ── Warmup au démarrage du serveur ─────────────────────────────────
+// Pré-chauffe les tokens et les méthodes pour les pays les plus utilisés
+// afin que le premier utilisateur n'attende pas.
+const WARMUP_COUNTRIES = ["CM", "CI", "SN", "ML", "BF", "TG", "BJ", "GN"];
+
+export async function warmupServices(): Promise<void> {
+  try {
+    await Promise.allSettled([
+      getPayoutToken().catch(() => {}),
+      getAccountPeToken().catch(() => {}),
+    ]);
+    // Pre-cache methods pour les pays communs (en parallèle, sans bloquer)
+    void Promise.allSettled(
+      WARMUP_COUNTRIES.map(cc => getPayoutMethods(cc).catch(() => {}))
+    );
+    console.log("[AccountPE] Warmup terminé ✅");
+  } catch {
+    console.warn("[AccountPE] Warmup partiel — l'API sera contactée à la première demande");
+  }
 }
 
 // ── Barème de frais progressif (en FCFA, basé sur le montant demandé) ──────
@@ -329,7 +380,7 @@ export async function createPayout(params: {
   console.log("[AccountPE] createPayout →", JSON.stringify({ ...body, email: "***" }));
 
   async function call(tok: string): Promise<Response> {
-    return fetch(`${PAYOUT_BASE}/create_payout`, {
+    return fetchWithTimeout(`${PAYOUT_BASE}/create_payout`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify(body),
@@ -372,7 +423,7 @@ export async function checkPayoutStatus(transactionId: string): Promise<{
   let token = await getPayoutToken();
 
   async function call(tok: string): Promise<Response> {
-    return fetch(`${PAYOUT_BASE}/payout_status`, {
+    return fetchWithTimeout(`${PAYOUT_BASE}/payout_status`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify({ transaction_id: transactionId }),

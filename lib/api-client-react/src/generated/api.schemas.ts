@@ -265,11 +265,15 @@ export interface PayoutMethod {
   id: string;
   name: string;
   country: string;
+  /** Format du numéro mobile (ex. "2376XXXXXXXX") */
+  mobileFormat?: string;
 }
 
 export interface PayoutMethodsResponse {
   countryCode: string;
   methods: PayoutMethod[];
+  /** true si les méthodes sont issues du fallback (AccountPE indisponible) */
+  fallback?: boolean;
 }
 
 export type CurrencyRatesRates = { [key: string]: number };

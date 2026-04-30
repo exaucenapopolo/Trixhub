@@ -42,9 +42,84 @@ router.get("/currency/rates", async (_req, res): Promise<void> => {
 });
 
 // ─────────────────────────────────────────────────────────────────
+// Méthodes de secours par pays (utilisées si AccountPE est lent/indisponible)
+// Les IDs suivent le format documenté de l'API AccountPE.
+// ─────────────────────────────────────────────────────────────────
+// IDs utilisés tels quels dans le champ payout_method d'AccountPE.
+// Format réel confirmé depuis l'API : "MTN", "Orange", "Wave", etc.
+const FALLBACK_METHODS: Record<string, { id: string; name: string }[]> = {
+  CM: [
+    { id: "MTN",    name: "MTN Mobile Money" },
+    { id: "Orange", name: "Orange Money" },
+  ],
+  CI: [
+    { id: "MTN",    name: "MTN MoMo" },
+    { id: "Orange", name: "Orange Money" },
+    { id: "Wave",   name: "Wave" },
+    { id: "Moov",   name: "Moov Money" },
+  ],
+  SN: [
+    { id: "Wave",   name: "Wave" },
+    { id: "Orange", name: "Orange Money" },
+    { id: "Free",   name: "Free Money" },
+  ],
+  ML: [
+    { id: "Orange", name: "Orange Money" },
+    { id: "Wave",   name: "Wave" },
+    { id: "Moov",   name: "Moov Money" },
+  ],
+  BF: [
+    { id: "Orange", name: "Orange Money" },
+    { id: "Moov",   name: "Moov Money" },
+    { id: "Wave",   name: "Wave" },
+  ],
+  TG: [
+    { id: "Tmoney", name: "T-Money" },
+    { id: "Moov",   name: "Flooz (Moov)" },
+  ],
+  BJ: [
+    { id: "MTN",    name: "MTN Mobile Money" },
+    { id: "Moov",   name: "Moov Money" },
+  ],
+  GN: [
+    { id: "Orange", name: "Orange Money" },
+    { id: "MTN",    name: "MTN Mobile Money" },
+  ],
+  GH: [
+    { id: "MTN",       name: "MTN Mobile Money" },
+    { id: "Vodafone",  name: "Vodafone Cash" },
+  ],
+  NG: [
+    { id: "MTN",    name: "MTN Mobile Money" },
+  ],
+  CD: [
+    { id: "Airtel", name: "Airtel Money" },
+    { id: "Orange", name: "Orange Money" },
+  ],
+  CG: [
+    { id: "Airtel", name: "Airtel Money" },
+    { id: "MTN",    name: "MTN Mobile Money" },
+  ],
+  GA: [
+    { id: "Airtel", name: "Airtel Money" },
+  ],
+};
+
+function getFallbackMethods(countryCode: string): { id: string; name: string; country: string }[] {
+  const list = FALLBACK_METHODS[countryCode] ?? [
+    { id: "MTN",    name: "MTN Mobile Money" },
+    { id: "Orange", name: "Orange Money" },
+  ];
+  return list.map(m => ({ ...m, country: countryCode }));
+}
+
+// ─────────────────────────────────────────────────────────────────
 // GET /api/config/payout-methods — méthodes de paiement disponibles
 // selon le pays de l'utilisateur (récupérées depuis AccountPE)
+// Réponse garantie en moins de 12s grâce au timeout + fallback.
 // ─────────────────────────────────────────────────────────────────
+const PAYOUT_METHODS_TIMEOUT_MS = 12_000;
+
 router.get("/config/payout-methods", authenticate, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
@@ -55,18 +130,27 @@ router.get("/config/payout-methods", authenticate, async (req, res): Promise<voi
 
   const countryCode = COUNTRY_CODES[user.country] || "CM";
 
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), PAYOUT_METHODS_TIMEOUT_MS)
+  );
+
   try {
-    const methods = await getPayoutMethods(countryCode);
-    res.json({ countryCode, methods });
+    const result = await Promise.race([
+      getPayoutMethods(countryCode),
+      timeout,
+    ]);
+
+    if (!result) {
+      req.log.warn({ countryCode }, "[AccountPE] getPayoutMethods timeout — fallback utilisé");
+      res.json({ countryCode, methods: getFallbackMethods(countryCode), fallback: true });
+      return;
+    }
+
+    const methods = result.length > 0 ? result : getFallbackMethods(countryCode);
+    res.json({ countryCode, methods, fallback: result.length === 0 });
   } catch (err) {
-    req.log.warn({ err, countryCode }, "[AccountPE] getPayoutMethods error — méthodes par défaut");
-    res.json({
-      countryCode,
-      methods: [
-        { id: "mtn_" + countryCode.toLowerCase(), name: "MTN Mobile Money", country: countryCode },
-        { id: "orange_" + countryCode.toLowerCase(), name: "Orange Money", country: countryCode },
-      ],
-    });
+    req.log.warn({ err, countryCode }, "[AccountPE] getPayoutMethods error — fallback utilisé");
+    res.json({ countryCode, methods: getFallbackMethods(countryCode), fallback: true });
   }
 });
 

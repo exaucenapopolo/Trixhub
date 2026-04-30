@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { warmupServices } from "./lib/swychr";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,10 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Pré-chauffe les tokens et les méthodes AccountPE en arrière-plan
+  // pour que le premier utilisateur n'attende pas.
+  setTimeout(() => {
+    warmupServices().catch((e) => logger.warn({ err: e }, "[AccountPE] warmup échoué"));
+  }, 2_000); // 2 secondes après démarrage
 });
