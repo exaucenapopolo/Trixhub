@@ -223,6 +223,22 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
     setSaving(false);
   };
 
+  const toggleActivation = async () => {
+    if (!data) return;
+    const newActivated = !data.user.isActivated;
+    if (!newActivated && !confirm(`Désactiver le compte de ${data.user.displayName} ? Il n'aura plus accès au tableau de bord.`)) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/api/admin/users/${userId}/activate`, { method: "PATCH", body: JSON.stringify({ activated: newActivated }) });
+      toast({ title: newActivated ? "Compte activé" : "Compte désactivé" });
+      const fresh = await apiFetch(`/api/admin/users/${userId}`);
+      setData(fresh);
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" });
+    }
+    setSaving(false);
+  };
+
   const BALANCE_LABELS: Record<string, string> = {
     referralBalance: "Parrainage",
     taskBalance: "Missions/Activités",
@@ -247,9 +263,14 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
           </div>
           <div className="flex items-center gap-2">
             {data && (
-              <button onClick={toggleBlock} disabled={saving} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-colors", data.user.isBanned ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25" : "bg-red-500/15 text-red-600 hover:bg-red-500/25")}>
-                {data.user.isBanned ? "Débloquer" : "Bloquer"}
-              </button>
+              <>
+                <button onClick={toggleActivation} disabled={saving} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-colors", data.user.isActivated ? "bg-orange-500/15 text-orange-600 hover:bg-orange-500/25" : "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25")}>
+                  {data.user.isActivated ? "Désactiver" : "Activer"}
+                </button>
+                <button onClick={toggleBlock} disabled={saving} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium transition-colors", data.user.isBanned ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25" : "bg-red-500/15 text-red-600 hover:bg-red-500/25")}>
+                  {data.user.isBanned ? "Débloquer" : "Bloquer"}
+                </button>
+              </>
             )}
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground">✕</button>
           </div>

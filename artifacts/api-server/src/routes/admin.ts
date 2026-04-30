@@ -224,6 +224,44 @@ router.patch("/admin/users/:id/password", authenticate, requireAdmin, async (req
 });
 
 // ─────────────────────────────────────────────────────────────────
+// PATCH /admin/users/:id/activate — activer / désactiver manuellement
+// ─────────────────────────────────────────────────────────────────
+router.patch("/admin/users/:id/activate", authenticate, requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
+
+  const { activated } = req.body as { activated?: boolean };
+  if (typeof activated !== "boolean") {
+    res.status(400).json({ error: "Champ 'activated' (boolean) requis" });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.update(usersTable).set({ isActivated: activated }).where(eq(usersTable.id, id));
+
+    if (activated) {
+      const [existing] = await tx.select({ userId: balancesTable.userId }).from(balancesTable).where(eq(balancesTable.userId, id));
+      if (!existing) {
+        await tx.insert(balancesTable).values({ userId: id });
+      }
+      await tx.insert(transactionsTable).values({
+        userId: id,
+        type: "activation",
+        amount: "0",
+        description: "Activation manuelle par administrateur",
+        status: "completed",
+      });
+    }
+  });
+
+  const [updated] = await db.select({ id: usersTable.id, isActivated: usersTable.isActivated, email: usersTable.email }).from(usersTable).where(eq(usersTable.id, id));
+  if (!updated) { res.status(404).json({ error: "Utilisateur introuvable" }); return; }
+
+  req.log.info({ adminId: req.userId, targetUserId: id, activated }, "[admin] statut activation modifié");
+  res.json(updated);
+});
+
+// ─────────────────────────────────────────────────────────────────
 // PATCH /admin/users/:id/block — bloquer / débloquer
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/block", authenticate, requireAdmin, async (req, res): Promise<void> => {
