@@ -167,6 +167,31 @@ router.post(
           return;
         }
 
+        // Vérif : quiz déjà soumis aujourd'hui (fuseau Douala = UTC+1) → bloqué pour la journée
+        const doualaNow = new Date(Date.now() + 60 * 60 * 1000);
+        doualaNow.setUTCHours(0, 0, 0, 0);
+        const todayStartUTC = new Date(doualaNow.getTime() - 60 * 60 * 1000);
+
+        const [quizSubmittedToday] = await db
+          .select({ id: quizSessionsTable.id })
+          .from(quizSessionsTable)
+          .where(
+            and(
+              eq(quizSessionsTable.userId, userId),
+              sql`${quizSessionsTable.submittedAt} >= ${todayStartUTC.toISOString()}`,
+            ),
+          )
+          .limit(1);
+
+        if (quizSubmittedToday) {
+          res.status(429).json({
+            error: "Quiz déjà effectué aujourd'hui",
+            detail: "Tu as déjà fait ton quiz aujourd'hui. Reviens demain !",
+            alreadyDone: true,
+          });
+          return;
+        }
+
         // Vérif : pas de session quiz déjà non submitted ouverte (anti-spam)
         const [existing] = await db
           .select()
@@ -357,6 +382,16 @@ router.post(
                 ? "Plafond hebdomadaire atteint, points non comptabilisés"
                 : "Points non comptabilisés";
           }
+        } else {
+          // 0 bonne réponse → on enregistre quand même la complétion pour bloquer un nouveau quiz aujourd'hui
+          await db.insert(activityCompletionsTable).values({
+            userId,
+            activityType: "quiz",
+            weekStart: getCurrentWeekStart(),
+            dayOfWeek: getDayOfWeek(),
+            pointsAwarded: 0,
+            status: "approved",
+          });
         }
 
         res.json({

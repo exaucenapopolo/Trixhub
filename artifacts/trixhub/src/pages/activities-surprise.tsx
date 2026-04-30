@@ -482,11 +482,11 @@ export default function ActivitiesSurprisePage() {
                     : "L'admin a été notifié et tes points ont été crédités."}
                 </div>
               </div>
-              <div className="flex gap-3 flex-wrap justify-center">
+              <div className="flex flex-col items-center gap-3 w-full">
                 {result.points === 0 && (
-                  <Button variant="outline" onClick={handleReset}>
-                    Réessayer avec plus de vues
-                  </Button>
+                  <div className="text-xs text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg text-center">
+                    Tu ne peux soumettre qu'une capture par semaine. Reviens vendredi prochain avec plus de vues !
+                  </div>
                 )}
                 <Link href="/activities">
                   <Button
@@ -497,7 +497,7 @@ export default function ActivitiesSurprisePage() {
                         : "bg-gradient-to-r from-amber-500 to-orange-500",
                     )}
                   >
-                    Voir mon score
+                    Retour aux activités
                     <Trophy className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>

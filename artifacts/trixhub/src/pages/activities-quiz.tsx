@@ -13,13 +13,14 @@ import {
   Sparkles,
   Trophy,
   ArrowRight,
-  RotateCcw,
   Clock,
   Minus,
+  Lock,
 } from "lucide-react";
 import {
   useStartQuiz,
   useSubmitQuiz,
+  useGetWeeklyStatus,
   getGetWeeklyStatusQueryKey,
   type QuizSession,
   type QuizResult,
@@ -45,6 +46,9 @@ export default function ActivitiesQuizPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAdvancedRef = useRef(false); // évite double-avance
+
+  const { data: weeklyStatus } = useGetWeeklyStatus();
+  const isAlreadyDone = ((weeklyStatus?.todayByType as Record<string, { count: number }> | undefined)?.quiz?.count ?? 0) > 0;
 
   const start = useStartQuiz();
   const submit = useSubmitQuiz();
@@ -211,8 +215,31 @@ export default function ActivitiesQuizPage() {
           </div>
         </div>
 
+        {/* ── DÉJÀ FAIT AUJOURD'HUI ───────────────────────────────── */}
+        {isAlreadyDone && phase !== "results" && (
+          <Card className="border-green-500/30 bg-green-500/5">
+            <CardContent className="p-8 flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">Quiz complété pour aujourd'hui !</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Tu as déjà fait ton quiz. Reviens demain pour de nouvelles questions.
+                </div>
+              </div>
+              <Link href="/activities">
+                <Button variant="outline" className="mt-2">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retour aux activités
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         {/* ── IDLE ────────────────────────────────────────────────── */}
-        {phase === "idle" && (
+        {!isAlreadyDone && phase === "idle" && (
           <Card className="border-2 border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-indigo-500/5">
             <CardContent className="p-8 text-center">
               <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white mb-4 shadow-xl">
@@ -466,18 +493,14 @@ export default function ActivitiesQuizPage() {
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onClick={handleRestart}
-                variant="outline"
-                className="gap-2"
-                data-testid="button-new-quiz"
-              >
-                <RotateCcw className="w-4 h-4" /> Nouveau quiz
-              </Button>
-              <Link href="/activities">
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg">
+                <Lock className="w-3 h-3" />
+                Quiz terminé pour aujourd'hui — reviens demain pour de nouvelles questions !
+              </div>
+              <Link href="/activities" className="w-full">
                 <Button className="w-full gap-2" data-testid="button-back-hub">
-                  Retour <ArrowRight className="w-4 h-4" />
+                  Retour aux activités <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             </div>
