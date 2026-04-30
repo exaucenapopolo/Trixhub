@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, isNull } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { eq, and, isNull, gte } from "drizzle-orm";
+import { db, usersTable, formationRequestsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { sendWhatsAppToAssistance } from "../lib/twilio";
 
@@ -104,8 +104,39 @@ router.post("/contact/canva", authenticate, async (req, res): Promise<void> => {
 });
 
 // ─────────────────────────────────────────────
+// GET /api/formations/requests
+// Liste des formations déjà demandées par l'utilisateur
+// ─────────────────────────────────────────────
+router.get("/formations/requests", authenticate, async (req, res): Promise<void> => {
+  const userId = req.userId!;
+  const requests = await db
+    .select({
+      id: formationRequestsTable.id,
+      formationTitle: formationRequestsTable.formationTitle,
+      requestedAt: formationRequestsTable.requestedAt,
+    })
+    .from(formationRequestsTable)
+    .where(eq(formationRequestsTable.userId, userId));
+
+  // Vérifie si l'utilisateur a déjà fait une demande aujourd'hui (heure locale Afrique = UTC+1)
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const requestedToday = requests.some(r => r.requestedAt >= todayStart);
+
+  res.json({
+    requests: requests.map(r => ({
+      id: r.id,
+      formationTitle: r.formationTitle,
+      requestedAt: r.requestedAt.toISOString(),
+    })),
+    requestedToday,
+    totalRequested: requests.length,
+  });
+});
+
+// ─────────────────────────────────────────────
 // POST /api/contact/formation
-// Demande d'inscription à une formation
+// Demande d'accès à une formation (1 par jour, toutes les formations accessibles)
 // ─────────────────────────────────────────────
 router.post("/contact/formation", authenticate, async (req, res): Promise<void> => {
   const userId = req.userId!;
@@ -115,61 +146,101 @@ router.post("/contact/formation", authenticate, async (req, res): Promise<void> 
     return;
   }
 
-  // Pré-check rapide pour message d'erreur clair.
-  if (user.formationRequestedAt) {
-    res.status(409).json({
-      error: `Vous avez déjà demandé une formation${user.formationRequestedTitle ? ` (« ${user.formationRequestedTitle} »)` : ""}. Une seule demande est autorisée par membre.`,
-      requestedAt: user.formationRequestedAt.toISOString(),
-      title: user.formationRequestedTitle,
-    });
-    return;
-  }
-
   if (rateLimited(userId, "formation")) {
     res.status(429).json({ error: "Patientez 30 secondes avant de réessayer." });
     return;
   }
 
-  const body = req.body as { title?: string };
+  const body = req.body as { title?: string; whatsappNumber?: string };
   const title = sanitize(body.title ?? "", 200);
+  const whatsappNumber = sanitize(body.whatsappNumber ?? "", 30);
+
   if (!title) {
     res.status(400).json({ error: "Titre de la formation requis" });
     return;
   }
+  if (!whatsappNumber || whatsappNumber.length < 8) {
+    res.status(400).json({ error: "Numéro WhatsApp requis (minimum 8 chiffres)" });
+    return;
+  }
 
-  // ATOMIC : stamp d'abord avec UPDATE conditionnel.
-  const stamped = await db.update(usersTable)
-    .set({ formationRequestedAt: new Date(), formationRequestedTitle: title })
-    .where(and(eq(usersTable.id, userId), isNull(usersTable.formationRequestedAt)))
-    .returning({ id: usersTable.id });
+  // Vérifier si l'utilisateur a déjà demandé une formation aujourd'hui
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
-  if (stamped.length === 0) {
+  const [todayRequest] = await db
+    .select({ id: formationRequestsTable.id })
+    .from(formationRequestsTable)
+    .where(
+      and(
+        eq(formationRequestsTable.userId, userId),
+        gte(formationRequestsTable.requestedAt, todayStart),
+      ),
+    )
+    .limit(1);
+
+  if (todayRequest) {
     res.status(409).json({
-      error: "Vous avez déjà demandé une formation. Une seule demande est autorisée par membre.",
+      error: "Vous avez déjà demandé une formation aujourd'hui. Revenez demain pour en demander une autre.",
+      requestedToday: true,
     });
     return;
   }
 
+  // Vérifier si cette formation a déjà été demandée par cet utilisateur
+  const [alreadyRequested] = await db
+    .select({ id: formationRequestsTable.id })
+    .from(formationRequestsTable)
+    .where(
+      and(
+        eq(formationRequestsTable.userId, userId),
+        eq(formationRequestsTable.formationTitle, title),
+      ),
+    )
+    .limit(1);
+
+  if (alreadyRequested) {
+    res.status(409).json({
+      error: "Vous avez déjà demandé cette formation.",
+      alreadyRequested: true,
+    });
+    return;
+  }
+
+  // Insérer la demande
+  await db.insert(formationRequestsTable).values({
+    userId,
+    formationTitle: title,
+    whatsappNumber,
+  });
+
+  const memberName = user.displayName ?? user.email.split("@")[0];
   const message =
-    `📚 Nouvelle demande de formation\n\n` +
-    `🎯 Formation : ${title}\n` +
-    `👤 Membre : ${user.displayName}\n` +
-    `📧 Email : ${user.email}\n` +
-    `📱 Téléphone : ${user.phone}\n` +
-    `🌍 Pays : ${user.country}\n` +
-    `🔗 Code parrainage : ${user.referralCode}`;
+    `📚 *Nouvelle demande de formation*\n\n` +
+    `🎯 *Formation :* ${title}\n` +
+    `👤 *Membre :* ${memberName}\n` +
+    `📱 *WhatsApp :* ${whatsappNumber}\n` +
+    `📧 *Email :* ${user.email}\n` +
+    `🌍 *Pays :* ${user.country}\n` +
+    `🔗 *Code parrainage :* ${user.referralCode}\n\n` +
+    `⚡ Contacter ce membre sur WhatsApp dans les plus brefs délais.`;
 
   const result = await sendWhatsAppToAssistance(message);
   if (!result.ok) {
-    // Rollback du stamp si Twilio échoue.
-    await db.update(usersTable)
-      .set({ formationRequestedAt: null, formationRequestedTitle: null })
-      .where(eq(usersTable.id, userId));
+    // Rollback de l'insertion si WhatsApp échoue
+    await db
+      .delete(formationRequestsTable)
+      .where(
+        and(
+          eq(formationRequestsTable.userId, userId),
+          eq(formationRequestsTable.formationTitle, title),
+        ),
+      );
     res.status(503).json({ error: "Impossible d'envoyer la demande pour le moment. Réessayez plus tard." });
     return;
   }
 
-  req.log.info({ userId, type: "formation", title }, "Demande contact envoyée");
+  req.log.info({ userId, type: "formation", title, whatsappNumber }, "Demande formation envoyée");
   res.json({ ok: true });
 });
 
