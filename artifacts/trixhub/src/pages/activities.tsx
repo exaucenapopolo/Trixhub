@@ -87,8 +87,13 @@ const ACTIVITY_DOT: Record<string, string> = {
   surprise: "bg-amber-500",
 };
 
+// DAY_ABBR/DAY_FULL_JS : indexation JS standard (0=Dim) — pour dateToLocalDow()
 const DAY_ABBR = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-const DAY_FULL = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+// DAY_FULL_SERVER : indexation serveur (0=Lun, 6=Dim) — pour dayOfWeek retourné par l'API
+const DAY_FULL_SERVER = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+// Indicateurs visuels (0=Lun → 6=Dim, même ordre serveur)
 const DAYS_INDICATOR = ["L", "M", "M", "J", "V", "S", "D"];
 
 function dateToLocalDow(dateStr: string): number {
@@ -366,13 +371,25 @@ export default function ActivitiesPage() {
                 <span>Semaine expirée. Nouvelle semaine dès lundi.</span>
               </div>
             ) : (
-              <div className="flex items-start gap-3 text-sm text-muted-foreground">
-                <Calendar className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  Conversion le <strong className="text-foreground">dimanche</strong> si tu
-                  atteins 700 pts. Aujourd'hui :{" "}
-                  <strong className="text-foreground">{DAY_FULL[dayOfWeek]}</strong>.
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                  <Calendar className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    Conversion le <strong className="text-foreground">dimanche</strong> si tu
+                    atteins 700 pts. Aujourd'hui :{" "}
+                    <strong className="text-foreground">{DAY_FULL_SERVER[dayOfWeek]}</strong>.
+                  </div>
                 </div>
+                {/* Avertissement expiration si points non nuls et semaine non dimanche */}
+                {weeklyTotal > 0 && !isSunday && (
+                  <div className="flex items-start gap-3 text-sm bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-amber-700 dark:text-amber-400">
+                      Tes <strong>{weeklyTotal} pts</strong> expirent dimanche si tu n'atteins pas 700.
+                      Il te manque <strong>{Math.max(0, 700 - weeklyTotal)} pts</strong> — continue à gagner chaque jour !
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
