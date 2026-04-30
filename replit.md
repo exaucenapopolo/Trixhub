@@ -109,6 +109,7 @@ Nouvelles tables (toutes serial PK) : `activities` (catalogue admin), `activity_
 - `components/ActivateChildModal.tsx` : modal 3 méthodes pour activer un filleul N1 inactif (solde dépôt 3600, solde parrainage 4100=3600+500 frais, paiement direct Swychr).
 - `pages/teamLevel.tsx` : bouton "Activer" sur N1 inactifs.
 - `hooks/use-count-up.ts` : animation count-up des montants.
+- `components/SupportModal.tsx` : modale support — 6 types de problème (infos site, réclamation, signalement, parrain malhonnête, bug technique, autre libre). Envoi via `POST /api/contact/assistance` → WhatsApp admin via Twilio. Anti-spam 30s côté serveur. Bouton "Contacter le support" dans le sidebar (juste au-dessus de la zone utilisateur).
 
 ## Key Commands
 

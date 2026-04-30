@@ -7,11 +7,13 @@ import { useToast } from "@/hooks/use-toast";
 import {
   LayoutDashboard, Users, CheckSquare, Wallet, User, LogOut,
   Menu, Sun, Moon, ChevronDown, PlayCircle, HelpCircle, Compass,
-  Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink, ShieldCheck
+  Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink, ShieldCheck,
+  MessageCircleQuestion
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 import PartnersFooter from "@/components/PartnersFooter";
 import { formatLocal, type CurrencyTarget } from "@/lib/currency";
+import SupportModal from "@/components/SupportModal";
 
 const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -54,6 +56,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [levelOpen, setLevelOpen] = useState(false);
   const [missionsOpen, setMissionsOpen] = useState(false);
   const [bonusOpen, setBonusOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -235,6 +238,18 @@ export default function Layout({ children }: { children: ReactNode }) {
         )}
       </div>
 
+      {/* Support */}
+      <div className="px-3 pb-2 pt-2 border-t border-sidebar-border/50">
+        <button
+          onClick={() => { setSidebarOpen(false); setSupportOpen(true); }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-sidebar-foreground hover:bg-sidebar-accent"
+          data-testid="button-support"
+        >
+          <MessageCircleQuestion size={17} className="text-primary" />
+          <span className="flex-1 text-left">Contacter le support</span>
+        </button>
+      </div>
+
       {/* User area */}
       <div className="p-4 border-t border-sidebar-border space-y-1">
         <Link
@@ -275,6 +290,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-background">
+      <SupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 flex-col bg-sidebar border-r border-sidebar-border shrink-0">
         <SidebarContent />
