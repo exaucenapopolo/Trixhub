@@ -152,11 +152,13 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
 
   const requestWithdrawal = useRequestWithdrawal();
 
-  // Stabiliser le tableau de méthodes pour éviter les re-renders inutiles
-  const payoutMethods = useMemo(
-    () => payoutMethodsData?.methods ?? [],
-    [payoutMethodsData]
-  );
+  // Stabiliser le tableau de méthodes.
+  // Array.isArray() est critique : l'ancien cache backend renvoyait un objet
+  // à la place d'un tableau, ce qui causait "map is not a function" → crash.
+  const payoutMethods = useMemo(() => {
+    const raw = payoutMethodsData?.methods;
+    return Array.isArray(raw) ? raw : [];
+  }, [payoutMethodsData]);
 
   const form = useForm<WithdrawalFormValues>({
     resolver: zodResolver(withdrawalSchema),
@@ -267,8 +269,10 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
   };
 
   // Ces valeurs sont calculées DANS ce composant isolé — pas de re-render de la page principale
+  // Tous les form.watch() sont au niveau composant (jamais dans des render props)
   const watchedAmount = form.watch("amount");
   const watchedFeeMode = form.watch("feeMode");
+  const watchedPayoutMethodId = form.watch("payoutMethodId");
   const safeAmount = isFinite(watchedAmount) && watchedAmount > 0 ? watchedAmount : 0;
   const currentFee = getPayoutFeeLocal(safeAmount);
   const amountReceived = watchedFeeMode === "from_balance"
@@ -476,7 +480,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
 
             {/* Numéro Mobile Money */}
             <FormField control={form.control} name="accountNumber" render={({ field }) => {
-              const selectedMethod = payoutMethods.find(m => m.id === form.watch("payoutMethodId"));
+              const selectedMethod = payoutMethods.find(m => m.id === watchedPayoutMethodId);
               const formatHint = selectedMethod?.mobileFormat ?? "+237 6XX XX XX XX";
               return (
                 <FormItem>
@@ -575,12 +579,21 @@ export default function WithdrawalsPage() {
     query: { queryKey: getGetPlatformConfigQueryKey() },
   });
 
+  const queryClient = useQueryClient();
+
+  // Invalider le cache des méthodes au montage pour effacer toute donnée corrompue
+  // (l'ancien backend renvoyait un objet au lieu d'un tableau → "map is not a function")
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: getGetPayoutMethodsQueryKey() });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Prefetch des méthodes dès le chargement de la page — pas seulement à l'ouverture du dialog.
-  // staleTime: 30 min → pas de re-fetch inutile entre les ouvertures du dialog.
+  // staleTime court (60s) : permet de rafraîchir les données si le cache contient
+  // d'anciennes données incorrectes, sans pour autant refetch à chaque re-render.
   const { data: payoutMethodsData, isLoading: loadingMethods } = useGetPayoutMethods({
     query: {
       queryKey: getGetPayoutMethodsQueryKey(),
-      staleTime: 30 * 60 * 1000,
+      staleTime: 60_000,
       retry: 2,
     },
   });
@@ -594,8 +607,6 @@ export default function WithdrawalsPage() {
     proofTargetRef.current = withdrawalId;
     fileInputRef.current?.click();
   };
-
-  const queryClient = useQueryClient();
 
   const handleProofFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
