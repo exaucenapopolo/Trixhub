@@ -117,6 +117,28 @@ Nouvelles tables (toutes serial PK) : `activities` (catalogue admin), `activity_
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run generate` — generate SQL migration files after schema changes (required before deploy)
+- `pnpm --filter @workspace/db run migrate` — apply migrations to the database (used in production build)
+
+## Database Migrations
+
+Drizzle ORM is configured with `migrations/` folder (`lib/db/migrations/`).
+
+**Workflow for schema changes:**
+1. Modify schema files in `lib/db/src/schema/`
+2. Apply to dev DB: `pnpm --filter @workspace/db run push-force`
+3. Generate migration file: `pnpm --filter @workspace/db run generate`
+4. Mark migration as applied in dev: insert hash into `drizzle.__drizzle_migrations` (see below)
+5. Deploy — production build runs `drizzle-kit migrate` automatically
+
+**Marking a new migration as applied in dev DB (after `push-force`):**
+```sql
+INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
+VALUES (sha256(content_of_sql_file), unix_timestamp_ms_from_journal);
+```
+The `created_at` value comes from `lib/db/migrations/meta/_journal.json` entries[].when.
+
+**Production:** The `artifact.toml` build command runs `drizzle-kit migrate` before building the API server, ensuring the production DB schema is always up to date.
 
 ## Auth Flow
 
