@@ -952,6 +952,15 @@ components:
           type: string
         exchangeRate:
           type: number
+        sponsor:
+          nullable: true
+          type: object
+          properties:
+            name:
+              type: string
+            referralCode:
+              type: string
+          required: [name, referralCode]
       required: [totalBalance, referralBalance, taskBalance, bonusBalance, depositBalance, withdrawnAmount, spentAmount, inactiveBalance, totalReferrals, activeReferrals, inactiveReferrals, level1Count, level2Count, level3Count, pendingWithdrawals, dailyBonusClaimed, dailyBonusAmount, currency, exchangeRate]
 
     ReferralUser:

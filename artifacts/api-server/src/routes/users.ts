@@ -99,6 +99,16 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
   const currency = user.preferredCurrency;
   const exchangeRate = rates[currency] ?? 1;
 
+  // Parrain (sponsor) — celui qui a invité cet utilisateur
+  let sponsor: { displayName: string | null; email: string; referralCode: string } | null = null;
+  if (user.referredByCode) {
+    const [sp] = await db
+      .select({ displayName: usersTable.displayName, email: usersTable.email, referralCode: usersTable.referralCode })
+      .from(usersTable)
+      .where(eq(usersTable.referralCode, user.referredByCode));
+    if (sp) sponsor = sp;
+  }
+
   res.json({
     totalBalance, referralBalance, taskBalance, activityBalance, bonusBalance, depositBalance,
     withdrawnAmount, spentAmount, inactiveBalance,
@@ -113,6 +123,9 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
     dailyBonusAmount: DAILY_BONUS,
     currency,
     exchangeRate,
+    sponsor: sponsor
+      ? { name: sponsor.displayName ?? sponsor.email.split("@")[0], referralCode: sponsor.referralCode }
+      : null,
   });
 });
 

@@ -86,6 +86,11 @@ export interface AuthResponse {
   token: string;
 }
 
+export type DashboardSponsor = {
+  name: string;
+  referralCode: string;
+} | null;
+
 export interface Dashboard {
   totalBalance: number;
   referralBalance: number;
@@ -108,6 +113,7 @@ export interface Dashboard {
   dailyBonusAmount: number;
   currency: string;
   exchangeRate: number;
+  sponsor?: DashboardSponsor;
 }
 
 export interface ReferralUser {

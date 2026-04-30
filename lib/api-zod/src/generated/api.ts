@@ -187,6 +187,12 @@ export const GetDashboardResponse = zod.object({
   dailyBonusAmount: zod.number(),
   currency: zod.string(),
   exchangeRate: zod.number(),
+  sponsor: zod
+    .object({
+      name: zod.string(),
+      referralCode: zod.string(),
+    })
+    .nullish(),
 });
 
 /**
