@@ -6,7 +6,8 @@ import {
   Users, TrendingUp, TrendingDown, Wallet, Activity, Search, RefreshCw,
   Ban, Trash2, Key, Edit3, ChevronRight, CheckCircle,
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
-  Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus
+  Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
+  Globe, AlertTriangle, Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -931,12 +932,181 @@ function ActivitiesSection() {
   );
 }
 
+// ─── Section : Portefeuilles pays ────────────────────────────────
+interface WalletRow {
+  country: string; countryCode: string; currency: string;
+  userCount: number; usersWithBalance: number; usersReadyToWithdraw: number;
+  totalReferralFcfa: number; eligibleReferralFcfa: number; pendingWithdrawalFcfa: number;
+  minimumFcfa: number; recommendedFcfa: number;
+  totalReferralLocal: number; eligibleReferralLocal: number; pendingWithdrawalLocal: number;
+  minimumLocal: number; recommendedLocal: number;
+}
+
+function fmtLocal(amount: number, currency: string) {
+  return amount.toLocaleString("fr-FR") + " " + currency;
+}
+
+function FundingBadge({ ready, total }: { ready: number; total: number }) {
+  if (total === 0) return <span className="text-[10px] text-muted-foreground px-2 py-0.5 rounded-full bg-muted">Vide</span>;
+  if (ready === 0) return <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-semibold">OK pour l&apos;instant</span>;
+  return <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-semibold">{ready} prêt{ready > 1 ? "s" : ""} à retirer</span>;
+}
+
+function WalletsSection() {
+  const [rows, setRows] = useState<WalletRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<WalletRow | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setRows(await apiFetch("/api/admin/wallet-exposure")); } catch {}
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const totalRecommended = rows.reduce((s, r) => s + r.recommendedFcfa, 0);
+  const totalReady = rows.reduce((s, r) => s + r.usersReadyToWithdraw, 0);
+
+  return (
+    <div className="space-y-5">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Portefeuilles par pays</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Montants à déposer chez notre partenaire de paiement pour éviter les échecs
+          </p>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Actualiser
+        </button>
+      </div>
+
+      {/* Bandeau résumé global */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4">
+          <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">Utilisateurs prêts à retirer</p>
+          <p className="text-2xl font-bold mt-1">{totalReady}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Sur tous les pays</p>
+        </div>
+        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4">
+          <p className="text-xs text-primary font-medium">Budget recommandé total</p>
+          <p className="text-xl font-bold mt-1">{totalRecommended.toLocaleString("fr-FR")}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">FCFA équivalent (toutes devises)</p>
+        </div>
+        <div className="bg-muted/50 border border-border rounded-2xl p-4 col-span-2 sm:col-span-1">
+          <div className="flex items-start gap-2">
+            <Info size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Le <strong>budget recommandé</strong> = soldes des utilisateurs prêts à retirer + retraits en cours + 20% de marge de sécurité.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16"><RefreshCw className="animate-spin text-muted-foreground" /></div>
+      ) : rows.length === 0 ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">Aucune donnée disponible</div>
+      ) : (
+        <div className="space-y-3">
+          {rows.map(row => {
+            const urgent = row.usersReadyToWithdraw > 0;
+            return (
+              <div key={row.country} className={cn(
+                "bg-card border rounded-2xl overflow-hidden transition-all",
+                urgent ? "border-amber-500/40" : "border-border"
+              )}>
+                {/* Header ligne */}
+                <button
+                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/30 transition-colors"
+                  onClick={() => setSelected(selected?.country === row.country ? null : row)}
+                >
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold",
+                    urgent ? "bg-amber-500/15 text-amber-600" : "bg-primary/10 text-primary"
+                  )}>
+                    {row.countryCode}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-sm">{row.country}</span>
+                      <FundingBadge ready={row.usersReadyToWithdraw} total={row.usersWithBalance} />
+                      {urgent && <AlertTriangle size={13} className="text-amber-500" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {row.userCount} membre{row.userCount > 1 ? "s" : ""} · devise : <strong>{row.currency}</strong>
+                    </p>
+                  </div>
+                  {/* Montant recommandé mis en avant */}
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] text-muted-foreground">À déposer</p>
+                    <p className={cn("text-base font-bold tabular-nums", urgent ? "text-amber-500" : "text-foreground")}>
+                      {row.recommendedLocal > 0 ? fmtLocal(row.recommendedLocal, row.currency) : "—"}
+                    </p>
+                  </div>
+                </button>
+
+                {/* Détail déployable */}
+                {selected?.country === row.country && (
+                  <div className="border-t border-border bg-muted/20 px-4 py-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <p className="text-muted-foreground mb-2 font-medium uppercase tracking-wide text-[10px]">Utilisateurs</p>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between"><span className="text-muted-foreground">Total membres</span><span className="font-semibold">{row.userCount}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Avec solde &gt; 0</span><span className="font-semibold">{row.usersWithBalance}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Prêts à retirer</span><span className={cn("font-bold", row.usersReadyToWithdraw > 0 ? "text-amber-500" : "")}>{row.usersReadyToWithdraw}</span></div>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground mb-2 font-medium uppercase tracking-wide text-[10px]">Soldes (FCFA)</p>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between"><span className="text-muted-foreground">Tous les soldes</span><span className="font-semibold">{row.totalReferralFcfa.toLocaleString("fr-FR")} F</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Soldes éligibles</span><span className="font-semibold text-amber-500">{row.eligibleReferralFcfa.toLocaleString("fr-FR")} F</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Retraits en cours</span><span className="font-semibold text-blue-500">{row.pendingWithdrawalFcfa.toLocaleString("fr-FR")} F</span></div>
+                        </div>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <p className="text-muted-foreground mb-2 font-medium uppercase tracking-wide text-[10px]">À déposer ({row.currency})</p>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between"><span className="text-muted-foreground">Minimum absolu</span><span className="font-semibold">{fmtLocal(row.minimumLocal, row.currency)}</span></div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Recommandé (+20%)</span>
+                            <span className={cn("font-bold text-sm", urgent ? "text-amber-500" : "text-emerald-600")}>{row.recommendedLocal > 0 ? fmtLocal(row.recommendedLocal, row.currency) : "—"}</span>
+                          </div>
+                        </div>
+                        {row.recommendedLocal > 0 && (
+                          <div className={cn(
+                            "mt-3 p-2.5 rounded-xl text-[11px] leading-relaxed",
+                            urgent ? "bg-amber-500/10 text-amber-700 dark:text-amber-400" : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                          )}>
+                            {urgent
+                              ? `⚠️ Déposez ${fmtLocal(row.recommendedLocal, row.currency)} dans votre portefeuille ${row.country} pour éviter les erreurs de solde insuffisant.`
+                              : `✅ Recommandé : ${fmtLocal(row.recommendedLocal, row.currency)} dans le portefeuille ${row.country}.`
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Page principale Admin ────────────────────────────────────────
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -962,10 +1132,11 @@ export default function AdminPage() {
   }
 
   const tabs = [
-    { id: "overview", label: "Vue d'ensemble", icon: BarChart3 },
-    { id: "users", label: "Utilisateurs", icon: Users },
-    { id: "withdrawals", label: "Retraits", icon: Wallet },
-    { id: "activities", label: "Activités", icon: Activity },
+    { id: "overview",    label: "Vue d'ensemble", icon: BarChart3 },
+    { id: "users",       label: "Utilisateurs",   icon: Users    },
+    { id: "withdrawals", label: "Retraits",        icon: Wallet   },
+    { id: "activities",  label: "Activités",       icon: Activity },
+    { id: "wallets",     label: "Portefeuilles",   icon: Globe    },
   ] as const;
 
   return (
@@ -990,10 +1161,11 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {activeTab === "overview" && <OverviewSection stats={stats} onRefresh={loadStats} />}
-        {activeTab === "users" && <UsersSection />}
+        {activeTab === "overview"    && <OverviewSection stats={stats} onRefresh={loadStats} />}
+        {activeTab === "users"       && <UsersSection />}
         {activeTab === "withdrawals" && <WithdrawalsSection />}
-        {activeTab === "activities" && <ActivitiesSection />}
+        {activeTab === "activities"  && <ActivitiesSection />}
+        {activeTab === "wallets"     && <WalletsSection />}
       </div>
     </Layout>
   );

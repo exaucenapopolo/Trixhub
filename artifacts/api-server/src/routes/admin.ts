@@ -12,6 +12,8 @@ import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { hashPassword } from "../lib/auth";
 import { activateUserTx } from "../lib/activation";
+import { COUNTRY_CODES, COUNTRY_CURRENCIES, PAYOUT_MIN } from "../lib/swychr";
+import { CURRENCY_RATES } from "../lib/currency";
 
 const router: IRouter = Router();
 
@@ -458,6 +460,80 @@ router.get("/admin/withdrawals/all", authenticate, requireAdmin, async (req, res
     .limit(200);
 
   res.json(items);
+});
+
+// ─────────────────────────────────────────────────────────────────
+// GET /admin/wallet-exposure — besoin de financement par pays
+// ─────────────────────────────────────────────────────────────────
+router.get("/admin/wallet-exposure", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  // 1. Soldes parrainage agrégés par pays
+  const balanceRows = await db
+    .select({
+      country: usersTable.country,
+      userCount:          sql<string>`COUNT(${usersTable.id})`,
+      usersWithBalance:   sql<string>`COUNT(CASE WHEN ${balancesTable.referralBalance}::numeric > 0 THEN 1 END)`,
+      usersReadyToWithdraw: sql<string>`COUNT(CASE WHEN ${balancesTable.referralBalance}::numeric >= ${PAYOUT_MIN} THEN 1 END)`,
+      totalReferralFcfa:  sql<string>`COALESCE(SUM(${balancesTable.referralBalance}::numeric), 0)`,
+      eligibleReferralFcfa: sql<string>`COALESCE(SUM(CASE WHEN ${balancesTable.referralBalance}::numeric >= ${PAYOUT_MIN} THEN ${balancesTable.referralBalance}::numeric ELSE 0 END), 0)`,
+    })
+    .from(usersTable)
+    .leftJoin(balancesTable, eq(balancesTable.userId, usersTable.id))
+    .where(and(sql`${usersTable.country} IS NOT NULL`, sql`${usersTable.country} != ''`))
+    .groupBy(usersTable.country)
+    .orderBy(sql`SUM(${balancesTable.referralBalance}::numeric) DESC NULLS LAST`);
+
+  // 2. Retraits en attente/processing par pays
+  const pendingRows = await db
+    .select({
+      country: usersTable.country,
+      pendingFcfa: sql<string>`COALESCE(SUM(${withdrawalsTable.amount}::numeric), 0)`,
+    })
+    .from(withdrawalsTable)
+    .innerJoin(usersTable, eq(usersTable.id, withdrawalsTable.userId))
+    .where(sql`${withdrawalsTable.status} IN ('pending', 'processing')`)
+    .groupBy(usersTable.country);
+
+  const pendingByCountry = Object.fromEntries(
+    pendingRows.map(r => [r.country, parseFloat(r.pendingFcfa)])
+  );
+
+  // 3. Calculer les montants en devise locale
+  const rows = balanceRows.map(r => {
+    const country       = r.country ?? "Inconnu";
+    const countryCode   = COUNTRY_CODES[country]      ?? "??";
+    const currency      = COUNTRY_CURRENCIES[country] ?? "XAF";
+    const fxRate        = CURRENCY_RATES[currency]    ?? 1;
+
+    const totalFcfa     = parseFloat(r.totalReferralFcfa);
+    const eligibleFcfa  = parseFloat(r.eligibleReferralFcfa);
+    const pendingFcfa   = pendingByCountry[country] ?? 0;
+
+    // Montant recommandé = soldes des utilisateurs prêts + retraits en cours + 20% buffer sécurité
+    const minimumFcfa   = eligibleFcfa + pendingFcfa;
+    const recommendedFcfa = Math.ceil(minimumFcfa * 1.20);
+
+    return {
+      country,
+      countryCode,
+      currency,
+      userCount:            parseInt(r.userCount),
+      usersWithBalance:     parseInt(r.usersWithBalance),
+      usersReadyToWithdraw: parseInt(r.usersReadyToWithdraw),
+      totalReferralFcfa:    Math.round(totalFcfa),
+      eligibleReferralFcfa: Math.round(eligibleFcfa),
+      pendingWithdrawalFcfa: Math.round(pendingFcfa),
+      minimumFcfa:          Math.round(minimumFcfa),
+      recommendedFcfa:      Math.round(recommendedFcfa),
+      // Même chose en devise locale
+      totalReferralLocal:    Math.round(totalFcfa    * fxRate),
+      eligibleReferralLocal: Math.round(eligibleFcfa * fxRate),
+      pendingWithdrawalLocal: Math.round(pendingFcfa * fxRate),
+      minimumLocal:          Math.round(minimumFcfa  * fxRate),
+      recommendedLocal:      Math.round(recommendedFcfa * fxRate),
+    };
+  });
+
+  res.json(rows);
 });
 
 export default router;
