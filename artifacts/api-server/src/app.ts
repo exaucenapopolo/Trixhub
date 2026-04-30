@@ -55,6 +55,7 @@ const ALLOWED_ORIGINS_PATTERNS = [
   /\.repl\.co$/,
   /\.replit\.dev$/,
   /\.janeway\.replit\.dev$/,
+  /trixhub\.site$/,
 ];
 
 app.use(
