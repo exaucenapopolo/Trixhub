@@ -3,16 +3,16 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import {
-  Users, TrendingUp, Wallet, Activity, Search, RefreshCw,
+  Users, TrendingUp, TrendingDown, Wallet, Activity, Search, RefreshCw,
   Ban, Trash2, Key, Edit3, ChevronRight, CheckCircle,
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
-  Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft
+  Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
-function authHeader() {
+function authHeader(): Record<string, string> {
   const token = localStorage.getItem("trixhub_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -20,7 +20,7 @@ function authHeader() {
 async function apiFetch(path: string, opts: RequestInit = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
-    headers: { "Content-Type": "application/json", ...authHeader(), ...(opts.headers ?? {}) },
+    headers: { "Content-Type": "application/json", ...authHeader(), ...(opts.headers as Record<string, string> ?? {}) },
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Erreur réseau" }));
@@ -35,6 +35,18 @@ interface AdminStats {
   withdrawals: { pendingCount: number; pendingAmount: number; processingCount: number; totalPaid: number };
   activityWithdrawals: { pendingCount: number; approvedCount: number };
   finance: { companyProfit: number; totalRevenue: number; profitPerActivation: number };
+}
+
+interface PeriodData {
+  today: number; yesterday: number;
+  thisWeek: number; lastWeek: number;
+  thisMonth: number; lastMonth: number;
+}
+interface GrowthData {
+  registrations: PeriodData;
+  activations: PeriodData;
+  inactive: PeriodData;
+  revenue: PeriodData;
 }
 
 interface AdminUser {
@@ -85,6 +97,76 @@ function StatCard({ icon: Icon, label, value, sub, color }: { icon: React.Elemen
   );
 }
 
+function pct(current: number, previous: number): { value: number; dir: "up" | "down" | "flat" } {
+  if (previous === 0 && current === 0) return { value: 0, dir: "flat" };
+  if (previous === 0) return { value: 100, dir: "up" };
+  const v = Math.round(((current - previous) / previous) * 100);
+  return { value: Math.abs(v), dir: v > 0 ? "up" : v < 0 ? "down" : "flat" };
+}
+
+function TrendBadge({ current, previous, label }: { current: number; previous: number; label: string }) {
+  const { value, dir } = pct(current, previous);
+  return (
+    <div className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="font-semibold tabular-nums">{current.toLocaleString("fr-FR")}</span>
+        <span className={cn(
+          "flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+          dir === "up" ? "bg-emerald-500/15 text-emerald-600" :
+          dir === "down" ? "bg-red-500/15 text-red-500" :
+          "bg-muted text-muted-foreground"
+        )}>
+          {dir === "up" ? <TrendingUp size={9} /> : dir === "down" ? <TrendingDown size={9} /> : <Minus size={9} />}
+          {dir !== "flat" ? `${value}%` : "="}
+        </span>
+        <span className="text-[10px] text-muted-foreground">vs {previous.toLocaleString("fr-FR")}</span>
+      </div>
+    </div>
+  );
+}
+
+function GrowthCard({ icon: Icon, label, color, data, unit = "", invertTrend = false }: {
+  icon: React.ElementType; label: string; color: string;
+  data: PeriodData; unit?: string; invertTrend?: boolean;
+}) {
+  const fmt = (n: number) => unit === "FCFA" ? n.toLocaleString("fr-FR") + " F" : n.toLocaleString("fr-FR");
+  const dayTrend = pct(data.today, data.yesterday);
+  const mainDir = invertTrend
+    ? (dayTrend.dir === "up" ? "down" : dayTrend.dir === "down" ? "up" : "flat")
+    : dayTrend.dir;
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className={cn("flex items-center gap-3 p-4 border-b border-border")}>
+        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0", color)}>
+          <Icon size={17} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground font-medium">{label}</p>
+          <div className="flex items-baseline gap-2 mt-0.5">
+            <span className="text-xl font-bold">{fmt(data.today)}</span>
+            <span className={cn(
+              "flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+              mainDir === "up" ? "bg-emerald-500/15 text-emerald-600" :
+              mainDir === "down" ? "bg-red-500/15 text-red-500" :
+              "bg-muted text-muted-foreground"
+            )}>
+              {mainDir === "up" ? <TrendingUp size={9} /> : mainDir === "down" ? <TrendingDown size={9} /> : <Minus size={9} />}
+              {dayTrend.dir !== "flat" ? `${dayTrend.value}%` : "stable"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="p-4 space-y-0.5">
+        <TrendBadge current={data.today}     previous={data.yesterday} label="Aujourd'hui / Hier" />
+        <TrendBadge current={data.thisWeek}  previous={data.lastWeek}  label="Cette semaine / Sem. dernière" />
+        <TrendBadge current={data.thisMonth} previous={data.lastMonth} label="Ce mois / Mois dernier" />
+      </div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
     pending: { label: "En attente", className: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
@@ -109,16 +191,32 @@ function fmtDate(d: string | null) {
 
 // ─── Section : Vue d'ensemble ────────────────────────────────────
 function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRefresh: () => void }) {
+  const [growth, setGrowth] = useState<GrowthData | null>(null);
+  const [loadingGrowth, setLoadingGrowth] = useState(true);
+
+  const loadGrowth = useCallback(async () => {
+    setLoadingGrowth(true);
+    try { setGrowth(await apiFetch("/api/admin/growth")); } catch {}
+    setLoadingGrowth(false);
+  }, []);
+
+  useEffect(() => { loadGrowth(); }, [loadGrowth]);
+
+  const handleRefreshAll = () => { onRefresh(); loadGrowth(); };
+
   if (!stats) return <div className="flex items-center justify-center h-64"><RefreshCw className="animate-spin text-muted-foreground" /></div>;
   const { users, withdrawals, activityWithdrawals, finance } = stats;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Vue d'ensemble</h2>
-        <button onClick={onRefresh} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          <RefreshCw size={13} /> Actualiser
+        <button onClick={handleRefreshAll} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw size={13} /> Actualiser tout
         </button>
       </div>
+
+      {/* ── Métriques globales ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Users} label="Total membres" value={users.total} sub={`${users.active} actifs`} color="bg-primary" />
         <StatCard icon={CheckCircle} label="Comptes actifs" value={users.active} sub={`${users.inactive} inactifs`} color="bg-emerald-500" />
@@ -131,6 +229,56 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
         <StatCard icon={Wallet} label="Activités en attente" value={activityWithdrawals.pendingCount} sub={`${activityWithdrawals.approvedCount} approuvées`} color="bg-purple-500" />
         <StatCard icon={DollarSign} label="Total retiré" value={withdrawals.totalPaid.toLocaleString("fr-FR") + " FCFA"} color="bg-teal-500" />
       </div>
+
+      {/* ── Section Tendances ──────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp size={16} className="text-primary" />
+          <h3 className="text-base font-bold">Tendances & Progressions</h3>
+          <span className="text-[10px] bg-primary/10 text-primary font-semibold px-2 py-0.5 rounded-full ml-1">Aujourd'hui · Semaine · Mois</span>
+        </div>
+        {loadingGrowth || !growth ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-2xl h-44 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <GrowthCard
+              icon={Users}
+              label="Nouvelles inscriptions"
+              color="bg-primary"
+              data={growth.registrations}
+            />
+            <GrowthCard
+              icon={CheckCircle}
+              label="Nouveaux actifs"
+              color="bg-emerald-500"
+              data={growth.activations}
+            />
+            <GrowthCard
+              icon={AlertCircle}
+              label="Inactifs (non-activés)"
+              color="bg-amber-500"
+              data={growth.inactive}
+              invertTrend
+            />
+            <GrowthCard
+              icon={DollarSign}
+              label="Revenus générés"
+              color="bg-teal-500"
+              data={growth.revenue}
+              unit="FCFA"
+            />
+          </div>
+        )}
+        <p className="text-[10px] text-muted-foreground mt-3">
+          Les revenus sont estimés à 900 FCFA par activation. Les inactifs correspondent aux comptes inscrits mais non encore activés.
+        </p>
+      </div>
+
+      {/* ── Calcul du revenu ──────────────────────────────────────── */}
       <div className="bg-card border border-border rounded-2xl p-6">
         <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><BarChart3 size={16} className="text-amber-500" /> Calcul du revenu par activation</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">

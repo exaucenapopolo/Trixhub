@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, ilike, or, sql, and, count } from "drizzle-orm";
+import { eq, desc, ilike, or, sql, and, count, gte, lt } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -54,6 +54,79 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
       profitPerActivation: PROFIT_PER_ACTIVATION,
     },
   });
+});
+
+// ─────────────────────────────────────────────────────────────────
+// GET /admin/growth — comparaisons par période (jour / semaine / mois)
+// ─────────────────────────────────────────────────────────────────
+router.get("/admin/growth", authenticate, requireAdmin, async (req, res): Promise<void> => {
+  try {
+    const now = new Date();
+    const todayStart   = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart.getTime() - 86_400_000);
+    const weekStart    = new Date(todayStart.getTime() - 7 * 86_400_000);
+    const lastWeekStart= new Date(weekStart.getTime()  - 7 * 86_400_000);
+    const monthStart   = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // ── Inscriptions ─────────────────────────────────────────────
+    const [[todayReg], [yestReg], [weekReg], [lastWeekReg], [monthReg], [lastMonthReg]] = await Promise.all([
+      db.select({ n: count() }).from(usersTable).where(gte(usersTable.createdAt, todayStart)),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, yesterdayStart), lt(usersTable.createdAt, todayStart))),
+      db.select({ n: count() }).from(usersTable).where(gte(usersTable.createdAt, weekStart)),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastWeekStart), lt(usersTable.createdAt, weekStart))),
+      db.select({ n: count() }).from(usersTable).where(gte(usersTable.createdAt, monthStart)),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastMonthStart), lt(usersTable.createdAt, monthStart))),
+    ]);
+
+    // ── Activations dans la période (inscrits + actifs) ───────────
+    const [[todayAct], [yestAct], [weekAct], [lastWeekAct], [monthAct], [lastMonthAct]] = await Promise.all([
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, todayStart), eq(usersTable.isActivated, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, yesterdayStart), lt(usersTable.createdAt, todayStart), eq(usersTable.isActivated, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, weekStart), eq(usersTable.isActivated, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastWeekStart), lt(usersTable.createdAt, weekStart), eq(usersTable.isActivated, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, monthStart), eq(usersTable.isActivated, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastMonthStart), lt(usersTable.createdAt, monthStart), eq(usersTable.isActivated, true))),
+    ]);
+
+    // ── Inactifs inscrits dans la période ─────────────────────────
+    const [[todayInact], [yestInact], [weekInact], [lastWeekInact], [monthInact], [lastMonthInact]] = await Promise.all([
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, todayStart), eq(usersTable.isActivated, false))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, yesterdayStart), lt(usersTable.createdAt, todayStart), eq(usersTable.isActivated, false))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, weekStart), eq(usersTable.isActivated, false))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastWeekStart), lt(usersTable.createdAt, weekStart), eq(usersTable.isActivated, false))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, monthStart), eq(usersTable.isActivated, false))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastMonthStart), lt(usersTable.createdAt, monthStart), eq(usersTable.isActivated, false))),
+    ]);
+
+    const P = 900; // profit par activation
+
+    res.json({
+      registrations: {
+        today: todayReg?.n ?? 0,      yesterday: yestReg?.n ?? 0,
+        thisWeek: weekReg?.n ?? 0,    lastWeek: lastWeekReg?.n ?? 0,
+        thisMonth: monthReg?.n ?? 0,  lastMonth: lastMonthReg?.n ?? 0,
+      },
+      activations: {
+        today: todayAct?.n ?? 0,      yesterday: yestAct?.n ?? 0,
+        thisWeek: weekAct?.n ?? 0,    lastWeek: lastWeekAct?.n ?? 0,
+        thisMonth: monthAct?.n ?? 0,  lastMonth: lastMonthAct?.n ?? 0,
+      },
+      inactive: {
+        today: todayInact?.n ?? 0,     yesterday: yestInact?.n ?? 0,
+        thisWeek: weekInact?.n ?? 0,   lastWeek: lastWeekInact?.n ?? 0,
+        thisMonth: monthInact?.n ?? 0, lastMonth: lastMonthInact?.n ?? 0,
+      },
+      revenue: {
+        today: (todayAct?.n ?? 0) * P,        yesterday: (yestAct?.n ?? 0) * P,
+        thisWeek: (weekAct?.n ?? 0) * P,      lastWeek: (lastWeekAct?.n ?? 0) * P,
+        thisMonth: (monthAct?.n ?? 0) * P,    lastMonth: (lastMonthAct?.n ?? 0) * P,
+      },
+    });
+  } catch (err) {
+    req.log.error(err, "admin/growth error");
+    res.status(500).json({ error: "Erreur serveur" });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────
