@@ -191,6 +191,12 @@ export const GetDashboardResponse = zod.object({
     .object({
       name: zod.string(),
       referralCode: zod.string(),
+      avatarUrl: zod
+        .string()
+        .nullish()
+        .describe(
+          "URL publique de la photo de profil du parrain, ou null si pas de photo",
+        ),
     })
     .nullish(),
 });

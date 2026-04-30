@@ -9,6 +9,7 @@ import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus";
 import {
   uploadAvatarImage,
   deleteAvatarObject,
+  getPublicAvatarUrl,
   ALLOWED_AVATAR_TYPES,
   AVATAR_MAX_SIZE,
 } from "../lib/uploadAvatar";
@@ -100,10 +101,10 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
   const exchangeRate = rates[currency] ?? 1;
 
   // Parrain (sponsor) — celui qui a invité cet utilisateur
-  let sponsor: { displayName: string | null; email: string; referralCode: string } | null = null;
+  let sponsor: { displayName: string | null; email: string; referralCode: string; avatarUrl: string | null } | null = null;
   if (user.referredByCode) {
     const [sp] = await db
-      .select({ displayName: usersTable.displayName, email: usersTable.email, referralCode: usersTable.referralCode })
+      .select({ displayName: usersTable.displayName, email: usersTable.email, referralCode: usersTable.referralCode, avatarUrl: usersTable.avatarUrl })
       .from(usersTable)
       .where(eq(usersTable.referralCode, user.referredByCode));
     if (sp) sponsor = sp;
@@ -124,7 +125,11 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
     currency,
     exchangeRate,
     sponsor: sponsor
-      ? { name: sponsor.displayName ?? sponsor.email.split("@")[0], referralCode: sponsor.referralCode }
+      ? {
+          name: sponsor.displayName ?? sponsor.email.split("@")[0],
+          referralCode: sponsor.referralCode,
+          avatarUrl: sponsor.avatarUrl ? getPublicAvatarUrl(req, sponsor.avatarUrl) : null,
+        }
       : null,
   });
 });

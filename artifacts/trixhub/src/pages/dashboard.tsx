@@ -535,8 +535,25 @@ export default function DashboardPage() {
               <p className="text-base font-bold text-foreground truncate">{dashboard.sponsor.name}</p>
               <p className="text-xs text-muted-foreground">C'est lui qui t'a ouvert les portes de TRIXHUB 🙏</p>
             </div>
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <span className="text-lg font-bold text-amber-500">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
+              {dashboard.sponsor.avatarUrl ? (
+                <img
+                  src={dashboard.sponsor.avatarUrl}
+                  alt={dashboard.sponsor.name as string}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    el.style.display = "none";
+                    el.nextElementSibling?.classList.remove("hidden");
+                  }}
+                />
+              ) : null}
+              <span
+                className={cn(
+                  "text-lg font-bold text-amber-500",
+                  dashboard.sponsor.avatarUrl ? "hidden" : "",
+                )}
+              >
                 {(dashboard.sponsor.name as string).charAt(0).toUpperCase()}
               </span>
             </div>

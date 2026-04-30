@@ -973,6 +973,10 @@ components:
               type: string
             referralCode:
               type: string
+            avatarUrl:
+              type: string
+              nullable: true
+              description: "URL publique de la photo de profil du parrain, ou null si pas de photo"
           required: [name, referralCode]
       required: [totalBalance, referralBalance, taskBalance, bonusBalance, depositBalance, withdrawnAmount, spentAmount, inactiveBalance, totalReferrals, activeReferrals, inactiveReferrals, level1Count, level2Count, level3Count, pendingWithdrawals, dailyBonusClaimed, dailyBonusAmount, currency, exchangeRate]
 

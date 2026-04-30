@@ -89,6 +89,8 @@ export interface AuthResponse {
 export type DashboardSponsor = {
   name: string;
   referralCode: string;
+  /** URL publique de la photo de profil du parrain, ou null si pas de photo */
+  avatarUrl?: string | null;
 } | null;
 
 export interface Dashboard {
