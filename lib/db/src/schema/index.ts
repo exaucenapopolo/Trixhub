@@ -12,3 +12,4 @@ export * from "./activityWithdrawals";
 export * from "./quizSessions";
 export * from "./activitySchedules";
 export * from "./formationRequests";
+export * from "./contactPurchases";

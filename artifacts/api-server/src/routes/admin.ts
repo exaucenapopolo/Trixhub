@@ -7,6 +7,7 @@ import {
   withdrawalsTable,
   activityWithdrawalsTable,
   transactionsTable,
+  contactPurchasesTable,
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -578,6 +579,42 @@ router.get("/admin/wallet-exposure", authenticate, requireAdmin, async (_req, re
   });
 
   res.json(rows);
+});
+
+// ─── GET /admin/contacts-revenue ────────────────────────────────
+router.get("/admin/contacts-revenue", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  const [summary] = await db
+    .select({
+      totalRevenue: sql<string>`COALESCE(SUM(price_fcfa::numeric), 0)`,
+      totalPurchases: count(),
+      totalContacts: sql<string>`COALESCE(SUM(quantity), 0)`,
+    })
+    .from(contactPurchasesTable);
+
+  const history = await db
+    .select({
+      id: contactPurchasesTable.id,
+      buyerId: contactPurchasesTable.buyerId,
+      buyerName: usersTable.displayName,
+      buyerEmail: usersTable.email,
+      quantity: contactPurchasesTable.quantity,
+      priceFcfa: contactPurchasesTable.priceFcfa,
+      currency: contactPurchasesTable.currency,
+      priceInCurrency: contactPurchasesTable.priceInCurrency,
+      orderType: contactPurchasesTable.orderType,
+      createdAt: contactPurchasesTable.createdAt,
+    })
+    .from(contactPurchasesTable)
+    .leftJoin(usersTable, eq(usersTable.id, contactPurchasesTable.buyerId))
+    .orderBy(desc(contactPurchasesTable.createdAt))
+    .limit(200);
+
+  res.json({
+    totalRevenue: parseFloat(summary?.totalRevenue ?? "0"),
+    totalPurchases: summary?.totalPurchases ?? 0,
+    totalContacts: parseInt(summary?.totalContacts ?? "0"),
+    history,
+  });
 });
 
 export default router;

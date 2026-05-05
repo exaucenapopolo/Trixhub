@@ -8,7 +8,7 @@ import {
   Ban, Trash2, Key, Edit3, ChevronRight, CheckCircle,
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
   Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
-  Globe, AlertTriangle, Info
+  Globe, AlertTriangle, Info, BookUser
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -1198,13 +1198,121 @@ function WalletsSection() {
   );
 }
 
+// ─── Section : Ventes de contacts ────────────────────────────────
+interface ContactPurchaseRow {
+  id: number;
+  buyerId: number;
+  buyerName: string | null;
+  buyerEmail: string | null;
+  quantity: number;
+  priceFcfa: string;
+  currency: string;
+  priceInCurrency: string;
+  orderType: string;
+  createdAt: string;
+}
+
+interface ContactsRevenue {
+  totalRevenue: number;
+  totalPurchases: number;
+  totalContacts: number;
+  history: ContactPurchaseRow[];
+}
+
+function ContactsSection() {
+  const [data, setData] = useState<ContactsRevenue | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setData(await apiFetch("/api/admin/contacts-revenue")); } catch {}
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Ventes de contacts</h2>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw size={13} /> Actualiser
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-muted-foreground" /></div>
+      ) : !data ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">Erreur de chargement.</div>
+      ) : (
+        <>
+          {/* Stats summary */}
+          <div className="grid grid-cols-3 gap-4">
+            <StatCard icon={DollarSign} label="Revenus contacts" value={fmt(data.totalRevenue)} color="bg-emerald-500" />
+            <StatCard icon={BookUser} label="Achats effectués" value={data.totalPurchases.toLocaleString("fr-FR")} color="bg-blue-500" />
+            <StatCard icon={Users} label="Contacts vendus" value={data.totalContacts.toLocaleString("fr-FR")} color="bg-purple-500" />
+          </div>
+
+          {/* Historique */}
+          {data.history.length === 0 ? (
+            <div className="bg-card border border-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
+              Aucun achat de contacts pour l'instant.
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-border flex items-center gap-2">
+                <BookUser size={16} className="text-primary" />
+                <span className="font-semibold text-sm">Historique des achats ({data.history.length})</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Acheteur</th>
+                      <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Contacts</th>
+                      <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Prix FCFA</th>
+                      <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Devise</th>
+                      <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Ordre</th>
+                      <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.history.map(row => (
+                      <tr key={row.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-foreground truncate max-w-[140px]">{row.buyerName ?? "—"}</p>
+                          <p className="text-[11px] text-muted-foreground truncate max-w-[140px]">{row.buyerEmail ?? "—"}</p>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold tabular-nums">{row.quantity.toLocaleString("fr-FR")}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400 font-semibold">{fmt(row.priceFcfa)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded font-mono">{row.currency}</span>
+                          <p className="text-[10px] text-muted-foreground tabular-nums">{parseFloat(row.priceInCurrency).toLocaleString("fr-FR")}</p>
+                        </td>
+                        <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                          {row.orderType === "newest" ? "Nouveaux" : "Anciens"}
+                        </td>
+                        <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">{fmtDate(row.createdAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Page principale Admin ────────────────────────────────────────
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
   usePageTitle('Administration');
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets" | "contacts">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -1230,11 +1338,12 @@ export default function AdminPage() {
   }
 
   const tabs = [
-    { id: "overview",    label: "Vue d'ensemble", icon: BarChart3 },
-    { id: "users",       label: "Utilisateurs",   icon: Users    },
-    { id: "withdrawals", label: "Retraits",        icon: Wallet   },
-    { id: "activities",  label: "Activités",       icon: Activity },
-    { id: "wallets",     label: "Portefeuilles",   icon: Globe    },
+    { id: "overview",    label: "Vue d'ensemble", icon: BarChart3  },
+    { id: "users",       label: "Utilisateurs",   icon: Users      },
+    { id: "withdrawals", label: "Retraits",        icon: Wallet     },
+    { id: "activities",  label: "Activités",       icon: Activity   },
+    { id: "wallets",     label: "Portefeuilles",   icon: Globe      },
+    { id: "contacts",    label: "Contacts",        icon: BookUser   },
   ] as const;
 
   return (
@@ -1264,6 +1373,7 @@ export default function AdminPage() {
         {activeTab === "withdrawals" && <WithdrawalsSection />}
         {activeTab === "activities"  && <ActivitiesSection />}
         {activeTab === "wallets"     && <WalletsSection />}
+        {activeTab === "contacts"    && <ContactsSection />}
       </div>
     </Layout>
   );
