@@ -270,8 +270,8 @@ export default function RegisterPage() {
               {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Numéro de téléphone
-                  <span className="ml-1.5 text-xs text-muted-foreground font-normal">(de préférence WhatsApp)</span>
+                  Numéro WhatsApp
+                  <span className="ml-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-normal">obligatoire</span>
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

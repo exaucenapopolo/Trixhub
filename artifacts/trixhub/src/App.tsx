@@ -31,6 +31,7 @@ import FormationsPage from "@/pages/formations";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import AdminPage from "@/pages/admin";
+import ContactsPage from "@/pages/contacts";
 import NotFound from "@/pages/not-found";
 
 export const queryClient = new QueryClient({
@@ -116,6 +117,7 @@ function InnerApp() {
         <Route path="/bonus/vpn" component={() => <ProtectedRoute component={BonusVpnPage} />} />
         <Route path="/formations" component={() => <ProtectedRoute component={FormationsPage} />} />
         <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
+        <Route path="/contacts" component={() => <ProtectedRoute component={ContactsPage} />} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route component={NotFound} />

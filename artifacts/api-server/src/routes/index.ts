@@ -15,6 +15,7 @@ import activitiesRouter from "./activities";
 import activityWithdrawalsRouter from "./activityWithdrawals";
 import activitySchedulesRouter from "./activitySchedules";
 import adminRouter from "./admin";
+import contactsRouter from "./contacts";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(activitiesRouter);
 router.use(activityWithdrawalsRouter);
 router.use(activitySchedulesRouter);
 router.use(adminRouter);
+router.use(contactsRouter);
 
 export default router;
