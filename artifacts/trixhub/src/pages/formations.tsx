@@ -20,6 +20,7 @@ type Formation = {
   title: string;
   description: string;
   emoji: string;
+  image?: string;
 };
 
 type Category = {
@@ -47,16 +48,19 @@ const CATEGORIES: Category[] = [
         title: "Comment organiser sa vie financière même avec un petit revenu",
         description: "Organise ton budget mois par mois, élimine les dépenses inutiles et commence à épargner dès aujourd'hui, même avec un petit revenu.",
         emoji: "💰",
+        image: "/formation-vie-financiere.jpg",
       },
       {
         title: "Comment ne plus finir le mois sans argent",
         description: "Anticipe tes dépenses, évite les emprunts d'urgence et construis un matelas financier qui te protège chaque fin de mois.",
         emoji: "📊",
+        image: "/formation-fin-mois-sans-argent.jpg",
       },
       {
         title: "Comment créer une deuxième source de revenu sans stress",
         description: "Identifie 3 sources de revenus adaptées à ton profil et lance la première en moins de 2 semaines, sans investissement de départ.",
         emoji: "💎",
+        image: "/formation-deuxieme-source-revenu.png",
       },
     ],
   },
@@ -73,16 +77,19 @@ const CATEGORIES: Category[] = [
         title: "Comment bâtir un business stable même en partant de rien",
         description: "Construis ton activité pas à pas : idée → validation → premiers clients → revenus réguliers. Zéro capital de départ nécessaire.",
         emoji: "🏗️",
+        image: "/formation-business-stable.png",
       },
       {
         title: "Comment gagner ses premiers revenus sans abandonner ses études",
         description: "Freelance, affiliation, revente — des méthodes concrètes pour gagner de l'argent en ligne, adaptées aux étudiants africains.",
         emoji: "🎓",
+        image: "/formation-revenus-etudes.jpg",
       },
       {
         title: "Comment avoir tout canal+ gratuitement ?",
         description: "Accède à Canal+ et ses bouquets premium à prix zéro grâce à des techniques légales méconnues du grand public.",
         emoji: "📺",
+        image: "/formation-canal-plus.jpg",
       },
     ],
   },
@@ -99,16 +106,19 @@ const CATEGORIES: Category[] = [
         title: "Comment vendre sur WhatsApp sans forcer les gens",
         description: "Maîtrise les messages, statuts et groupes WhatsApp pour vendre naturellement, sans harceler tes contacts ni les perdre.",
         emoji: "💬",
+        image: "/formation-vendre-whatsapp.png",
       },
       {
         title: "Comment convertir ses amis et contacts en premiers clients",
         description: "Transforme ta liste de contacts en clients fidèles avec des scripts de conversation simples et des techniques de confiance éprouvées.",
         emoji: "🤝",
+        image: "/formation-convertir-contacts.png",
       },
       {
         title: "Comment devenir viral sur les réseaux sociaux ?",
         description: "Crée du contenu qui se partage seul : visuels, vidéos courtes, textes accrocheurs — sans budget publicitaire.",
         emoji: "🚀",
+        image: "/formation-viral-reseaux.jpg",
       },
     ],
   },
@@ -125,11 +135,13 @@ const CATEGORIES: Category[] = [
         title: "Comment avoir confiance en soi quand personne ne croit en toi",
         description: "Développe une confiance inébranlable en toi, même dans les moments de doute, de critique ou d'échec collectif.",
         emoji: "💪",
+        image: "/formation-confiance-en-soi.jpg",
       },
       {
         title: "Comment devenir sérieux et discipliné en 30 jours",
         description: "Plan d'action de 30 jours pour devenir quelqu'un de fiable, constant et productif dans tous les domaines de ta vie.",
         emoji: "🎯",
+        image: "/formation-serieux-30-jours.jpg",
       },
       {
         title: "Comment reprendre le contrôle de sa vie en 90 jours",
@@ -140,11 +152,13 @@ const CATEGORIES: Category[] = [
         title: "Comment devenir une meilleure version de soi (plan concret)",
         description: "Évalue qui tu es aujourd'hui, décide qui tu veux être demain et applique les changements concrets semaine après semaine.",
         emoji: "⭐",
+        image: "/formation-meilleure-version.jpg",
       },
       {
         title: "Comment utiliser son téléphone sans gâcher sa vie",
         description: "Utilise ton smartphone comme un outil de croissance, pas de distraction : productivité, réseaux, apprentissage continu.",
         emoji: "📱",
+        image: "/formation-telephone.jpg",
       },
     ],
   },
@@ -161,6 +175,7 @@ const CATEGORIES: Category[] = [
         title: "Comment utiliser l'intelligence artificielle pour améliorer sa vie quotidienne",
         description: "Découvre comment ChatGPT, Gemini et les autres IA peuvent te faire gagner des heures chaque jour et booster tes revenus.",
         emoji: "🤖",
+        image: "/formation-intelligence-artificielle.jpg",
       },
     ],
   },
@@ -219,18 +234,37 @@ function FormationCard({
       )}
     >
       {/* Illustration */}
-      <div className={cn("relative flex items-center justify-center py-8", category.bg)}>
-        <span className="text-6xl select-none" role="img" aria-hidden>
-          {formation.emoji}
-        </span>
-        <div className={cn("absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center", category.iconBg)}>
+      <div className="relative overflow-hidden">
+        {formation.image ? (
+          <img
+            src={`${BASE}${formation.image}`}
+            alt={formation.title}
+            className="w-full h-44 object-cover object-top"
+            loading="lazy"
+          />
+        ) : (
+          <div className={cn("flex items-center justify-center py-8 h-44", category.bg)}>
+            <span className="text-6xl select-none" role="img" aria-hidden>
+              {formation.emoji}
+            </span>
+          </div>
+        )}
+
+        {/* Badge catégorie toujours visible */}
+        <div className={cn("absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center shadow-sm", category.iconBg)}>
           <Icon className={cn("w-3.5 h-3.5", category.color)} />
         </div>
+
         {isRequested && (
-          <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+          <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
             <CheckCircle2 className="w-3 h-3" />
             Demandée
           </div>
+        )}
+
+        {/* Dégradé bas pour lisibilité si image */}
+        {formation.image && (
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
         )}
       </div>
 
