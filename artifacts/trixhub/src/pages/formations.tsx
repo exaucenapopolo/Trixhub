@@ -147,6 +147,7 @@ const CATEGORIES: Category[] = [
         title: "Comment reprendre le contrôle de sa vie en 90 jours",
         description: "Programme de transformation sur 90 jours : santé, finances, relations, mental — reprends les rênes de ton existence.",
         emoji: "🔄",
+        image: "/formation-controle-90-jours.png",
       },
       {
         title: "Comment devenir une meilleure version de soi (plan concret)",
