@@ -21,7 +21,7 @@ export default function PrivacyPage() {
 
         <div className="bg-card border border-border rounded-2xl p-6 md:p-10">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Politique de confidentialité</h1>
-          <p className="text-muted-foreground text-sm mb-8">Dernière mise à jour : Avril 2026</p>
+          <p className="text-muted-foreground text-sm mb-8">Dernière mise à jour : Mai 2026</p>
 
           <div className="prose prose-sm max-w-none text-muted-foreground space-y-6">
             <section>
@@ -55,11 +55,31 @@ export default function PrivacyPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-2">4. Partage des données</h2>
-              <p>Nous ne vendons ni ne louons vos données personnelles à des tiers. Nous pouvons partager certaines informations avec :</p>
+              <p>Nous ne vendons ni ne louons vos données personnelles à des tiers commerciaux extérieurs à la plateforme. Nous pouvons partager certaines informations dans les cas suivants :</p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
                 <li>Nos partenaires de paiement (Orange Money, Wave, MTN, etc.) pour traiter vos transactions</li>
                 <li>Les autorités compétentes si requis par la loi</li>
               </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">4b. Partage intra-communautaire des contacts membres</h2>
+              <p>
+                En vous inscrivant sur TRIXHUB, vous acceptez que votre <strong className="text-foreground">nom d'affichage et votre numéro WhatsApp</strong> soient accessibles aux membres ayant activé leur compte, dans le cadre du <strong className="text-foreground">système de contacts communautaires TRIXHUB</strong>.
+              </p>
+              <p className="mt-2">
+                Ce partage est une fonctionnalité centrale de la communauté : TRIXHUB réunit des personnes partageant les mêmes centres d'intérêt (entrepreneuriat, développement personnel, génération de revenus). Rendre les contacts accessibles entre membres permet de créer des opportunités de réseau, de collaboration et de partenariat au sein d'une communauté qualifiée et engagée.
+              </p>
+              <p className="mt-3 font-medium text-foreground">Garanties de protection :</p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Seuls les membres avec un <strong className="text-foreground">compte activé</strong> peuvent accéder aux contacts — les simples inscrits non activés n'y ont pas accès</li>
+                <li>Vos coordonnées ne sont <strong className="text-foreground">jamais transmises à des entreprises extérieures</strong> à TRIXHUB</li>
+                <li>L'accès aux contacts est une fonctionnalité payante (2 FCFA/contact) qui génère des revenus réinjectés dans la plateforme</li>
+                <li>Vous bénéficiez réciproquement de l'accès au réseau des autres membres, créant des opportunités mutuelles</li>
+              </ul>
+              <p className="mt-3 text-sm bg-muted/60 rounded-xl p-3 border border-border">
+                <strong className="text-foreground">Base légale :</strong> Ce traitement est fondé sur votre consentement libre et éclairé, exprimé lors de l'inscription. Vous pouvez demander la suppression de vos données à tout moment en nous contactant via la page support de la plateforme.
+              </p>
             </section>
 
             <section>

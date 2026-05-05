@@ -406,11 +406,44 @@ export default function ContactsPage() {
               </div>
             )}
 
-            {/* Note bas */}
+            {/* Note technique bas */}
             <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
               <p className="text-xs text-muted-foreground">
                 Le fichier .vcf peut être importé directement dans les contacts de ton téléphone — compatible WhatsApp, Android et iPhone.
               </p>
+            </div>
+
+            {/* Section valeur — toujours visible */}
+            <div className="bg-gradient-to-br from-primary/8 via-card to-amber-500/5 border border-primary/20 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">💡</span>
+                <h3 className="text-base font-bold text-foreground">Tu n'achètes pas des contacts. Tu achètes des opportunités.</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Contrairement aux groupes WhatsApp aléatoires où tout le monde est mélangé sans lien commun, les membres TRIXHUB partagent le même centre d'intérêt : <strong className="text-foreground">l'entrepreneuriat, le développement personnel et la génération de revenus</strong>.
+              </p>
+              <div className="grid grid-cols-1 gap-3">
+                {[
+                  { icon: "🏢", title: "Chefs d'entreprise", desc: "Des entrepreneurs actifs qui cherchent à développer leur réseau et leurs partenariats." },
+                  { icon: "👔", title: "Professionnels motivés", desc: "Des personnes déjà engagées dans une démarche active d'amélioration de leur situation financière." },
+                  { icon: "🤝", title: "Potentiels clients & partenaires", desc: "Des profils ouverts à de nouvelles propositions commerciales, collaborations et opportunités." },
+                  { icon: "🚀", title: "Prospection ciblée", desc: "Quand tu les contactes, tu n'envoies pas un message dans le vide — tu parles à quelqu'un qui est déjà dans la bonne dynamique." },
+                ].map(item => (
+                  <div key={item.title} className="flex items-start gap-3 bg-background/60 rounded-xl p-3">
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-primary/10 border border-primary/25 rounded-xl p-4">
+                <p className="text-sm text-foreground font-medium leading-relaxed">
+                  À 2 FCFA le contact, tu accèdes à une opportunité de business, de collaboration ou de vente. <br />
+                  <span className="text-muted-foreground font-normal">Présente-toi, prospecte, crée des synergies — le reste dépend de toi.</span>
+                </p>
+              </div>
             </div>
           </>
         )}

@@ -21,7 +21,7 @@ export default function TermsPage() {
 
         <div className="bg-card border border-border rounded-2xl p-6 md:p-10">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Conditions d'utilisation</h1>
-          <p className="text-muted-foreground text-sm mb-8">Dernière mise à jour : Avril 2026</p>
+          <p className="text-muted-foreground text-sm mb-8">Dernière mise à jour : Mai 2026</p>
 
           <div className="prose prose-sm max-w-none text-muted-foreground space-y-6">
             <section>
@@ -69,6 +69,35 @@ export default function TermsPage() {
                 <li>Vous devez fournir des informations exactes et à jour lors de votre inscription.</li>
                 <li>Vous êtes responsable de la confidentialité de votre mot de passe.</li>
               </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">4b. Consentement au partage de contact au sein de la communauté TRIXHUB</h2>
+              <p>
+                En vous inscrivant sur TRIXHUB, vous acceptez expressément que votre <strong className="text-foreground">nom d'affichage et votre numéro WhatsApp</strong> puissent être rendus accessibles aux autres membres de la plateforme ayant un compte activé, dans le cadre exclusif du système de contacts communautaires de TRIXHUB.
+              </p>
+              <p className="mt-3 font-medium text-foreground">Pourquoi ce partage ?</p>
+              <p className="mt-1">
+                TRIXHUB est une communauté de personnes partageant les mêmes centres d'intérêt : l'entrepreneuriat, le développement personnel et la génération de revenus. Le système de contacts communautaires permet à chaque membre activé d'accéder aux coordonnées d'autres membres pour :
+              </p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Développer leur réseau professionnel au sein de la communauté</li>
+                <li>Créer des synergies, des partenariats ou des collaborations</li>
+                <li>Prospecter des clients potentiels sensibles aux mêmes opportunités</li>
+                <li>Partager des projets, services ou produits avec un public déjà engagé dans une démarche entrepreneuriale</li>
+              </ul>
+              <p className="mt-3 font-medium text-foreground">Ce que ce partage n'est PAS :</p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Vos données ne sont <strong className="text-foreground">jamais vendues à des tiers externes</strong> à la plateforme</li>
+                <li>Vos données ne sont <strong className="text-foreground">jamais transmises à des entreprises commerciales</strong> hors de la communauté TRIXHUB</li>
+                <li>L'accès à vos coordonnées reste limité aux <strong className="text-foreground">membres ayant activé leur compte</strong> — les simples inscrits ne peuvent pas y accéder</li>
+              </ul>
+              <p className="mt-3">
+                En vous inscrivant, vous bénéficiez vous-même de ce même réseau : votre profil intègre la base communautaire accessible aux membres, ce qui peut générer pour vous des opportunités de collaboration, de partenariat ou de clientèle inattendues.
+              </p>
+              <p className="mt-3 text-sm bg-muted/60 rounded-xl p-3">
+                <strong className="text-foreground">Important :</strong> En cas de désaccord avec ce principe de partage communautaire, vous ne devez pas vous inscrire sur TRIXHUB. L'inscription vaut acceptation de cette clause. Pour toute demande de retrait de vos données, contactez-nous via la page support de la plateforme.
+              </p>
             </section>
 
             <section>
