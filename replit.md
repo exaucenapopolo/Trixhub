@@ -120,14 +120,14 @@ Nouvelles tables (toutes serial PK) : `activities` (catalogue admin), `activity_
 
 ## Database Migrations
 
-No migrations folder — we use `drizzle-kit push --force` exclusively (dev and production).
+No migrations folder — we use `drizzle-kit push --force` for dev only.
 
 **Workflow for schema changes:**
 1. Modify schema files in `lib/db/src/schema/`
 2. Apply to dev: `pnpm --filter @workspace/db run push-force`
-3. Deploy — production build runs `push-force` automatically (idempotent, only applies what's missing)
+3. Re-publish — Replit's publish flow diffs dev vs prod schema and applies changes automatically
 
-**Why `push --force` and not `migrate`:** Replit's deployment platform detects migration files and tries to run its own migration logic, which fails on existing schemas. Using `push --force` (no `out` dir in `drizzle.config.ts`) bypasses this and lets drizzle diff directly against the live DB.
+**IMPORTANT:** Never run `push-force` in the production build command (`artifact.toml`). Replit handles production schema migration during publish. Adding `push-force` to the build command breaks the publish flow with "Failed to check for database diff: The endpoint has been disabled."
 
 ## Auth Flow
 
