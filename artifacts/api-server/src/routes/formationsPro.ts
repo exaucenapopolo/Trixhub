@@ -4,12 +4,13 @@ import { usersTable, balancesTable, premiumFormationPurchasesTable } from "@work
 import { eq, and, sql } from "drizzle-orm";
 import { authenticate } from "../middlewares/authenticate";
 import { CURRENCY_RATES } from "../lib/currency";
+import { generateFormationPDF } from "../lib/formationPdf";
 
 export const FORMATIONS_CATALOG: Record<string, { priceFcfa: number; title: string }> = {
   "tiktok-monetisable": { priceFcfa: 250, title: "Comment créer un compte TikTok monétisable depuis l'Afrique ?" },
-  "tiktok-clients":     { priceFcfa: 250, title: "Comment transformer TikTok en source de clients ?" },
-  "whatsapp-systeme":   { priceFcfa: 250, title: "Comment créer un système WhatsApp qui vend tout seul ?" },
-  "ia-vendre":          { priceFcfa: 250, title: "Comment utiliser l'IA pour produire et vendre plus vite ?" },
+  "tiktok-clients":     { priceFcfa: 150, title: "Comment transformer TikTok en source de clients ?" },
+  "whatsapp-systeme":   { priceFcfa: 150, title: "Comment créer un système WhatsApp qui vend tout seul ?" },
+  "ia-vendre":          { priceFcfa: 150, title: "Comment utiliser l'IA pour produire et vendre plus vite ?" },
   "whatsapp-business":  { priceFcfa: 100, title: "Comment prospecter et vendre sur WhatsApp Business en Afrique ?" },
   "marketing-affiliation": { priceFcfa: 100, title: "La base du marketing d'affiliation" },
   "business-telephone": { priceFcfa: 100, title: "Créer un business en ligne avec son téléphone" },
@@ -107,6 +108,57 @@ router.post("/formations-pro/purchase", authenticate, async (req, res): Promise<
   });
 
   res.json({ ok: true });
+});
+
+router.get("/formations-pro/:id/download", authenticate, async (req, res): Promise<void> => {
+  if (!req.user?.isActivated) {
+    res.status(403).json({ error: "Compte non activé." });
+    return;
+  }
+
+  const formationId = String(req.params.id);
+  if (!FORMATIONS_CATALOG[formationId]) {
+    res.status(404).json({ error: "Formation introuvable." });
+    return;
+  }
+
+  const [purchase] = await db
+    .select({ id: premiumFormationPurchasesTable.id })
+    .from(premiumFormationPurchasesTable)
+    .where(
+      and(
+        eq(premiumFormationPurchasesTable.buyerId, req.user.id),
+        eq(premiumFormationPurchasesTable.formationId, formationId)
+      )
+    );
+
+  if (!purchase) {
+    res.status(403).json({ error: "Formation non achetée." });
+    return;
+  }
+
+  const formation = FORMATIONS_CATALOG[formationId];
+  const safeName = formationId.replace(/[^a-z0-9-]/g, "-");
+  const filename = `trixhub-formation-${safeName}.pdf`;
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+  const doc = generateFormationPDF(formationId);
+  if (!doc) {
+    res.status(500).json({ error: "Impossible de générer la formation." });
+    return;
+  }
+
+  doc.pipe(res);
+  doc.on("error", (err: Error) => {
+    req.log.error({ err, formationId }, "PDF generation error");
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Erreur de génération." });
+    }
+  });
+
+  req.log.info({ formationId, userId: req.user.id, title: formation.title }, "Formation PDF downloaded");
 });
 
 export default router;

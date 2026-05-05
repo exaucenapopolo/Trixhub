@@ -11,7 +11,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { formatLocalWithFcfa, formatLocal, type CurrencyTarget } from "@/lib/currency";
 import {
   Star, CheckCircle2, Loader2, ZoomIn, X, ChevronRight,
-  Wallet, Gift, ShoppingCart, BookOpen, Zap, Target, Lock,
+  Wallet, Gift, ShoppingCart, BookOpen, Zap, Target, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +31,12 @@ function priceStr(amountFcfa: number, ct: CurrencyTarget): string {
 type FormationWithImage = {
   id: string; title: string; price: number;
   image: string; tag: string; tagColor: string; tagBg: string;
-  description: string; points: string[];
+  description: string;
 };
 type FormationList = {
   id: string; title: string; price: number;
   emoji: string; tag: string; tagColor: string; tagBg: string;
-  description: string; points: string[];
+  description: string;
 };
 
 const FORMATIONS_WITH_IMAGES: FormationWithImage[] = [
@@ -45,52 +45,28 @@ const FORMATIONS_WITH_IMAGES: FormationWithImage[] = [
     title: "Comment créer un compte TikTok monétisable depuis l'Afrique ?",
     price: 250, image: imgTikTokMonetisable,
     tag: "TikTok", tagColor: "text-pink-500", tagBg: "bg-pink-500/10",
-    description: "C'est un service ultra recherché qui se revend entre 2 500 et 7 000 FCFA. Quand tu sais le faire, tu as une compétence monnayable immédiatement. On te l'enseigne à 250 FCFA.",
-    points: [
-      "Créer un compte TikTok professionnel depuis l'Afrique",
-      "Paramétrer correctement pour être éligible à la monétisation",
-      "Atteindre les critères requis (vues, abonnés, région)",
-      "Vendre ce service à d'autres à partir de 3 000 FCFA",
-    ],
+    description: "C'est un service ultra recherché qui se revend entre 2 500 et 7 000 FCFA. Quand tu sais le faire, tu as une compétence monnayable immédiatement.",
   },
   {
     id: "tiktok-clients",
     title: "Comment transformer TikTok en source de clients ?",
-    price: 250, image: imgTikTokClients,
+    price: 150, image: imgTikTokClients,
     tag: "TikTok", tagColor: "text-pink-500", tagBg: "bg-pink-500/10",
     description: "Fais de TikTok ton meilleur outil d'acquisition client. Stratégies concrètes pour attirer, engager et convertir une audience africaine.",
-    points: [
-      "Créer du contenu qui attire et qui convertit",
-      "Gagner en visibilité et en crédibilité",
-      "Générer des leads et des ventes directement depuis TikTok",
-      "Automatiser la fidélisation de ta communauté",
-    ],
   },
   {
     id: "whatsapp-systeme",
     title: "Comment créer un système WhatsApp qui vend tout seul ?",
-    price: 250, image: imgWhatsAppSystem,
+    price: 150, image: imgWhatsAppSystem,
     tag: "WhatsApp", tagColor: "text-green-500", tagBg: "bg-green-500/10",
     description: "Configure WhatsApp Business comme un tunnel de vente automatisé. Ton business génère des ventes 24h/24, même quand tu dors.",
-    points: [
-      "Configurer un compte WhatsApp Business optimisé",
-      "Créer un tunnel de vente automatisé",
-      "Rédiger des messages qui convertissent",
-      "Mettre en place des relances automatiques efficaces",
-    ],
   },
   {
     id: "ia-vendre",
     title: "Comment utiliser l'IA pour produire et vendre plus vite ?",
-    price: 250, image: imgIA,
+    price: 150, image: imgIA,
     tag: "Intelligence Artificielle", tagColor: "text-purple-500", tagBg: "bg-purple-500/10",
     description: "Exploite ChatGPT et les autres IA pour créer du contenu, des offres et des visuels 10x plus vite. Prends de l'avance sur ta concurrence.",
-    points: [
-      "Maîtriser les meilleurs outils IA pour ton activité",
-      "Créer du contenu IA qui convertit",
-      "Automatiser tes processus répétitifs",
-      "Booster tes ventes grâce à des stratégies IA éprouvées",
-    ],
   },
 ];
 
@@ -101,12 +77,6 @@ const FORMATIONS_LIST: FormationList[] = [
     price: 100, emoji: "💬",
     tag: "WhatsApp", tagColor: "text-green-500", tagBg: "bg-green-500/10",
     description: "Maîtrise la prospection, les messages qui convertissent et la fidélisation — tout adapté au marché africain.",
-    points: [
-      "Optimiser son profil WhatsApp Business comme un pro",
-      "Trouver des prospects sans budget pub",
-      "Envoyer le premier message qui crée l'intérêt",
-      "Transformer les conversations en ventes concrètes",
-    ],
   },
   {
     id: "marketing-affiliation",
@@ -114,12 +84,6 @@ const FORMATIONS_LIST: FormationList[] = [
     price: 100, emoji: "🔗",
     tag: "Affiliation", tagColor: "text-blue-500", tagBg: "bg-blue-500/10",
     description: "Comprends les fondements du marketing d'affiliation et commence à générer tes premières commissions dès aujourd'hui.",
-    points: [
-      "Comprendre le fonctionnement de l'affiliation",
-      "Choisir les bons programmes à promouvoir",
-      "Générer tes premières commissions",
-      "Scaler ton activité d'affilié",
-    ],
   },
   {
     id: "business-telephone",
@@ -127,12 +91,6 @@ const FORMATIONS_LIST: FormationList[] = [
     price: 100, emoji: "📱",
     tag: "Business", tagColor: "text-amber-500", tagBg: "bg-amber-500/10",
     description: "Zéro bureau, zéro ordinateur. Démarre et développe ton activité digitale avec uniquement ton smartphone.",
-    points: [
-      "Identifier ton niche business depuis ton téléphone",
-      "Créer tes contenus et tes offres",
-      "Gérer tes paiements et tes clients",
-      "Automatiser et faire croître ton business",
-    ],
   },
 ];
 
@@ -141,12 +99,6 @@ const BONUS_FORMATION = {
   title: "Comment recruter pour TRIXHUB sans mentir ?",
   price: 0, emoji: "🎁",
   description: "La méthode honnête pour parrainer avec succès. Présente TRIXHUB avec intégrité et convertis mieux — sans pression, sans fausses promesses.",
-  points: [
-    "Présenter TRIXHUB de façon honnête et convaincante",
-    "Répondre aux objections courantes des prospects",
-    "Recruter des filleuls qui restent actifs longtemps",
-    "Bâtir une équipe solide et durable",
-  ],
 };
 
 function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
@@ -165,41 +117,6 @@ function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: ()
   );
 }
 
-function ContentModal({
-  open, onClose, title, points,
-}: { open: boolean; onClose: () => void; title: string; points: string[] }) {
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm mx-4">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-            Formation débloquée
-          </DialogTitle>
-          <DialogDescription className="text-left text-xs leading-relaxed">
-            <span className="font-semibold text-foreground block mb-3">"{title}"</span>
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 -mt-2">
-          <p className="text-xs font-semibold text-foreground">Ce que tu vas apprendre :</p>
-          <ul className="space-y-2">
-            {points.map((pt, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                {pt}
-              </li>
-            ))}
-          </ul>
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-700 dark:text-amber-400">
-            Le contenu complet est en cours de préparation. Tu seras notifié sur WhatsApp dès qu'il est disponible.
-          </div>
-          <Button className="w-full" onClick={onClose}>Compris !</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function FormationsProPage() {
   usePageTitle("Formations Pro");
   const { user } = useAuth();
@@ -208,10 +125,11 @@ export default function FormationsProPage() {
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [depositBalance, setDepositBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
 
-  const [buyDialog, setBuyDialog] = useState<{ id: string; title: string; price: number; points: string[] } | null>(null);
+  const [buyDialog, setBuyDialog] = useState<{ id: string; title: string; price: number } | null>(null);
   const [buying, setBuying] = useState(false);
-  const [contentDialog, setContentDialog] = useState<{ title: string; points: string[] } | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   const token = () => localStorage.getItem(TOKEN_KEY);
@@ -232,12 +150,17 @@ export default function FormationsProPage() {
   }, []);
 
   const fetchBalance = useCallback(async () => {
-    const res = await fetch(`${BASE}/api/balances/me`, {
-      headers: { Authorization: `Bearer ${token()}` },
-    });
-    if (res.ok) {
-      const data = await res.json() as { depositBalance: number };
-      setDepositBalance(Number(data.depositBalance));
+    setBalanceLoading(true);
+    try {
+      const res = await fetch(`${BASE}/api/balances`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      if (res.ok) {
+        const data = await res.json() as { depositBalance: number };
+        setDepositBalance(Number(data.depositBalance));
+      }
+    } finally {
+      setBalanceLoading(false);
     }
   }, []);
 
@@ -246,8 +169,8 @@ export default function FormationsProPage() {
     fetchBalance();
   }, [refresh, fetchBalance]);
 
-  const openBuyDialog = (id: string, title: string, price: number, points: string[]) => {
-    setBuyDialog({ id, title, price, points });
+  const openBuyDialog = (id: string, title: string, price: number) => {
+    setBuyDialog({ id, title, price });
   };
 
   const handlePurchase = async () => {
@@ -272,12 +195,43 @@ export default function FormationsProPage() {
         }
         return;
       }
+      const purchasedId = buyDialog.id;
       setBuyDialog(null);
       await Promise.all([refresh(), fetchBalance()]);
-      toast({ title: "Formation débloquée !", description: "Tu as maintenant accès à cette formation." });
-      setContentDialog({ title: buyDialog.title, points: buyDialog.points });
+      toast({ title: "Formation débloquée !", description: "Clique sur 'Télécharger' pour obtenir ton PDF." });
+      handleDownload(purchasedId);
     } finally {
       setBuying(false);
+    }
+  };
+
+  const handleDownload = async (formationId: string) => {
+    if (downloading) return;
+    setDownloading(formationId);
+    try {
+      const res = await fetch(`${BASE}/api/formations-pro/${formationId}/download`, {
+        headers: { Authorization: `Bearer ${token()}` },
+      });
+      if (!res.ok) {
+        const json = await res.json() as { error?: string };
+        toast({ title: "Erreur", description: json.error ?? "Impossible de télécharger.", variant: "destructive" });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = formationId.replace(/[^a-z0-9-]/g, "-");
+      a.download = `trixhub-formation-${safeName}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Téléchargement démarré !", description: "Ton PDF est en cours de téléchargement." });
+    } catch {
+      toast({ title: "Erreur réseau", description: "Impossible de télécharger. Réessaie.", variant: "destructive" });
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -289,14 +243,6 @@ export default function FormationsProPage() {
   return (
     <Layout>
       {lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
-      {contentDialog && (
-        <ContentModal
-          open={!!contentDialog}
-          onClose={() => setContentDialog(null)}
-          title={contentDialog.title}
-          points={contentDialog.points}
-        />
-      )}
 
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
 
@@ -307,7 +253,7 @@ export default function FormationsProPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Formations Pro</h1>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            Des formations professionnelles à <strong className="text-foreground">prix mini</strong> — payées depuis ton solde dépôt, accessibles immédiatement.
+            Des formations pratiques à <strong className="text-foreground">prix mini</strong> — payées depuis ton solde dépôt, téléchargeables immédiatement en PDF.
           </p>
         </div>
 
@@ -320,7 +266,12 @@ export default function FormationsProPage() {
             <div>
               <p className="text-[11px] text-muted-foreground">Solde dépôt</p>
               <p className="text-sm font-bold text-foreground">
-                {depositBalance === null ? "—" : formatLocal(depositBalance, ct)}
+                {balanceLoading
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin inline" />
+                  : depositBalance === null
+                    ? <span className="text-red-400 text-xs">Indisponible</span>
+                    : formatLocal(depositBalance, ct)
+                }
               </p>
             </div>
           </div>
@@ -335,8 +286,8 @@ export default function FormationsProPage() {
           </div>
         </div>
 
-        {/* Lien vers dépôt si besoin */}
-        {depositBalance !== null && depositBalance < 100 && (
+        {/* Lien vers dépôt si solde faible */}
+        {!balanceLoading && depositBalance !== null && depositBalance < 100 && (
           <Link href="/depot">
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-red-500/15 transition-colors">
               <Wallet className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -362,6 +313,7 @@ export default function FormationsProPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {FORMATIONS_WITH_IMAGES.map(f => {
                   const owned = purchasedIds.has(f.id);
+                  const isDownloading = downloading === f.id;
                   return (
                     <div
                       key={f.id}
@@ -411,14 +363,19 @@ export default function FormationsProPage() {
                             <Button
                               size="sm" variant="outline"
                               className="text-xs h-8 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                              onClick={() => setContentDialog({ title: f.title, points: f.points })}
+                              onClick={() => handleDownload(f.id)}
+                              disabled={isDownloading}
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Accéder
+                              {isDownloading
+                                ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                : <Download className="w-3.5 h-3.5 mr-1" />
+                              }
+                              {isDownloading ? "..." : "Télécharger"}
                             </Button>
                           ) : (
                             <Button
                               size="sm" className="text-xs h-8"
-                              onClick={() => openBuyDialog(f.id, f.title, f.price, f.points)}
+                              onClick={() => openBuyDialog(f.id, f.title, f.price)}
                             >
                               <ShoppingCart className="w-3.5 h-3.5 mr-1" /> Acheter
                             </Button>
@@ -440,6 +397,7 @@ export default function FormationsProPage() {
               <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
                 {FORMATIONS_LIST.map(f => {
                   const owned = purchasedIds.has(f.id);
+                  const isDownloading = downloading === f.id;
                   return (
                     <div key={f.id} className={cn("p-4 flex items-start gap-3 transition-colors", owned && "bg-emerald-500/5")}>
                       <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl mt-0.5", f.tagBg)}>
@@ -459,14 +417,19 @@ export default function FormationsProPage() {
                             <Button
                               size="sm" variant="outline"
                               className="text-xs h-7 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                              onClick={() => setContentDialog({ title: f.title, points: f.points })}
+                              onClick={() => handleDownload(f.id)}
+                              disabled={isDownloading}
                             >
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Accéder
+                              {isDownloading
+                                ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                : <Download className="w-3 h-3 mr-1" />
+                              }
+                              {isDownloading ? "..." : "Télécharger"}
                             </Button>
                           ) : (
                             <Button
                               size="sm" className="text-xs h-7"
-                              onClick={() => openBuyDialog(f.id, f.title, f.price, f.points)}
+                              onClick={() => openBuyDialog(f.id, f.title, f.price)}
                             >
                               <ShoppingCart className="w-3 h-3 mr-1" /> Acheter
                             </Button>
@@ -487,6 +450,7 @@ export default function FormationsProPage() {
               </h2>
               {(() => {
                 const owned = purchasedIds.has(BONUS_FORMATION.id);
+                const isDownloading = downloading === BONUS_FORMATION.id;
                 return (
                   <div className={cn(
                     "bg-gradient-to-r from-amber-500/10 to-orange-500/10 border rounded-2xl p-4",
@@ -508,15 +472,20 @@ export default function FormationsProPage() {
                             <Button
                               size="sm" variant="outline"
                               className="text-xs h-7 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                              onClick={() => setContentDialog({ title: BONUS_FORMATION.title, points: BONUS_FORMATION.points })}
+                              onClick={() => handleDownload(BONUS_FORMATION.id)}
+                              disabled={isDownloading}
                             >
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Accéder
+                              {isDownloading
+                                ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                : <Download className="w-3 h-3 mr-1" />
+                              }
+                              {isDownloading ? "..." : "Télécharger"}
                             </Button>
                           ) : (
                             <Button
                               size="sm"
                               className="text-xs h-7 bg-amber-500 hover:bg-amber-600 text-white"
-                              onClick={() => openBuyDialog(BONUS_FORMATION.id, BONUS_FORMATION.title, 0, BONUS_FORMATION.points)}
+                              onClick={() => openBuyDialog(BONUS_FORMATION.id, BONUS_FORMATION.title, 0)}
                             >
                               <Gift className="w-3 h-3 mr-1" /> Obtenir gratuitement
                             </Button>
@@ -529,11 +498,14 @@ export default function FormationsProPage() {
               })()}
             </div>
 
-            {/* Note bas */}
-            <div className="bg-muted/50 border border-border rounded-xl p-4 text-center">
-              <Lock className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs text-muted-foreground">
-                Paiement depuis ton solde dépôt · Accès immédiat · Contenu livré sur WhatsApp
+            {/* Note bas de page */}
+            <div className="bg-muted/50 border border-border rounded-xl p-4 text-center space-y-1">
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                <Download className="w-3.5 h-3.5" />
+                Paiement depuis ton solde dépôt · PDF téléchargeable immédiatement · Accès à vie
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Chaque formation est un guide PDF pratique avec exemples et exercices.
               </p>
             </div>
           </>
@@ -562,7 +534,7 @@ export default function FormationsProPage() {
                     {buyDialog.price === 0 ? "Gratuit" : priceStr(buyDialog.price, ct)}
                   </span>
                 </div>
-                {depositBalance !== null && buyDialog.price > 0 && (
+                {!balanceLoading && depositBalance !== null && buyDialog.price > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Solde dépôt actuel</span>
                     <span className={cn("font-semibold", depositBalance >= buyDialog.price ? "text-emerald-600 dark:text-emerald-400" : "text-red-500")}>
@@ -570,9 +542,21 @@ export default function FormationsProPage() {
                     </span>
                   </div>
                 )}
+                {buyDialog.price === 0 && (
+                  <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 pt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    PDF téléchargeable immédiatement après confirmation
+                  </div>
+                )}
+                {buyDialog.price > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 pt-1">
+                    <Download className="w-3.5 h-3.5" />
+                    Le PDF démarre automatiquement après l'achat
+                  </div>
+                )}
               </div>
 
-              {depositBalance !== null && buyDialog.price > 0 && depositBalance < buyDialog.price && (
+              {!balanceLoading && depositBalance !== null && buyDialog.price > 0 && depositBalance < buyDialog.price && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
                   <p className="text-xs text-red-600 dark:text-red-400">
                     Solde insuffisant. Il te manque <strong>{priceStr(buyDialog.price - depositBalance, ct)}</strong>.{" "}
