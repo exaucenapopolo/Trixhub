@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CheckSquare, Wallet, User, LogOut,
   Menu, Sun, Moon, ChevronDown, PlayCircle, HelpCircle, Compass,
   Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink, ShieldCheck,
-  MessageCircleQuestion, BookUser
+  MessageCircleQuestion, BookUser, Star
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 import PartnersFooter from "@/components/PartnersFooter";
@@ -209,6 +209,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {/* Formations link */}
         <div className="mt-2 pt-2 border-t border-sidebar-border/50">
           <Link href="/formations"
+            onClick={() => setSidebarOpen(false)}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
               location === "/formations" ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
@@ -217,6 +218,17 @@ export default function Layout({ children }: { children: ReactNode }) {
             <GraduationCap size={17} />
             <span className="flex-1">Formations</span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">NEW</span>
+          </Link>
+          <Link href="/formations-pro"
+            onClick={() => setSidebarOpen(false)}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 mt-0.5",
+              location === "/formations-pro" ? "bg-primary/90 text-primary-foreground shadow-sm" : "text-sidebar-foreground hover:bg-sidebar-accent"
+            )}
+            data-testid="link-formations-pro">
+            <Star size={17} />
+            <span className="flex-1">Formations Pro</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-500">PRO</span>
           </Link>
         </div>
 

@@ -13,3 +13,4 @@ export * from "./quizSessions";
 export * from "./activitySchedules";
 export * from "./formationRequests";
 export * from "./contactPurchases";
+export * from "./premiumFormationPurchases";

@@ -28,6 +28,7 @@ import ProfilePage from "@/pages/profile";
 import BonusCanvaPage from "@/pages/bonus/canva";
 import BonusVpnPage from "@/pages/bonus/vpn";
 import FormationsPage from "@/pages/formations";
+import FormationsProPage from "@/pages/formations-pro";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import AdminPage from "@/pages/admin";
@@ -116,6 +117,7 @@ function InnerApp() {
         <Route path="/bonus/canva" component={() => <ProtectedRoute component={BonusCanvaPage} />} />
         <Route path="/bonus/vpn" component={() => <ProtectedRoute component={BonusVpnPage} />} />
         <Route path="/formations" component={() => <ProtectedRoute component={FormationsPage} />} />
+        <Route path="/formations-pro" component={() => <ProtectedRoute component={FormationsProPage} />} />
         <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
         <Route path="/contacts" component={() => <ProtectedRoute component={ContactsPage} />} />
         <Route path="/terms" component={TermsPage} />

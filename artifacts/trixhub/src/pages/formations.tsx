@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   GraduationCap, CheckCircle2, Lock, Loader2, CalendarClock,
-  DollarSign, Rocket, MessageSquare, Brain, Zap, ChevronRight, X, ZoomIn,
+  DollarSign, Rocket, MessageSquare, Brain, Zap, ChevronRight, X, ZoomIn, Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -448,6 +448,23 @@ export default function FormationsPage() {
             )}
           </div>
         )}
+
+        {/* CTA Formations Pro */}
+        <Link href="/formations-pro">
+          <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-purple-500/10 border border-amber-500/25 rounded-2xl p-4 flex items-center gap-4 hover:border-purple-500/30 hover:shadow-sm transition-all cursor-pointer">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <Star className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-sm font-bold text-foreground">Formations Pro</p>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-500">PRO</span>
+              </div>
+              <p className="text-xs text-muted-foreground">TikTok, IA, WhatsApp, Affiliation… Des formations à prix mini payées depuis ton solde dépôt.</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          </div>
+        </Link>
 
         {/* Catégories */}
         {loading ? (
