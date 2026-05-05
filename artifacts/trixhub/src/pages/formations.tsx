@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   GraduationCap, CheckCircle2, Lock, Loader2, CalendarClock,
-  DollarSign, Rocket, MessageSquare, Brain, Zap, ChevronRight,
+  DollarSign, Rocket, MessageSquare, Brain, Zap, ChevronRight, X, ZoomIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -205,6 +205,34 @@ function useFormationRequests() {
   return { data, loading, refresh };
 }
 
+function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <button
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+        onClick={onClose}
+      >
+        <X className="w-5 h-5" />
+      </button>
+      <img
+        src={src}
+        alt={alt}
+        className="max-h-[90vh] max-w-full w-auto rounded-2xl shadow-2xl object-contain"
+        onClick={e => e.stopPropagation()}
+      />
+    </div>
+  );
+}
+
 function FormationCard({
   formation,
   category,
@@ -212,6 +240,7 @@ function FormationCard({
   requestedToday,
   onRequest,
   sending,
+  onImageClick,
 }: {
   formation: Formation;
   category: Category;
@@ -219,6 +248,7 @@ function FormationCard({
   requestedToday: boolean;
   onRequest: () => void;
   sending: boolean;
+  onImageClick: (src: string, alt: string) => void;
 }) {
   const Icon = category.icon;
   const blocked = isRequested || requestedToday || sending;
@@ -237,12 +267,23 @@ function FormationCard({
       {/* Illustration */}
       <div className="relative overflow-hidden">
         {formation.image ? (
-          <img
-            src={`${BASE}${formation.image}`}
-            alt={formation.title}
-            className="w-full h-44 object-cover object-top"
-            loading="lazy"
-          />
+          <div
+            className="relative group cursor-zoom-in"
+            onClick={() => onImageClick(`${BASE}${formation.image}`, formation.title)}
+          >
+            <img
+              src={`${BASE}${formation.image}`}
+              alt={formation.title}
+              className="w-full h-44 object-cover object-top transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+            {/* Overlay zoom au survol */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/20 backdrop-blur-sm rounded-full p-3">
+                <ZoomIn className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
         ) : (
           <div className={cn("flex items-center justify-center py-8 h-44", category.bg)}>
             <span className="text-6xl select-none" role="img" aria-hidden>
@@ -265,7 +306,7 @@ function FormationCard({
 
         {/* Dégradé bas pour lisibilité si image */}
         {formation.image && (
-          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         )}
       </div>
 
@@ -317,6 +358,8 @@ export default function FormationsPage() {
   const [whatsapp, setWhatsapp] = useState(user?.phone ?? "");
   const [sending, setSending] = useState(false);
 
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+
   const requestedTitles = new Set(data?.requests.map(r => r.formationTitle) ?? []);
   const requestedToday = data?.requestedToday ?? false;
   const totalRequested = data?.totalRequested ?? 0;
@@ -359,6 +402,13 @@ export default function FormationsPage() {
 
   return (
     <Layout>
+      {lightbox && (
+        <ImageLightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          onClose={() => setLightbox(null)}
+        />
+      )}
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
 
         {/* Header */}
@@ -431,6 +481,7 @@ export default function FormationsPage() {
                     requestedToday={!requestedTitles.has(f.title) && requestedToday}
                     onRequest={() => openDialog(f.title)}
                     sending={sending && selectedTitle === f.title}
+                    onImageClick={(src, alt) => setLightbox({ src, alt })}
                   />
                 ))}
               </div>
