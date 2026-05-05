@@ -345,245 +345,299 @@ const FORMATION_CONTENTS: Record<string, FormationContent> = {
   "tiktok-monetisable": {
     id: "tiktok-monetisable",
     title: "Comment créer un compte TikTok monétisable depuis l'Afrique ?",
-    subtitle: "La méthode complète pour activer la monétisation et vendre ce service à 3 000 FCFA",
+    subtitle: "La méthode exacte, étape par étape — du téléphone vide au compte actif en 15 minutes",
     tagline: "✦ Formation Premium · 250 FCFA ✦",
     accentColor: BRAND,
     accentLight: YELLOW_LIGHT,
     conclusion:
-      "Tu as maintenant entre les mains tout ce qu'il faut pour créer un compte TikTok monétisable depuis l'Afrique. Cette compétence est rare, recherchée, et tu peux la vendre à répétition. Un seul client peut te rembourser cette formation 10 fois. Ne perds plus de temps — crée ton premier compte dès aujourd'hui et commence à prospecter dès demain.",
+      "Tu maîtrises maintenant la méthode complète. Ce service se revend entre 2 500 et 7 000 FCFA par client. Avec une formation à 250 FCFA, il suffit d'une seule vente pour rentabiliser l'investissement 10 fois. Commence par créer ton propre compte d'abord pour maîtriser la procédure, puis propose le service à ton entourage. C'est une compétence rare — peu de gens la connaissent en Afrique.",
     chapters: [
       {
-        title: "TikTok : l'opportunité cachée pour les Africains",
+        title: "Pourquoi les Africains ne peuvent pas monétiser TikTok directement",
         intro:
-          "TikTok compte plus de 1,5 milliard d'utilisateurs actifs dans le monde. En Afrique subsaharienne, la croissance est de plus de 150 % par an. Ce que la plupart ne savent pas, c'est que tu peux monétiser TikTok depuis l'Afrique, même sans être sur le sol européen ou américain. Ce chapitre te donne le cadre mental pour comprendre pourquoi cette opportunité est réelle.",
+          "Avant de commencer, il faut comprendre le problème. TikTok réserve ses outils de monétisation (Creator Fund, cadeaux Lives, TikTok Shop) à des pays précis : France, USA, Royaume-Uni, Allemagne, etc. Les pays africains ne sont pas encore sur cette liste. Résultat : si ton compte est enregistré depuis l'Afrique, tu n'y auras pas accès. La solution existe — elle est légale, simple, et c'est ce que tu vas apprendre ici.",
         sections: [
           {
-            heading: "Pourquoi TikTok est différent des autres réseaux",
+            heading: "Les pays éligibles à la monétisation TikTok (liste principale)",
             body: "",
             listItems: [
-              "L'algorithme favorise le contenu qualitatif, pas le nombre d'abonnés",
-              "Un compte à 0 abonné peut faire 1 million de vues sur son premier post",
-              "Les niches africaines sont moins saturées = plus de visibilité facilement",
-              "Le coût d'acquisition d'abonnés sur TikTok est 10x moins cher qu'Instagram",
-            ],
-          },
-          {
-            type: "tip",
-            body: "Les créateurs africains ont un avantage naturel : l'authenticité. Le contenu africain (humour, vie quotidienne, business local) performe très bien dans les pays francophones du monde entier.",
-          },
-          {
-            heading: "Les 3 modèles de monétisation TikTok accessibles depuis l'Afrique",
-            body: "",
-            listItems: [
-              "1. TikTok Creator Fund (fonds créateurs) — rémunération directe sur les vues",
-              "2. Lives et cadeaux virtuels — convertis en argent réel via TikTok",
-              "3. Vendre des produits ou services via tes vidéos (le plus rentable)",
-            ],
-          },
-          {
-            type: "example",
-            body: "Exemple réel : Moussa, basé à Abidjan, crée des contenus de 30 secondes sur les astuces téléphoniques. En 3 mois avec 45 000 abonnés, il génère 15 000 FCFA/mois via le Creator Fund + 60 000 FCFA/mois via la vente de prestation. Revenu total : 75 000 FCFA/mois.",
-          },
-        ],
-      },
-      {
-        title: "Créer et configurer ton compte professionnel",
-        intro:
-          "La création du compte est l'étape cruciale. Une mauvaise configuration dès le départ peut bloquer ta monétisation pendant des mois. Suis exactement ces étapes.",
-        sections: [
-          {
-            heading: "Étape 1 — Préparer ton environnement",
-            body: "",
-            listItems: [
-              "Installe un VPN fiable sur ton téléphone (ProtonVPN gratuit ou ExpressVPN)",
-              "Connecte-toi à un serveur situé en France ou en Belgique",
-              "Crée une adresse Gmail dédiée uniquement à ce compte TikTok",
-              "Prépare un numéro de téléphone valide (le tien suffit)",
-            ],
-          },
-          {
-            type: "warning",
-            body: "N'utilise JAMAIS le même appareil ou le même réseau WiFi que d'autres comptes TikTok. TikTok détecte les doublons par IP et appareil. Utilise toujours le VPN avant de créer le compte.",
-          },
-          {
-            heading: "Étape 2 — Créer le compte",
-            body: "",
-            listItems: [
-              "Ouvre TikTok avec le VPN activé (serveur France)",
-              "Choisis 'Créer un compte' → 'Continuer avec e-mail'",
-              "Renseigne la date de naissance (18 ans minimum requis)",
-              "Choisis un nom d'utilisateur professionnel et mémorable",
-              "Ne mentionne PAS l'Afrique dans ta bio au départ",
-            ],
-          },
-          {
-            heading: "Étape 3 — Passer en compte Business/Créateur",
-            body: "Va dans Paramètres → Gérer mon compte → Passer en compte Créateur. Cette action est gratuite et débloque des fonctionnalités essentielles comme les statistiques, les outils d'analyse et surtout l'accès au Programme Créateur.",
-          },
-          {
-            heading: "Étape 4 — Optimiser la bio parfaite",
-            body: "",
-            listItems: [
-              "Photo de profil : portrait clair, fond neutre, sourire professionnel",
-              "Bio en 3 lignes : ce que tu fais | pour qui | ce qu'ils gagnent",
-              "Exemple de bio : '🎯 J'aide les entrepreneurs africains à vendre sur TikTok | +12 000 ventes générées | Clique sur le lien ↓'",
-              "Lien en bio : utilise Linktree gratuit pour pointer vers WhatsApp + ton offre",
-            ],
-          },
-          {
-            type: "exercise",
-            body: "Exercice 1 — Crée ton compte aujourd'hui",
-            listItems: [
-              "Installe ProtonVPN et connecte-toi à un serveur France",
-              "Crée ton compte TikTok avec une nouvelle adresse Gmail",
-              "Passe en mode Créateur",
-              "Rédige ta bio en utilisant la formule ci-dessus",
-              "Publie une première vidéo test (peu importe le contenu)",
-            ],
-          },
-        ],
-      },
-      {
-        title: "Les critères de monétisation décryptés",
-        intro:
-          "TikTok a des critères précis pour accéder à la monétisation. Beaucoup de créateurs africains échouent parce qu'ils ne connaissent pas les règles exactes. Ce chapitre te donne tout ce qu'il faut savoir.",
-        sections: [
-          {
-            heading: "Les critères officiels du TikTok Creator Fund",
-            body: "",
-            listItems: [
-              "✅ Avoir au minimum 10 000 abonnés",
-              "✅ Avoir cumulé 100 000 vues dans les 30 derniers jours",
-              "✅ Être âgé d'au moins 18 ans",
-              "✅ Respecter les règles de la communauté TikTok",
-              "✅ Avoir un compte actif depuis plus de 30 jours",
+              "France, Belgique, Suisse — les plus accessibles pour les francophones africains",
+              "États-Unis, Royaume-Uni, Canada, Australie",
+              "Allemagne, Italie, Espagne, Portugal",
+              "Principe : ton compte doit être enregistré depuis l'un de ces pays",
             ],
           },
           {
             type: "info",
-            body: "Le critère de 'résider dans un pays éligible' est le plus bloquant pour les Africains. La solution : utiliser un VPN France en permanence + avoir un compte Payoneer ou Wise pour recevoir les paiements. Ces deux services acceptent les Africains.",
+            body: "La solution : simuler ta localisation avec un VPN. TikTok détecte ton pays via ton adresse IP — pas ton passeport. Si ton IP est française au moment de la création du compte, TikTok enregistre ton compte comme un compte français. C'est légal et c'est la méthode utilisée par des milliers de créateurs africains.",
           },
           {
-            heading: "La méthode alternative : TikTok LIVE (plus rapide)",
-            body: "Pour activer les TikTok Lives et recevoir des cadeaux, le seuil est seulement 1 000 abonnés. Un Live de 2 heures bien animé peut générer entre 5 000 et 30 000 FCFA en cadeaux. C'est souvent plus rentable que le Creator Fund au début.",
+            heading: "Ce que ce compte te permet de faire une fois créé",
+            body: "",
+            listItems: [
+              "Accéder au Creator Fund (rémunération sur les vues)",
+              "Recevoir des cadeaux virtuels lors des Lives (convertibles en argent)",
+              "Accéder à TikTok Shop pour vendre des produits directement",
+              "Avoir accès à tous les outils de monétisation professionnels",
+              "Vendre ce service à d'autres entre 2 500 et 7 000 FCFA",
+            ],
+          },
+        ],
+      },
+      {
+        title: "Les 3 outils à télécharger AVANT de commencer",
+        intro:
+          "Tu as besoin de 3 choses seulement. Télécharge-les dans l'ordre avant de passer à l'étape suivante. Tout est gratuit.",
+        sections: [
+          {
+            heading: "Outil 1 — Planet VPN (obligatoire)",
+            body: "Planet VPN est disponible gratuitement sur le Play Store (Android) et l'App Store (iPhone). Cherche 'Planet VPN' dans ta boutique d'applications et installe-le. C'est le VPN que tu vas utiliser pour simuler ta connexion depuis la France.",
+          },
+          {
+            type: "tip",
+            body: "Pourquoi Planet VPN et pas un autre ? Il est gratuit, stable, et dispose de serveurs dans les pays éligibles TikTok. D'autres VPN gratuits comme ProtonVPN ou Windscribe fonctionnent aussi — l'important c'est d'avoir accès à un serveur France ou Belgique.",
+          },
+          {
+            heading: "Outil 2 — Une adresse Gmail non utilisée sur TikTok",
+            body: "Tu as besoin d'une adresse email qui n'a jamais été enregistrée sur TikTok. Si tu crées le compte pour toi-même, utilise une adresse Gmail existante ou crée-en une nouvelle. Si tu crées le compte pour un client, utilise TempMail (voir outil 3) — ça te fait gagner du temps.",
+          },
+          {
+            heading: "Outil 3 — TempMail (pour les clients)",
+            body: "TempMail est une application qui génère des adresses email temporaires en un clic. Cherche 'Temp Mail' sur le Play Store ou l'App Store et installe-la. Tu n'en as besoin QUE si tu crées le compte pour un client ou si tu ne veux pas utiliser ton Gmail personnel. TempMail génère une adresse jetable — tu l'utilises pour recevoir le code de vérification TikTok, puis tu peux la supprimer ou garder.",
+          },
+          {
+            type: "warning",
+            body: "Si tu crées le compte pour un client avec TempMail, pense à changer l'adresse email du compte TikTok par l'email définitif du client APRÈS la création (voir Chapitre 4). Sinon, il ne pourra pas récupérer son compte en cas de problème.",
+          },
+          {
+            type: "exercise",
+            body: "Fais ça maintenant — 5 minutes",
+            listItems: [
+              "Ouvre le Play Store ou l'App Store",
+              "Installe Planet VPN (gratuit)",
+              "Installe Temp Mail (gratuit) — même si tu ne l'utilises pas tout de suite",
+              "Prépare l'adresse Gmail que tu vas utiliser pour le compte",
+              "Ne passe PAS à l'étape suivante sans avoir ces 3 éléments prêts",
+            ],
+          },
+        ],
+      },
+      {
+        title: "La règle d'or : préparer son téléphone correctement",
+        intro:
+          "Cette étape est celle que les gens sautent — et c'est pour ça que leurs comptes sont bloqués. TikTok est très intelligent. Il détecte si tu as déjà eu un compte sur ce téléphone. Si c'est le cas, le nouveau compte sera automatiquement lié à l'historique de l'ancien et ne sera jamais éligible à la monétisation. Il faut repartir de zéro.",
+        sections: [
+          {
+            heading: "Étape obligatoire : désinstaller puis réinstaller TikTok",
+            body: "",
+            listItems: [
+              "Appuie longtemps sur l'icône TikTok → Désinstaller",
+              "Attends 1 à 2 minutes après la désinstallation",
+              "Retourne sur le Play Store ou l'App Store",
+              "Réinstalle TikTok proprement",
+              "N'ouvre PAS encore TikTok — fais d'abord l'étape VPN",
+            ],
+          },
+          {
+            type: "warning",
+            body: "Règle absolue : si tu as un ancien compte TikTok sur ce téléphone et que tu NE désinstalles PAS l'application avant de créer le nouveau, TikTok va détecter l'historique de l'appareil. Le nouveau compte n'aura pas accès aux outils de monétisation même avec le VPN. Cette étape est non-négociable.",
+          },
+          {
+            heading: "Si tu crées le compte pour un client",
+            body: "Demande au client de désinstaller TikTok lui-même depuis son téléphone AVANT que tu commences. Ou fais-le toi-même si tu as accès au téléphone. Cette étape prend 2 minutes mais elle est décisive pour que le compte soit propre.",
           },
           {
             type: "example",
-            body: "Stratégie rapide : publie 3 vidéos par jour pendant 2 semaines. Concentre-toi sur un seul sujet (cuisine, business, humour). À ce rythme, atteindre 1 000 abonnés en 14 jours est réaliste si le contenu est bon.",
-          },
-          {
-            type: "exercise",
-            body: "Exercice 2 — Vérifie ton éligibilité actuelle",
-            listItems: [
-              "Ouvre TikTok → Outils créateur → Voir mes statistiques",
-              "Note ton nombre d'abonnés actuel",
-              "Note tes vues des 30 derniers jours",
-              "Calcule combien de vues manquantes il te faut",
-              "Définis une date cible réaliste pour atteindre les critères",
-            ],
+            body: "Erreur fréquente : un créateur essaie de créer un deuxième compte TikTok depuis le même téléphone sans désinstaller l'application. TikTok détecte l'appareil, limite la portée du nouveau compte à presque zéro vue, et refuse l'accès aux outils de monétisation. Résultat : travail perdu, client mécontent.",
           },
         ],
       },
       {
-        title: "Techniques pour atteindre les critères rapidement",
+        title: "Créer le compte TikTok monétisable — étape par étape",
         intro:
-          "Croître rapidement sur TikTok n'est pas une question de chance. C'est une science. Ce chapitre te donne les stratégies testées et éprouvées pour atteindre 10 000 abonnés en moins de 60 jours.",
+          "Tu as tes outils, ton téléphone est prêt. Maintenant on crée le compte. Suis ces étapes dans l'ordre exact. Ne saute aucune.",
         sections: [
           {
-            heading: "La formule du contenu qui performe",
-            body: "Le contenu TikTok qui performe suit toujours la même formule : Accroche forte (0-3 secondes) + Valeur ou divertissement + Appel à l'action. Les 3 premières secondes déterminent 80 % des performances de ta vidéo.",
-          },
-          {
-            heading: "Les 5 types de contenus qui marchent le mieux en Afrique",
+            heading: "Étape 1 — Activer Planet VPN sur France",
             body: "",
             listItems: [
-              "1. 'Ce que personne ne te dit sur [sujet]' — curiosité maximale",
-              "2. Avant / Après — transformation visible en 15 secondes",
-              "3. Tutoriel étape par étape en moins de 60 secondes",
-              "4. Réaction ou commentaire sur une tendance locale",
-              "5. Histoire vraie de réussite ou d'échec (storytelling)",
+              "Ouvre Planet VPN",
+              "Dans la liste des pays, sélectionne 'France' (ou 'Belgique')",
+              "Appuie sur 'Connecter'",
+              "Attends que la connexion soit établie (l'icône VPN apparaît dans la barre de statut en haut)",
+              "Ne continue PAS si le VPN n'est pas connecté — vérifie d'abord",
             ],
           },
           {
             type: "tip",
-            body: "Publie à ces heures pour l'audience africaine francophone : 7h-9h (matin), 12h-14h (pause déjeuner) et 19h-22h (soirée). Le vendredi soir et le samedi matin sont les meilleurs moments de la semaine.",
+            body: "Comment vérifier que le VPN est actif ? Regarde en haut de ton écran. Tu dois voir une petite icône 'VPN' ou un cadenas dans la barre de notifications. Si tu ne le vois pas, le VPN n'est pas actif — reconnecte avant de continuer.",
           },
           {
-            heading: "Le hack des Duos et Coutures",
-            body: 'Utilise la fonction "Duo" ou "Couture" pour répondre à des vidéos virales dans ta niche. Tu bénéficies de leur audience. Cherche des vidéos ayant entre 10 000 et 100 000 vues dans ton domaine et fais un Duo avec une vraie valeur ajoutée.',
+            heading: "Étape 2 — Ouvrir TikTok et créer le compte",
+            body: "",
+            listItems: [
+              "Ouvre TikTok (version fraîchement réinstallée)",
+              "Appuie sur 'Profil' en bas à droite, puis 'S'inscrire'",
+              "Choisis 'Continuer avec email'",
+              "Entre ton adresse email (Gmail personnel ou adresse TempMail générée)",
+              "Entre la date de naissance — tu dois avoir 18 ans minimum",
+            ],
+          },
+          {
+            heading: "Étape 3 — Valider avec le code reçu par email",
+            body: "TikTok va envoyer un code à 6 chiffres sur l'email que tu as entré. Ouvre ton Gmail ou l'application TempMail, récupère le code, et entre-le dans TikTok. Le compte est maintenant créé.",
+          },
+          {
+            type: "warning",
+            body: "Pendant toute la procédure de création — de l'ouverture de TikTok jusqu'à la confirmation du compte — ton VPN doit rester actif. Si la connexion VPN coupe à mi-chemin, le compte peut être enregistré avec ta vraie adresse IP africaine. Si ça arrive : désinstalle TikTok, reconnecte le VPN, réinstalle, et recommence.",
+          },
+          {
+            heading: "Étape 4 — Choisir un nom d'utilisateur",
+            body: "Choisis un nom d'utilisateur simple, professionnel et mémorable. Évite les chiffres aléatoires et les underscores multiples. Tu peux le changer une fois après la création si nécessaire. Pour un client, demande-lui son nom de business ou son prénom.",
           },
           {
             type: "exercise",
-            body: "Exercice 3 — Ton plan de contenu 30 jours",
+            body: "Crée ton compte maintenant — checklist de validation",
             listItems: [
-              "Semaine 1 : Crée 21 vidéos (3/jour) sur UN seul sujet",
-              "Semaine 2 : Identifie les 3 vidéos qui ont le mieux marché — réplique-les",
-              "Semaine 3 : Fais 5 Duos avec des créateurs populaires dans ta niche",
-              "Semaine 4 : Lance ton premier Live de 45 minutes minimum",
-              "Objectif : 1 000 abonnés à la fin du mois",
+              "VPN actif sur France ? ✓",
+              "TikTok fraîchement réinstallé ? ✓",
+              "Email prêt (Gmail ou TempMail) ? ✓",
+              "Compte créé avec code de validation entré ? ✓",
+              "VPN toujours actif pendant toute la procédure ? ✓",
             ],
-          },
-          {
-            type: "tip",
-            body: "Utilisez des hashtags en français ET en langue locale. Exemple : #businessafrique #entrepreneurcameroun #tiktokci. 5 à 8 hashtags maximum par vidéo, sinon TikTok pénalise.",
           },
         ],
       },
       {
-        title: "Vendre ce service entre 2 500 et 7 000 FCFA",
+        title: "Vérifier que le compte est éligible et le sécuriser",
         intro:
-          "Une fois que tu sais créer des comptes monétisables, tu as une compétence que des milliers de commerçants et d'entrepreneurs africains cherchent désespérément. Ce chapitre te montre comment transformer cette compétence en source de revenus réguliers.",
+          "Le compte est créé — mais ce n'est pas fini. Tu dois vérifier qu'il est bien enregistré dans le bon pays, et le sécuriser avec l'email définitif. Ces deux vérifications sont essentielles avant de livrer le compte à un client ou de commencer à l'utiliser.",
         sections: [
           {
-            heading: "Tes clients idéaux — qui prospecter en priorité",
+            heading: "Vérification 1 — Contrôler la région du compte",
+            body: "",
+            listItems: [
+              "Ouvre TikTok → appuie sur 'Profil' (en bas à droite)",
+              "Appuie sur les 3 lignes en haut à droite → 'Paramètres et confidentialité'",
+              "Va dans 'Gérer le compte'",
+              "Cherche 'Région' ou 'Pays/Région'",
+              "La région affichée doit être 'France' (ou le pays VPN que tu as utilisé)",
+            ],
+          },
+          {
+            type: "tip",
+            body: "Si la région affiche un pays africain (Cameroun, Côte d'Ivoire, etc.), la procédure n'a pas fonctionné. Le VPN n'était probablement pas actif au moment de la création. Dans ce cas, désinstalle TikTok, réinstalle, reconnecte le VPN France, et recommence la création.",
+          },
+          {
+            heading: "Vérification 2 — Confirmer l'accès aux outils de monétisation",
+            body: "",
+            listItems: [
+              "Dans les paramètres TikTok → cherche 'Outils créateur'",
+              "Tu dois voir : Creator Fund, Cadeaux, TikTok Shop (selon les pays)",
+              "Si ces options sont présentes → le compte est éligible, le travail est fait",
+              "Si ces options sont absentes → la région n'est pas correcte, recommence",
+            ],
+          },
+          {
+            heading: "Sécurisation — Changer l'email si tu as utilisé TempMail",
+            body: "Si tu as utilisé une adresse TempMail pour créer le compte, change-la maintenant par l'email définitif du client (ou ton Gmail perso). Sans ça, le compte ne peut pas être récupéré en cas de perte de mot de passe.",
+          },
+          {
+            type: "example",
+            body: "Comment changer l'email : Paramètres → Gérer le compte → Email → Entre le nouvel email → TikTok envoie un code de vérification → Valide. L'email est maintenant changé. Le compte est sécurisé.",
+          },
+          {
+            type: "exercise",
+            body: "Checklist de livraison (pour toi ou pour un client)",
+            listItems: [
+              "Région du compte = pays éligible (France, Belgique...) ? ✓",
+              "Outils de monétisation visibles dans les paramètres ? ✓",
+              "Email définitif configuré (plus de TempMail) ? ✓",
+              "Mot de passe noté et transmis au client ? ✓",
+              "Capture d'écran de la région envoyée au client comme preuve ? ✓",
+            ],
+          },
+        ],
+      },
+      {
+        title: "Protéger le compte — les erreurs qui font tout perdre",
+        intro:
+          "Beaucoup de personnes créent le compte correctement, mais le perdent en quelques jours à cause d'erreurs simples. Ce chapitre te donne les règles pour garder le compte actif et protégé.",
+        sections: [
+          {
+            heading: "Règle 1 — Continuer à utiliser le VPN pendant les premiers jours",
+            body: "Après la création, TikTok continue de surveiller les connexions. Si tu te connectes brusquement depuis une IP africaine le lendemain de la création depuis une IP française, TikTok détecte l'incohérence. Il peut limiter la portée du compte ou le bloquer.",
+          },
+          {
+            type: "warning",
+            body: "Ne coupe pas le VPN brusquement les premiers jours. Pendant 3 à 7 jours après la création, continue à ouvrir TikTok avec le VPN France activé. Tu peux progressivement réduire l'usage du VPN après cette période de 'rodage'. Pareil pour ton client — préviens-le de cette règle dès la livraison.",
+          },
+          {
+            heading: "Règle 2 — Ne pas changer de comportement trop vite",
+            body: "",
+            listItems: [
+              "Jour 1 à 3 : utilise TikTok uniquement avec le VPN France",
+              "Jour 4 à 7 : tu peux commencer à regarder des vidéos sans VPN, mais poste toujours avec VPN",
+              "Après 2 semaines : le compte est stabilisé, tu peux utiliser sans VPN pour regarder",
+              "Toujours utiliser le VPN pour les actions importantes : Live, accès Creator Fund",
+            ],
+          },
+          {
+            heading: "Règle 3 — Ne jamais connecter deux comptes sur le même téléphone",
+            body: "Si tu as ton compte personnel africain ET ce nouveau compte monétisable, ne les connecte jamais sur le même appareil en même temps. TikTok détecte que les deux comptes viennent du même téléphone et peut les lier ou bloquer le nouveau.",
+          },
+          {
+            type: "tip",
+            body: "Solution si tu dois gérer plusieurs comptes : utilise un deuxième téléphone (même bas de gamme), ou utilise une application de clonage comme 'Dual Space' ou 'Parallel Space' disponibles sur le Play Store. Chacun de tes clients doit avoir son propre espace isolé.",
+          },
+          {
+            heading: "Règle 4 — Informer le client de ces règles",
+            body: "Si tu crées le compte pour un client, explique-lui ces 4 règles avant de lui livrer. Un client qui ne connaît pas ces règles va coupe le VPN le lendemain, le compte sera limité, et il va penser que tu l'as mal configuré.",
+          },
+          {
+            type: "example",
+            body: "Message à envoyer à chaque client après livraison : 'Voici ton compte TikTok monétisable. Règle importante : pendant les 7 premiers jours, active Planet VPN sur France AVANT d'ouvrir TikTok. Après 2 semaines, tu peux l'utiliser normalement. Ne connecte pas ce compte sur un appareil qui a déjà eu un autre compte TikTok. Si tu respectes ces règles, ton compte reste actif et monétisable.'",
+          },
+        ],
+      },
+      {
+        title: "Vendre ce service et gagner entre 2 500 et 7 000 FCFA",
+        intro:
+          "Tu maîtrises maintenant la procédure. C'est une compétence rare que des milliers de commerçants, créateurs et entrepreneurs africains cherchent. Voici comment transformer ça en revenu.",
+        sections: [
+          {
+            heading: "Tes packages et tes prix",
+            body: "",
+            listItems: [
+              "Pack Basique (2 500 FCFA) : création du compte + vérification région + livraison",
+              "Pack Complet (4 500 FCFA) : Basique + configuration du profil + règles expliquées",
+              "Pack Premium (7 000 FCFA) : Complet + suivi 2 semaines + réponses aux questions",
+            ],
+          },
+          {
+            heading: "Tes clients idéaux — qui contacter en premier",
             body: "",
             listItems: [
               "Commerçants et boutiquiers qui veulent vendre en ligne",
-              "Coiffeurs, couturiers, restaurateurs qui veulent plus de visibilité",
-              "Agences de voyage et hôtels locaux",
-              "Formateurs et coachs qui veulent se faire connaître",
-              "Autres créateurs qui veulent monétiser mais ne savent pas comment",
-            ],
-          },
-          {
-            heading: "Tes offres et tes prix",
-            body: "",
-            listItems: [
-              "Pack Starter (2 500 FCFA) : création du compte + configuration + bio optimisée",
-              "Pack Pro (4 500 FCFA) : Starter + 7 premières vidéos créées + stratégie 30 jours",
-              "Pack Complet (7 000 FCFA) : Pro + suivi 1 mois + 3 Lives animés",
-              "Abonnement mensuel (3 000 FCFA/mois) : gestion du compte en continu",
+              "Coiffeurs, couturiers, restaurateurs, prestataires de services",
+              "Artistes, musiciens, influenceurs qui veulent monétiser leur contenu",
+              "Entrepreneurs qui veulent attirer des clients via TikTok",
             ],
           },
           {
             type: "example",
-            body: "Script WhatsApp testé : 'Bonjour [Nom], j'aide les [commerçants/coiffeurs/etc.] à créer un compte TikTok professionnel monétisable pour attirer plus de clients. Je prends en charge toute la configuration — tu n'as rien à faire. C'est à partir de 2 500 FCFA. Est-ce que ça t'intéresse ?'",
-          },
-          {
-            heading: "Comment gérer et livrer la prestation",
-            body: "",
-            listItems: [
-              "Demande accès au téléphone du client via TeamViewer ou AnyDesk",
-              "Ou demande-lui de créer le compte en te partageant son écran via WhatsApp",
-              "Documente chaque étape en photo/vidéo pour lui envoyer après",
-              "Fais signer un petit accord simple par WhatsApp ('Je confirme avoir reçu mon compte TikTok configuré')",
-              "Propose une garantie : si les critères ne sont pas atteints en 60 jours, tu fais une session de coaching gratuite",
-            ],
+            body: "Script WhatsApp à copier-coller : 'Bonjour [Prénom] ! Je sais comment créer un compte TikTok monétisable depuis l'Afrique — avec accès au Creator Fund et aux cadeaux Lives. C'est un service à 2 500 FCFA que je peux faire pour toi en moins de 30 minutes. Est-ce que ça t'intéresse ?'",
           },
           {
             type: "exercise",
-            body: "Exercice 4 — Ta première vente cette semaine",
+            body: "Ta première vente cette semaine",
             listItems: [
-              "Identifie 10 contacts WhatsApp qui ont un business local",
-              "Envoie le script ci-dessus à 5 d'entre eux aujourd'hui",
-              "Propose une démo gratuite à ceux qui hésitent (crée un compte test en direct)",
-              "Objectif : 1 vente dans les 7 prochains jours",
-              "Budget cible premier mois : 3 à 5 ventes = 7 500 à 22 500 FCFA",
+              "Crée d'abord ton propre compte pour maîtriser la procédure",
+              "Prends des captures d'écran de la région et des outils de monétisation comme preuve",
+              "Contacte 5 personnes de ton entourage avec le script ci-dessus",
+              "Objectif : 1 première vente dans les 3 jours",
+              "1 vente à 2 500 FCFA = cette formation remboursée 10 fois",
             ],
-          },
-          {
-            type: "tip",
-            body: "Rejoins des groupes WhatsApp de commerçants, d'associations d'entrepreneurs ou de femmes d'affaires dans ta ville. C'est là que tu trouveras tes 10 premiers clients gratuitement.",
           },
         ],
       },
