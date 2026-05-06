@@ -18,7 +18,16 @@ function base(content: string): string {
   <tr><td style="background:#fff;border-radius:20px;padding:40px 32px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     ${content}
   </td></tr>
-  <tr><td align="center" style="padding-top:24px;">
+  <tr><td align="center" style="padding-top:20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff7ed;border-radius:16px;padding:16px 24px;border:1px solid #fed7aa;">
+      <tr><td align="center">
+        <p style="margin:0 0 4px;color:#9a3412;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Partenaire officiel n°1</p>
+        <a href="https://socialboosthorizon.com" style="color:#ea580c;font-size:15px;font-weight:800;text-decoration:none;">🤝 Social Boost Horizon</a>
+        <p style="margin:4px 0 0;color:#c2410c;font-size:12px;">socialboosthorizon.com — Le soutien principal de la plateforme TRIXHUB</p>
+      </td></tr>
+    </table>
+  </td></tr>
+  <tr><td align="center" style="padding-top:16px;">
     <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.8;">
       © 2025 TRIXHUB · La plateforme d'affiliation africaine<br>
       <a href="${SITE}" style="color:#f97316;text-decoration:none;">trixhub.site</a>
@@ -71,16 +80,42 @@ export async function sendWelcomeEmail(user: { email: string; displayName: strin
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-size:52px;margin-bottom:12px;">🎉</div>
       ${h1("Bienvenue sur TRIXHUB !")}
-      ${sub("Ton compte est créé — il reste une étape.")}
+      ${sub("Ton compte est créé — voici comment commencer à gagner.")}
     </div>
     ${p(`Bonjour <strong>${user.displayName}</strong>,`)}
-    ${p("Tu viens de rejoindre TRIXHUB, la plateforme d'affiliation qui te permet de gagner de l'argent en invitant tes proches partout en Afrique.")}
-    ${box("#f97316", "💡", "Active ton compte pour commencer",
-      "L'activation coûte <strong>3 600 FCFA</strong> (frais unique). Une fois activé, tu reçois <strong>800 FCFA bonus</strong> de bienvenue, tu gagnes <strong>1 700 FCFA</strong> par filleul direct activé, et tu accèdes à toutes les fonctionnalités."
+    ${p("Tu viens de rejoindre <strong>TRIXHUB</strong>, la plateforme d'affiliation africaine qui te permet de générer des revenus réels depuis ton téléphone, en travaillant à ton rythme.")}
+
+    <div style="background:#fff7ed;border-radius:16px;padding:24px;margin:20px 0;border:2px solid #fed7aa;">
+      <p style="margin:0 0 12px;color:#9a3412;font-size:16px;font-weight:800;text-align:center;">❓ Pourquoi payer 3 600 FCFA ?</p>
+      ${p(`Ce montant unique est ton <strong>ticket d'entrée</strong> dans la communauté TRIXHUB. Il te donne accès à un <strong>système complet de revenus</strong> conçu pour te faire rentabiliser cet investissement dès tes premières actions. Voici ce que tu reçois en échange :`)}
+      <ul style="margin:0;padding-left:20px;color:#334155;font-size:14px;line-height:2.2;">
+        <li>🎁 <strong>800 FCFA offerts</strong> immédiatement sur ton solde bonus</li>
+        <li>💰 <strong>1 700 FCFA</strong> chaque fois qu'un filleul direct active son compte</li>
+        <li>🔗 <strong>700 FCFA</strong> sur chaque activation de tes filleuls de niveau 2</li>
+        <li>🌐 <strong>300 FCFA</strong> sur chaque activation au niveau 3 de ton réseau</li>
+        <li>📋 Accès au <strong>répertoire de contacts</strong> à revendre (2 FCFA/contact)</li>
+        <li>🎓 Accès aux <strong>formations exclusives</strong> que tu peux revendre à ta communauté</li>
+        <li>🏆 Accès aux <strong>activités hebdomadaires</strong> (vidéos, quiz, découverte) convertibles en FCFA</li>
+      </ul>
+    </div>
+
+    ${box("#22c55e", "📊", "Exemple concret de revenus",
+      "Tu actives ton compte à <strong>3 600 FCFA</strong>. Tu parraines 3 personnes qui activent à leur tour → tu récupères déjà <strong>5 100 FCFA</strong> (3 × 1 700). Chacun de tes 3 filleuls parraine 3 autres → tu touches encore <strong>6 300 FCFA</strong> (9 × 700). Ton réseau grandit, tes revenus aussi — <strong>sans limite</strong>."
     )}
-    ${btn(SITE + "/activate", "Activer mon compte")}
+
+    ${box("#3b82f6", "🤝", "Soutenu par Social Boost Horizon",
+      "TRIXHUB est porté par son partenaire officiel n°1, <strong>Social Boost Horizon</strong>, qui assure la crédibilité et la solidité de la plateforme. Découvrez-les sur <a href='https://socialboosthorizon.com' style='color:#1d4ed8;'>socialboosthorizon.com</a>"
+    )}
+
+    <div style="text-align:center;margin:28px 0 8px;">
+      <p style="margin:0 0 8px;color:#0f172a;font-size:15px;font-weight:700;">Prêt à commencer ? Active ton compte maintenant :</p>
+    </div>
+    ${btn(SITE + "/activate", "Activer mon compte — 3 600 FCFA")}
+    <div style="text-align:center;margin-top:16px;">
+      <p style="margin:0;color:#64748b;font-size:13px;">Des questions ? Contacte notre équipe depuis ton tableau de bord ou via <a href="${SITE}/dashboard" style="color:#f97316;text-decoration:none;">trixhub.site</a></p>
+    </div>
   `);
-  await resend.emails.send({ from: FROM, to: user.email, subject: "🎉 Bienvenue sur TRIXHUB — Active ton compte maintenant", html });
+  await resend.emails.send({ from: FROM, to: user.email, subject: "🎉 Bienvenue sur TRIXHUB — Découvre comment gagner dès aujourd'hui", html });
 }
 
 // ─── 2. Compte activé (confirmation à l'utilisateur) ──────────────────────
