@@ -8,6 +8,7 @@ import {
   activityWithdrawalsTable,
   transactionsTable,
   contactPurchasesTable,
+  weeklyPointsTable,
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -209,6 +210,7 @@ router.get("/admin/users", authenticate, requireAdmin, async (req, res): Promise
       referralCode: usersTable.referralCode,
       referredByCode: usersTable.referredByCode,
       createdAt: usersTable.createdAt,
+      avatarUrl: usersTable.avatarUrl,
       referralBalance: balancesTable.referralBalance,
       taskBalance: balancesTable.taskBalance,
       bonusBalance: balancesTable.bonusBalance,
@@ -674,6 +676,76 @@ router.get("/admin/contacts-revenue", authenticate, requireAdmin, async (_req, r
     totalContacts: parseInt(summary?.totalContacts ?? "0"),
     history,
   });
+});
+
+// ─── GET /admin/top-users — classements multi-catégories ─────────
+router.get("/admin/top-users", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  // Semaine en cours (lundi matin UTC+1)
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysToMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
+
+  const userCols = {
+    id: usersTable.id,
+    displayName: usersTable.displayName,
+    email: usersTable.email,
+    phone: usersTable.phone,
+    avatarUrl: usersTable.avatarUrl,
+    country: usersTable.country,
+  };
+
+  // Top recruteurs — correlated subquery
+  const recruitCountSql = sql<number>`(SELECT COUNT(*)::int FROM users u2 WHERE u2.referred_by_code = ${usersTable.referralCode})`;
+  const topRecruiters = await db
+    .select({ ...userCols, metric: recruitCountSql })
+    .from(usersTable)
+    .where(eq(usersTable.isActivated, true))
+    .orderBy(desc(recruitCountSql))
+    .limit(10);
+
+  // Top activités — semaine en cours
+  const topActivities = await db
+    .select({ ...userCols, metric: weeklyPointsTable.totalPoints })
+    .from(weeklyPointsTable)
+    .innerJoin(usersTable, eq(usersTable.id, weeklyPointsTable.userId))
+    .where(and(
+      sql`${weeklyPointsTable.weekStart} = ${weekStartStr}::date`,
+      eq(usersTable.isActivated, true),
+    ))
+    .orderBy(desc(weeklyPointsTable.totalPoints))
+    .limit(10);
+
+  // Gros soldes — somme de tous les soldes
+  const totalBalanceSql = sql<number>`(
+    COALESCE(${balancesTable.referralBalance}::numeric,0) +
+    COALESCE(${balancesTable.taskBalance}::numeric,0) +
+    COALESCE(${balancesTable.bonusBalance}::numeric,0) +
+    COALESCE(${balancesTable.depositBalance}::numeric,0) +
+    COALESCE(${balancesTable.activityBalance}::numeric,0)
+  )`;
+  const topBalances = await db
+    .select({ ...userCols, metric: totalBalanceSql })
+    .from(usersTable)
+    .innerJoin(balancesTable, eq(balancesTable.userId, usersTable.id))
+    .where(eq(usersTable.isActivated, true))
+    .orderBy(desc(totalBalanceSql))
+    .limit(10);
+
+  // Gros retraits — montant total retiré
+  const withdrawnSql = sql<number>`COALESCE(${balancesTable.withdrawnAmount}::numeric, 0)`;
+  const topWithdrawals = await db
+    .select({ ...userCols, metric: withdrawnSql })
+    .from(usersTable)
+    .innerJoin(balancesTable, eq(balancesTable.userId, usersTable.id))
+    .where(eq(usersTable.isActivated, true))
+    .orderBy(desc(withdrawnSql))
+    .limit(10);
+
+  res.json({ recruiters: topRecruiters, activities: topActivities, balances: topBalances, withdrawals: topWithdrawals });
 });
 
 export default router;

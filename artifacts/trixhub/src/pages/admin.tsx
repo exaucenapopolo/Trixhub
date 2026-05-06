@@ -9,8 +9,9 @@ import {
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
   Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
   Globe, AlertTriangle, Info, BookUser, GraduationCap, Star, Download,
+  Trophy, Medal, Phone, UserCheck,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, resolveAvatarUrl } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
@@ -54,10 +55,21 @@ interface GrowthData {
 interface AdminUser {
   id: number; displayName: string; email: string; phone: string; country: string;
   isActivated: boolean; isBanned: boolean; isAdmin: boolean; referralCode: string;
-  referredByCode: string | null; createdAt: string;
+  referredByCode: string | null; createdAt: string; avatarUrl: string | null;
   referralBalance: string; taskBalance: string; bonusBalance: string;
   depositBalance: string; activityBalance: string; inactiveBalance: string;
   withdrawnAmount: string; spentAmount: string;
+}
+
+interface TopUser {
+  id: number; displayName: string; email: string; phone: string;
+  avatarUrl: string | null; country: string; metric: number;
+}
+interface TopUsersData {
+  recruiters: TopUser[];
+  activities: TopUser[];
+  balances: TopUser[];
+  withdrawals: TopUser[];
 }
 
 interface Withdrawal {
@@ -189,6 +201,20 @@ function fmt(val: string | number) {
 function fmtDate(d: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function UserAvatar({ avatarUrl, name, size = "sm" }: { avatarUrl: string | null | undefined; name: string; size?: "sm" | "md" | "lg" }) {
+  const src = resolveAvatarUrl(avatarUrl);
+  const initials = name.split(" ").slice(0, 2).map(w => w[0] ?? "").join("").toUpperCase() || "?";
+  const sizes = { sm: "w-8 h-8 text-xs", md: "w-10 h-10 text-sm", lg: "w-12 h-12 text-base" };
+  return (
+    <div className={cn("rounded-full overflow-hidden flex-shrink-0 bg-primary/15 flex items-center justify-center font-bold text-primary", sizes[size])}>
+      {src
+        ? <img src={src} alt={name} className="w-full h-full object-cover" onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+        : <span>{initials}</span>
+      }
+    </div>
+  );
 }
 
 // ─── Section : Vue d'ensemble ────────────────────────────────────
@@ -740,8 +766,13 @@ function UsersSection() {
                   return (
                     <tr key={u.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-xs">{u.displayName}</p>
-                        <p className="text-[10px] text-muted-foreground">{u.email}</p>
+                        <div className="flex items-center gap-2">
+                          <UserAvatar avatarUrl={u.avatarUrl} name={u.displayName} size="sm" />
+                          <div>
+                            <p className="font-medium text-xs">{u.displayName}</p>
+                            <p className="text-[10px] text-muted-foreground">{u.email}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-0.5">
@@ -1492,13 +1523,148 @@ function FormationsSection() {
   );
 }
 
+// ─── Section : Top Utilisateurs ──────────────────────────────────
+const TOP_CATS = [
+  { id: "recruiters" as const, label: "Top Recruteurs",  icon: Users,     color: "text-blue-500",   bg: "bg-blue-500/10",   fmt: (m: number) => `${m} filleul${m !== 1 ? "s" : ""}` },
+  { id: "activities" as const, label: "Top Activités",   icon: Activity,  color: "text-purple-500", bg: "bg-purple-500/10", fmt: (m: number) => `${m} pts` },
+  { id: "balances"   as const, label: "Gros Soldes",     icon: Wallet,    color: "text-emerald-500",bg: "bg-emerald-500/10",fmt: (m: number) => parseFloat(String(m)).toLocaleString("fr-FR") + " F" },
+  { id: "withdrawals"as const, label: "Gros Retraits",   icon: ArrowUpRight, color: "text-amber-500",  bg: "bg-amber-500/10",  fmt: (m: number) => parseFloat(String(m)).toLocaleString("fr-FR") + " F" },
+] as const;
+
+const RANK_STYLES = [
+  { medal: "🥇", border: "border-amber-400/40",   bg: "bg-amber-500/5"   },
+  { medal: "🥈", border: "border-slate-400/40",   bg: "bg-slate-500/5"   },
+  { medal: "🥉", border: "border-orange-400/40",  bg: "bg-orange-500/5"  },
+];
+
+function TopSection() {
+  const [data, setData] = useState<TopUsersData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cat, setCat] = useState<"recruiters" | "activities" | "balances" | "withdrawals">("recruiters");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setData(await apiFetch("/api/admin/top-users")); } catch {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const catCfg = TOP_CATS.find(c => c.id === cat)!;
+  const CatIcon = catCfg.icon;
+  const users: TopUser[] = data?.[cat] ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Trophy size={20} className="text-amber-500" />
+          <h2 className="text-xl font-bold">Top Utilisateurs</h2>
+        </div>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw size={13} /> Actualiser
+        </button>
+      </div>
+
+      {/* Tabs catégories */}
+      <div className="flex gap-2 flex-wrap">
+        {TOP_CATS.map(c => {
+          const Ic = c.icon;
+          return (
+            <button key={c.id} onClick={() => setCat(c.id)} className={cn(
+              "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all",
+              cat === c.id ? `${c.bg} ${c.color} font-semibold` : "bg-muted text-muted-foreground hover:bg-muted/70"
+            )}>
+              <Ic size={13} /> {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Catégorie active label */}
+      <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold", catCfg.bg, catCfg.color)}>
+        <CatIcon size={15} />
+        {catCfg.label}
+        {cat === "activities" && <span className="text-[10px] font-normal opacity-75 ml-1">— semaine en cours</span>}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-muted-foreground" /></div>
+      ) : users.length === 0 ? (
+        <div className="bg-card border border-border rounded-2xl p-10 text-center">
+          <Medal size={32} className="mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">Aucune donnée disponible pour cette catégorie</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {users.map((u, idx) => {
+            const rank = RANK_STYLES[idx] ?? { medal: `#${idx + 1}`, border: "border-border", bg: "" };
+            return (
+              <div key={u.id} className={cn(
+                "flex items-center gap-3 p-3 rounded-2xl border transition-all",
+                rank.border, rank.bg,
+                idx >= 3 ? "bg-card border-border/50" : ""
+              )}>
+                {/* Rang */}
+                <div className="w-8 text-center flex-shrink-0">
+                  {idx < 3 ? (
+                    <span className="text-xl">{rank.medal}</span>
+                  ) : (
+                    <span className="text-sm font-bold text-muted-foreground">#{idx + 1}</span>
+                  )}
+                </div>
+
+                {/* Avatar */}
+                <UserAvatar avatarUrl={u.avatarUrl} name={u.displayName} size="md" />
+
+                {/* Infos */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{u.displayName}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
+                  <p className="text-[10px] text-muted-foreground">{u.country}</p>
+                </div>
+
+                {/* WhatsApp / Téléphone */}
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <div className={cn("text-sm font-bold tabular-nums", catCfg.color)}>
+                    {catCfg.fmt(u.metric)}
+                  </div>
+                  {u.phone && (
+                    <a
+                      href={`https://wa.me/${u.phone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-500 transition-colors"
+                    >
+                      <Phone size={10} />
+                      {u.phone}
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Légende */}
+      <div className="bg-muted/50 rounded-xl p-3 flex items-start gap-2">
+        <UserCheck size={14} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+        <p className="text-[11px] text-muted-foreground">
+          Classement basé sur les membres <strong>actifs</strong> uniquement. Le téléphone affiché est cliquable — il ouvre WhatsApp directement.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page principale Admin ────────────────────────────────────────
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
   usePageTitle('Administration');
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets" | "contacts" | "formations">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets" | "contacts" | "formations" | "top">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -1531,6 +1697,7 @@ export default function AdminPage() {
     { id: "wallets",     label: "Portefeuilles",   icon: Globe          },
     { id: "contacts",    label: "Contacts",        icon: BookUser       },
     { id: "formations",  label: "Formations",      icon: GraduationCap  },
+    { id: "top",         label: "Top Membres",     icon: Trophy         },
   ] as const;
 
   return (
@@ -1562,6 +1729,7 @@ export default function AdminPage() {
         {activeTab === "wallets"     && <WalletsSection />}
         {activeTab === "contacts"    && <ContactsSection />}
         {activeTab === "formations"  && <FormationsSection />}
+        {activeTab === "top"         && <TopSection />}
       </div>
     </Layout>
   );
