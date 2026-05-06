@@ -1625,6 +1625,957 @@ const FORMATION_CONTENTS: Record<string, FormationContent> = {
       },
     ],
   },
+  // ── FORMATIONS GRATUITES ─────────────────────────────────────────
+
+  "vie-financiere": {
+    id: "vie-financiere",
+    title: "Comment organiser sa vie financière même avec un petit revenu",
+    subtitle: "Un système simple pour gérer ton argent, épargner et arrêter de subir fin de mois",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#10b981",
+    accentLight: "#d1fae5",
+    conclusion: "La gestion financière n'est pas une question de combien tu gagnes — c'est une question d'habitudes. Mets en place le système de ce guide cette semaine, même si c'est imparfait. Dans 3 mois, tu verras la différence.",
+    chapters: [
+      {
+        title: "Comprendre où va ton argent",
+        intro: "La première étape pour changer ta situation financière, c'est de savoir exactement où part ton argent chaque mois. La plupart des gens n'en ont aucune idée.",
+        sections: [
+          {
+            heading: "Les 3 catégories de dépenses à connaître",
+            body: "",
+            listItems: [
+              "Dépenses fixes : loyer, transport, abonnements — tu ne peux pas les éviter",
+              "Dépenses variables : nourriture, téléphone, sorties — tu peux les contrôler",
+              "Dépenses invisibles : petits achats quotidiens qui s'accumulent sans qu'on s'en rende compte",
+            ],
+          },
+          { type: "exercise", body: "Cette semaine, note chaque dépense dans un carnet ou ton téléphone. Même les plus petites. Au bout de 7 jours, classe-les dans les 3 catégories ci-dessus. Tu vas être surpris." },
+          {
+            heading: "Les dépenses invisibles : le vrai problème",
+            body: "Une bouteille d'eau à 200 FCFA par jour = 6 000 FCFA par mois. Un crédit de 500 FCFA tous les 2 jours = 7 500 FCFA par mois. Ces petits montants grignotent ton budget sans que tu t'en aperçoives. Identifier ces dépenses, c'est retrouver de l'argent que tu pensais ne pas avoir.",
+          },
+        ],
+      },
+      {
+        title: "Le système de budget en 3 enveloppes",
+        intro: "Un budget ne doit pas être compliqué. Voici un système simple testé qui fonctionne même avec 30 000 FCFA par mois.",
+        sections: [
+          {
+            heading: "La règle 60-30-10",
+            body: "",
+            listItems: [
+              "60% → Besoins essentiels (loyer, nourriture, transport, santé)",
+              "30% → Vie quotidienne (habits, sorties, téléphone, loisirs)",
+              "10% → Épargne — à mettre de côté DÈS que tu reçois ton argent",
+            ],
+          },
+          { type: "tip", body: "Règle d'or : épargne EN PREMIER, avant de dépenser quoi que ce soit. Pas ce qui reste à la fin du mois — ce qui reste est toujours zéro. Fixe un montant et mets-le de côté immédiatement." },
+          { type: "example", body: "Avec 50 000 FCFA/mois : 30 000 pour les besoins, 15 000 pour la vie quotidienne, 5 000 d'épargne. En 12 mois : 60 000 FCFA d'épargne = 2 mois de loyer en réserve. C'est ça la vraie sécurité financière." },
+          {
+            heading: "Dépenses inutiles à couper en priorité",
+            body: "",
+            listItems: [
+              "Abonnements oubliés que tu n'utilises plus",
+              "Achats impulsifs — attendre 24h avant tout achat non prévu",
+              "Crédits téléphoniques excessifs — achète un forfait plutôt que des recharges",
+              "Nourriture à emporter fréquente — cuisiner coûte 3x moins cher",
+            ],
+          },
+        ],
+      },
+      {
+        title: "Construire une épargne de sécurité",
+        intro: "Une épargne de sécurité, c'est un coussin financier qui t'évite de tomber dans la dette à chaque imprévu. L'objectif : avoir l'équivalent de 2 mois de dépenses de côté.",
+        sections: [
+          {
+            heading: "Comment commencer à épargner quand on n'a rien",
+            body: "",
+            listItems: [
+              "Commence par 500 FCFA par semaine — ça fait 2 000 FCFA par mois",
+              "Augmente progressivement : 1 000, puis 2 000, puis 5 000 par semaine",
+              "Ne touche à cette épargne QUE pour les vraies urgences",
+              "Garde l'argent séparé — idéalement dans un autre compte ou une tontine",
+            ],
+          },
+          { type: "exercise", body: "Action immédiate : décide d'un montant fixe à épargner dès aujourd'hui. Note-le. La semaine prochaine, mets-le de côté avant toute autre dépense. Un seul montant, une seule action." },
+        ],
+      },
+    ],
+  },
+
+  "fin-mois-sans-argent": {
+    id: "fin-mois-sans-argent",
+    title: "Comment ne plus finir le mois sans argent",
+    subtitle: "Les causes réelles et les solutions concrètes pour arrêter de galérer en fin de mois",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#10b981",
+    accentLight: "#d1fae5",
+    conclusion: "Finir le mois avec de l'argent n'est pas un rêve réservé aux riches. C'est le résultat d'habitudes simples mises en place dès maintenant. Commence par une seule chose ce mois-ci et ajoute les autres progressivement.",
+    chapters: [
+      {
+        title: "Pourquoi tu finis toujours le mois sans argent",
+        intro: "Avant de chercher des solutions, il faut comprendre les vraies causes. Ce n'est presque jamais une question de revenu.",
+        sections: [
+          {
+            heading: "Les 4 causes les plus fréquentes",
+            body: "",
+            listItems: [
+              "1. Aucun plan — tu dépenses sans savoir combien il reste",
+              "2. Les dépenses surprises — imprévu médical, réparation, contribution famille",
+              "3. La pression sociale — dépenses pour maintenir les apparences",
+              "4. Les petites fuites quotidiennes — 200 FCFA ici, 500 FCFA là, ça s'accumule",
+            ],
+          },
+          { type: "tip", body: "La pression sociale est l'ennemi numéro 1 des finances africaines. Contribuer à chaque deuil, mariage et baptême de quartier peut représenter 20 à 30% du budget mensuel. Il faut apprendre à dire non poliment." },
+        ],
+      },
+      {
+        title: "Les solutions pratiques à appliquer ce mois-ci",
+        intro: "Voici des actions concrètes à mettre en place maintenant. Pas la peine de tout faire en même temps — choisis 2 ou 3 et applique-les vraiment.",
+        sections: [
+          {
+            heading: "Planifier les dépenses avant la fin du mois",
+            body: "",
+            listItems: [
+              "Au début du mois, liste toutes tes dépenses fixes obligatoires",
+              "Soustrait-les de ton revenu → ce qui reste est ton argent libre",
+              "Divise l'argent libre par semaine → tu sais exactement combien tu peux dépenser chaque semaine",
+              "Si une semaine est dépassée, compense la suivante",
+            ],
+          },
+          { type: "example", body: "Revenu : 80 000 FCFA. Dépenses fixes (loyer + transport + nourriture de base) : 55 000 FCFA. Argent libre : 25 000 FCFA ÷ 4 semaines = 6 250 FCFA par semaine. Tu sais maintenant exactement ta limite." },
+          {
+            heading: "Créer un fonds d'urgence pour les imprévus",
+            body: "Chaque mois, mets de côté une somme fixe uniquement pour les imprévus. Même 2 000 FCFA. Au bout de 6 mois, tu as 12 000 FCFA de réserve. Les pannes, les maladies et les contributions sociales ne te déstabiliseront plus.",
+          },
+          {
+            heading: "Apprendre à dire non sans briser les relations",
+            body: "",
+            listItems: [
+              "Pour les contributions non urgentes : 'Je passe en ce moment une période difficile, je ferai comme je peux'",
+              "Pour les emprunts : 'Je ne prête plus d'argent pour éviter de casser nos relations'",
+              "Ne te justifie pas longuement — une phrase courte et sincère suffit",
+              "Les vraies relations respectent tes limites financières",
+            ],
+          },
+          { type: "exercise", body: "Ce soir : note tes revenus du mois et tes dépenses fixes. Calcule ce qui reste. Divise par 4. C'est ton budget hebdomadaire. Affiche-le quelque part et respecte-le cette semaine." },
+        ],
+      },
+    ],
+  },
+
+  "deuxieme-source-revenu": {
+    id: "deuxieme-source-revenu",
+    title: "Comment créer une deuxième source de revenu sans stress",
+    subtitle: "3 méthodes accessibles depuis l'Afrique pour gagner de l'argent en parallèle de ton activité principale",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#10b981",
+    accentLight: "#d1fae5",
+    conclusion: "Une seule source de revenu, c'est un risque. Deux sources, c'est une protection. Trois sources, c'est une stratégie. Commence par UNE seule méthode, applique-la pendant 30 jours sérieusement avant de passer à la suivante.",
+    chapters: [
+      {
+        title: "Pourquoi une seule source de revenu est dangereuse",
+        intro: "Si tu dépends d'un seul employeur, d'un seul client ou d'une seule activité, ta vie entière repose sur un seul fil. Un licenciement, une fermeture, une maladie — et tout s'effondre. Les personnes financièrement solides ont minimum 2 sources de revenus.",
+        sections: [
+          {
+            heading: "Les revenus complémentaires les plus accessibles depuis l'Afrique",
+            body: "",
+            listItems: [
+              "Revente de produits (physiques ou numériques) — sans stock ni investissement",
+              "Services basés sur tes compétences (rédaction, design, gestion réseaux sociaux, traduction)",
+              "Affiliation et parrainage (recommander des produits/services contre commission)",
+            ],
+          },
+          { type: "tip", body: "Le critère principal pour choisir ta deuxième source : elle doit pouvoir démarrer avec ZÉRO ou très peu d'investissement. Si quelqu'un te demande de payer pour commencer à gagner, méfie-toi." },
+        ],
+      },
+      {
+        title: "Méthode 1 — La revente",
+        intro: "La revente est la méthode la plus rapide pour générer des revenus supplémentaires. Pas besoin d'expertise particulière.",
+        sections: [
+          {
+            heading: "Quoi revendre ?",
+            body: "",
+            listItems: [
+              "Produits physiques : cosmétiques, habits, produits alimentaires achetés en gros et revendus à l'unité",
+              "Produits numériques : ebooks, formations, logiciels — tu vends sans gérer de stock",
+              "Services de tiers : tu joues l'intermédiaire entre un prestataire et un client",
+            ],
+          },
+          { type: "example", body: "Exemple concret : tu achètes des savons artisanaux à 1 200 FCFA l'unité, tu les revends à 2 000 FCFA sur WhatsApp. 20 ventes par mois = 16 000 FCFA de bénéfice net. Sans boutique, sans investissement lourd." },
+        ],
+      },
+      {
+        title: "Méthode 2 — Vendre ses compétences en ligne",
+        intro: "Tu sais faire quelque chose ? Tu peux le vendre. Rédaction, design, retouche photo, gestion de réseaux sociaux, traduction, saisie de données — tout se vend.",
+        sections: [
+          {
+            heading: "Les compétences les plus demandées en Afrique francophone",
+            body: "",
+            listItems: [
+              "Gestion de pages Facebook/Instagram pour des petits commerces",
+              "Rédaction de textes pour WhatsApp Business, sites web, publicités",
+              "Retouche photo et création de visuels pour boutiques en ligne",
+              "Transcription et traduction de documents",
+              "Saisie de données et administration à distance",
+            ],
+          },
+          { type: "exercise", body: "Fais la liste de 5 choses que tu sais faire mieux que la moyenne. Demande-toi pour chacune : est-ce que quelqu'un paierait pour ça ? Si oui, tu as une compétence vendable. Choisis une et commence à la proposer cette semaine." },
+        ],
+      },
+      {
+        title: "Méthode 3 — L'affiliation",
+        intro: "L'affiliation, c'est recommander un produit ou service et toucher une commission sur chaque vente réalisée grâce à toi. C'est passif, scalable, et ne nécessite aucun investissement.",
+        sections: [
+          {
+            heading: "Comment démarrer l'affiliation en Afrique",
+            body: "",
+            listItems: [
+              "Rejoins des programmes d'affiliation africains (plateformes de cours, services en ligne)",
+              "Partage ton lien de parrainage sur WhatsApp, TikTok, Facebook",
+              "Tu touches une commission chaque fois que quelqu'un achète via ton lien",
+              "TRIXHUB est lui-même un système d'affiliation — tu en fais déjà partie",
+            ],
+          },
+          { type: "tip", body: "La clé de l'affiliation : recommande seulement des produits que tu utilises toi-même ou en lesquels tu crois vraiment. Les recommandations authentiques convertissent 5 fois mieux que les promotions génériques." },
+        ],
+      },
+    ],
+  },
+
+  "business-stable": {
+    id: "business-stable",
+    title: "Comment bâtir un business stable même en partant de rien",
+    subtitle: "Le chemin de l'idée aux premiers revenus réguliers — sans capital de départ",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#3b82f6",
+    accentLight: "#dbeafe",
+    conclusion: "Un business stable ne se construit pas du jour au lendemain. Il se construit semaine après semaine, client après client. La clé : commencer petit, valider vite, et réinvestir chaque bénéfice dans la croissance.",
+    chapters: [
+      {
+        title: "Trouver la bonne idée de business",
+        intro: "La meilleure idée de business n'est pas la plus originale — c'est celle qui résout un problème réel que les gens ont déjà et pour lequel ils sont prêts à payer.",
+        sections: [
+          {
+            heading: "La formule d'une bonne idée de business",
+            body: "Bonne idée = Compétence que tu as OU produit que tu peux trouver + Problème réel + Personnes prêtes à payer",
+          },
+          {
+            heading: "Business accessibles depuis l'Afrique sans capital",
+            body: "",
+            listItems: [
+              "Service (coiffure, cuisine, réparation, informatique, ménage) — tu vends ton temps et ton savoir",
+              "Revente (produits en gros revendus à l'unité) — tu vends sans fabriquer",
+              "Contenu et formation (ebooks, coaching, tutoriels) — tu vends ta connaissance",
+              "Intermédiaire (trouver des clients pour d'autres contre commission) — tu vends ton réseau",
+            ],
+          },
+          { type: "exercise", body: "Réponds à ces 3 questions : 1. Qu'est-ce que je sais faire que d'autres ne savent pas ? 2. Quel problème vois-je autour de moi que personne ne résout bien ? 3. Pour quoi est-ce que les gens dans mon entourage paient déjà ? L'intersection de ces 3 réponses = ton idée de business." },
+        ],
+      },
+      {
+        title: "Valider avant d'investir",
+        intro: "La plupart des business échouent parce que les gens investissent avant de savoir si leur idée marche. La règle : vends d'abord, investis ensuite.",
+        sections: [
+          {
+            heading: "Comment valider une idée en 7 jours",
+            body: "",
+            listItems: [
+              "Jour 1-2 : Décris ton offre en une phrase claire (je fais X pour Y au prix Z)",
+              "Jour 3-4 : Partage ton offre à 20 personnes via WhatsApp ou en direct",
+              "Jour 5-7 : Compte les réponses positives et les demandes de prix",
+              "Si 3 personnes ou plus veulent acheter → l'idée est valide, lance-toi",
+              "Si personne ne réagit → modifie l'offre ou l'audience et recommence",
+            ],
+          },
+          { type: "warning", body: "Ne construis pas de site web, ne commande pas de flyers et n'achète pas de stock AVANT d'avoir vendu au moins une fois. Commence par parler à des vrais clients potentiels — rien d'autre." },
+        ],
+      },
+      {
+        title: "Aller des premiers clients aux revenus réguliers",
+        intro: "Un premier client, c'est bien. Des revenus réguliers, c'est un business. Voici comment passer de l'un à l'autre.",
+        sections: [
+          {
+            heading: "Les 4 étapes pour stabiliser ton business",
+            body: "",
+            listItems: [
+              "1. Livre une excellente prestation à tes premiers clients — la réputation est tout",
+              "2. Demande un témoignage ou une recommandation après chaque livraison",
+              "3. Crée une offre récurrente (abonnement, retour mensuel, fidélité)",
+              "4. Réinvestis 30% de chaque bénéfice dans la croissance (publicité, stock, formation)",
+            ],
+          },
+          { type: "tip", body: "Le bouche-à-oreille est le meilleur outil marketing en Afrique. Un client satisfait en amène 3 autres. Un client mécontent en fait fuir 10. Concentre toute ton énergie sur la qualité avant la quantité." },
+          { type: "example", body: "Exemple : tu lances un service de livraison de repas dans ton quartier. Semaine 1 : 3 clients. Semaine 4 : 12 clients. Mois 3 : 40 clients réguliers. Revenu stabilisé à 60 000 FCFA/mois. Tout ça en partant de zéro capital avec un vélo et un téléphone." },
+        ],
+      },
+    ],
+  },
+
+  "revenus-etudes": {
+    id: "revenus-etudes",
+    title: "Comment gagner ses premiers revenus sans abandonner ses études",
+    subtitle: "Des méthodes concrètes compatibles avec un emploi du temps d'étudiant africain",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#3b82f6",
+    accentLight: "#dbeafe",
+    conclusion: "Étudier ET gagner de l'argent, c'est possible. Des milliers d'étudiants africains le font déjà. La condition : choisir des méthodes compatibles avec ton emploi du temps et y consacrer 1 à 2 heures par jour minimum.",
+    chapters: [
+      {
+        title: "Pourquoi et comment concilier études et revenus",
+        intro: "Attendre de finir les études pour commencer à gagner de l'argent, c'est perdre des années. Les compétences que tu développes maintenant en gagnant de l'argent seront plus précieuses sur ton CV que tes notes.",
+        sections: [
+          {
+            heading: "Les règles pour ne pas sacrifier ses études",
+            body: "",
+            listItems: [
+              "1 à 2 heures par jour maximum pour tes activités rémunérées — pas plus",
+              "Les révisions et devoirs passent TOUJOURS en premier",
+              "Choisis des activités qui peuvent s'arrêter pendant les examens",
+              "Évite les activités qui demandent d'être physiquement présent à des horaires fixes",
+            ],
+          },
+          { type: "tip", body: "Le week-end est ton meilleur allié. 6 heures de travail rémunéré par weekend = une activité sérieuse. En semaine, 1 heure de soir suffit pour beaucoup d'activités en ligne." },
+        ],
+      },
+      {
+        title: "Les meilleures activités pour les étudiants africains",
+        intro: "Ces activités ont été choisies parce qu'elles sont flexibles, accessibles depuis un téléphone, et ne nécessitent pas de capital de départ.",
+        sections: [
+          {
+            heading: "Activité 1 — Cours particuliers",
+            body: "Tu maîtrises les maths, l'anglais, la physique ou une autre matière ? Des élèves du lycée et d'autres étudiants cherchent des cours particuliers partout en Afrique. 1 heure de cours à 1 000-3 000 FCFA selon ta ville. 5 élèves = 5 000 à 15 000 FCFA par semaine.",
+          },
+          {
+            heading: "Activité 2 — Freelance en ligne",
+            body: "Plateformes comme Fiverr, 5euros ou ComeUp acceptent les Africains. Rédaction, design, traduction, saisie de données. Commence à 5€-10€ par mission, monte progressivement. 1 mission par semaine = 10 000 à 20 000 FCFA par mois.",
+          },
+          {
+            heading: "Activité 3 — Affiliation et parrainage",
+            body: "Recommande des services que tu utilises et touches des commissions. TRIXHUB, applications mobiles, cours en ligne, plateformes d'achat. Partage sur WhatsApp et TikTok. Zéro investissement, revenus passifs.",
+          },
+          {
+            heading: "Activité 4 — Revente de produits numériques",
+            body: "Crée ou achète des ebooks, des modèles de CV, des templates. Vends-les en ligne via WhatsApp, Telegram ou des groupes d'étudiants. Un ebook vendu à 500 FCFA à 50 étudiants = 25 000 FCFA. Tu le crées une fois, tu le vends indéfiniment.",
+          },
+          { type: "exercise", body: "Choisis UNE seule activité dans cette liste. Consacre-lui 1 heure par jour pendant 21 jours. Note tes revenus chaque semaine. Après 21 jours, décide si tu continues ou tu explores une autre option." },
+        ],
+      },
+    ],
+  },
+
+  "canal-plus": {
+    id: "canal-plus",
+    title: "Comment avoir tout Canal+ gratuitement",
+    subtitle: "Les méthodes légales et méconnues pour accéder à Canal+ et ses chaînes premium à prix zéro",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#3b82f6",
+    accentLight: "#dbeafe",
+    conclusion: "Ces méthodes sont légales, accessibles et fonctionnent depuis l'Afrique. Tu n'as besoin que d'un téléphone ou d'un ordinateur pour en profiter. Essaie d'abord la méthode 1 — elle est gratuite et sans inscription.",
+    chapters: [
+      {
+        title: "Les méthodes gratuites d'accès à Canal+",
+        intro: "Canal+ propose lui-même des accès gratuits que très peu de gens connaissent. Avant de payer quoi que ce soit, découvre ces options officielles.",
+        sections: [
+          {
+            heading: "Méthode 1 — myCanal (accès gratuit partiel)",
+            body: "L'application myCanal est disponible sur le Play Store et l'App Store. Sans abonnement, tu accèdes à une sélection de chaînes et contenus gratuits. Crée un compte, explore la section 'Gratuit'. C'est légal, c'est officiel, et ça couvre déjà beaucoup de films et séries.",
+          },
+          {
+            heading: "Méthode 2 — Période d'essai gratuite de 30 jours",
+            body: "Canal+ offre régulièrement des périodes d'essai gratuites. Sur myCanal ou le site officiel, cherche 'Essai gratuit'. Tu peux créer un compte avec ta carte ou un mode de paiement, profiter 30 jours gratuitement, et annuler avant le prélèvement. Aucun frais si tu annules à temps.",
+          },
+          {
+            heading: "Méthode 3 — Partage de compte familial",
+            body: "Un abonnement Canal+ peut être partagé avec plusieurs personnes via les profils. Se regrouper à 3 ou 4 pour partager l'abonnement divisé par le nombre de personnes = Canal+ complet à moins de 2 000 FCFA par mois au lieu de 7 000 à 10 000 FCFA.",
+          },
+          {
+            heading: "Méthode 4 — Applications légales de streaming alternatif",
+            body: "",
+            listItems: [
+              "YouTube Premium Trial — films, séries, YouTube sans publicité 1 mois gratuit",
+              "Netflix (mois d'essai via certaines offres opérateurs en Afrique)",
+              "AfricaTV — alternative africaine avec contenus locaux souvent gratuits",
+              "RFI, TV5Monde, France 24 — gratuites officiellement, accessibles depuis l'Afrique",
+            ],
+          },
+          { type: "warning", body: "Attention aux sites pirates qui proposent du streaming illégal. Ils sont instables, remplis de virus et peuvent endommager ton téléphone. Les méthodes ci-dessus sont 100% légales et sûres." },
+        ],
+      },
+    ],
+  },
+
+  "vendre-whatsapp": {
+    id: "vendre-whatsapp",
+    title: "Comment vendre sur WhatsApp sans forcer les gens",
+    subtitle: "Scripts, statuts et groupes — la méthode pour vendre naturellement sans perdre ses contacts",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#8b5cf6",
+    accentLight: "#ede9fe",
+    conclusion: "WhatsApp est le réseau social le plus utilisé en Afrique. C'est le meilleur endroit pour vendre. La clé : apporter de la valeur d'abord, proposer l'achat ensuite. Jamais l'inverse.",
+    chapters: [
+      {
+        title: "Les règles d'or de la vente sur WhatsApp",
+        intro: "Beaucoup de gens échouent à vendre sur WhatsApp parce qu'ils bombardent leurs contacts de messages non sollicités. Résultat : blocages et relations abîmées. Il existe une meilleure façon.",
+        sections: [
+          {
+            heading: "Ce qu'il ne faut JAMAIS faire",
+            body: "",
+            listItems: [
+              "Envoyer le même message commercial en masse à tout ta liste",
+              "Envoyer des messages à des gens qui ne t'ont rien demandé",
+              "Promouvoir un produit avant d'avoir établi une relation",
+              "Relancer plus de 2 fois quelqu'un qui n'a pas répondu",
+              "Promettre des résultats impossibles pour forcer l'achat",
+            ],
+          },
+          { type: "tip", body: "La règle numéro 1 de WhatsApp : les gens achètent à ceux en qui ils ont confiance. Construis la confiance d'abord. Un abonné à tes statuts depuis 3 semaines achètera plus facilement qu'un inconnu." },
+        ],
+      },
+      {
+        title: "La méthode des statuts WhatsApp",
+        intro: "Les statuts WhatsApp sont ton outil de vente le plus puissant. Ils sont vus par tous tes contacts sans forcer personne. Voici comment les utiliser.",
+        sections: [
+          {
+            heading: "Le calendrier de statuts en 5 jours",
+            body: "",
+            listItems: [
+              "Lundi : contenu utile (conseil, astuce, information pratique)",
+              "Mardi : témoignage d'un client satisfait ou résultat obtenu",
+              "Mercredi : coulisses de ton activité (comment ça se passe en vrai)",
+              "Jeudi : contenu divertissant ou inspirant lié à ta niche",
+              "Vendredi : offre ou produit avec appel à l'action clair",
+            ],
+          },
+          { type: "example", body: "Si tu vends des cosmétiques : Lundi = '3 erreurs qui abîment ta peau sans que tu le saches'. Mardi = photo avant/après d'une cliente. Mercredi = vidéo de ta commande qui arrive. Vendredi = 'Commande ouverte ce week-end, tarif spécial pour les 10 premières'. C'est ça vendre sans forcer." },
+        ],
+      },
+      {
+        title: "Scripts de messages qui convertissent",
+        intro: "Voici des scripts testés à copier-coller et adapter à ton activité.",
+        sections: [
+          {
+            heading: "Script 1 — Premier contact après une recommandation",
+            body: "'Bonjour [Prénom] ! [Nom de la personne] m'a dit que tu pourrais être intéressé(e) par [produit/service]. Je ne vais pas te déranger longtemps — est-ce que c'est quelque chose dont tu as besoin en ce moment ? Je te donne les détails si c'est le cas.'",
+          },
+          {
+            heading: "Script 2 — Relance d'un contact qui a vu ton statut",
+            body: "'Salut [Prénom], j'ai vu que tu as regardé mon statut sur [sujet]. Est-ce que c'est quelque chose qui t'intéresse ? Je peux t'en dire plus si tu veux.'",
+          },
+          {
+            heading: "Script 3 — Présentation d'une offre",
+            body: "'[Prénom], j'ai une offre limitée cette semaine sur [produit]. [Bénéfice principal]. [Prix]. Si ça t'intéresse, je te réserve une place. Réponds-moi avant [date] pour en profiter.'",
+          },
+          { type: "exercise", body: "Adapte le Script 1 à ton activité. Identifie 5 personnes dans ta liste WhatsApp qui pourraient être intéressées par ce que tu vends. Envoie le message adapté à chacune, en personnalisant le prénom. Mesure les réponses." },
+        ],
+      },
+    ],
+  },
+
+  "convertir-contacts": {
+    id: "convertir-contacts",
+    title: "Comment convertir ses amis et contacts en premiers clients",
+    subtitle: "Les techniques de confiance et scripts éprouvés pour vendre à son entourage sans gêne",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#8b5cf6",
+    accentLight: "#ede9fe",
+    conclusion: "Tes premiers clients sont dans ta liste de contacts. Ils te connaissent, ils te font confiance, ils veulent te voir réussir. La barrière n'est pas dans leur tête — elle est dans la tienne. Enlève-la.",
+    chapters: [
+      {
+        title: "Pourquoi les gens achètent — ou n'achètent pas",
+        intro: "Comprendre la psychologie de l'achat, c'est la compétence la plus précieuse pour tout vendeur. Les gens n'achètent pas des produits — ils achètent des solutions à leurs problèmes.",
+        sections: [
+          {
+            heading: "Les 3 raisons pour lesquelles quelqu'un n'achète pas",
+            body: "",
+            listItems: [
+              "1. Il ne voit pas le besoin — tu n'as pas montré le problème que tu résous",
+              "2. Il ne te fait pas confiance — il doute que tu puisses vraiment l'aider",
+              "3. Le moment n'est pas bon — il a besoin mais n'a pas l'argent ou le temps maintenant",
+            ],
+          },
+          { type: "tip", body: "Pour chaque non, demande-toi lequel de ces 3 problèmes c'est. Selon la réponse, ta stratégie de relance sera différente." },
+        ],
+      },
+      {
+        title: "La technique de la conversation naturelle",
+        intro: "La meilleure vente est celle où le client a l'impression que c'est lui qui a décidé. Voici comment y arriver en conversant naturellement.",
+        sections: [
+          {
+            heading: "Les 5 étapes de la conversation vendeuse",
+            body: "",
+            listItems: [
+              "1. Demande des nouvelles sincèrement — pas comme prétexte pour vendre",
+              "2. Écoute — laisse la personne parler de sa situation",
+              "3. Identifie un problème lié à ce que tu vends",
+              "4. Raconte comment tu ou un client avez résolu ce problème",
+              "5. Propose ton aide seulement si le problème est réel pour elle",
+            ],
+          },
+          { type: "example", body: "Tu vends des produits pour maigrir. Tu parles à une amie. Elle mentionne qu'elle se sent fatiguée et qu'elle a pris du poids. Tu réponds : 'Ah oui, j'ai eu le même problème, j'ai essayé quelque chose qui m'a aidée. Tu veux que je t'explique ?' — ce n'est pas de la manipulation, c'est de l'écoute utile." },
+          {
+            heading: "Comment gérer les objections fréquentes",
+            body: "",
+            listItems: [
+              "'C'est trop cher' → 'Je comprends. Par rapport à quoi tu compares ? Laisse-moi te montrer ce que ça t'apporte.'",
+              "'Je vais réfléchir' → 'Bien sûr. Tu as besoin d'info en plus pour décider ? Je peux t'aider.'",
+              "'Je n'ai pas le temps' → 'Aucun problème. Quand est-ce que ce serait le bon moment pour toi ?'",
+              "'J'ai déjà ça' → 'Super ! Qu'est-ce que tu en penses ? Est-ce que ça te donne les résultats que tu voulais ?'",
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  "viral-reseaux": {
+    id: "viral-reseaux",
+    title: "Comment devenir viral sur les réseaux sociaux",
+    subtitle: "Les formules de contenu qui se partagent seules — sans budget publicitaire",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#8b5cf6",
+    accentLight: "#ede9fe",
+    conclusion: "Le contenu viral n'est pas une question de chance. C'est une question de formule. Applique les 3 formules de ce guide, publie régulièrement, et observe lequel marche le mieux pour ton audience. Ensuite, réplique.",
+    chapters: [
+      {
+        title: "Pourquoi certains contenus deviennent viraux",
+        intro: "Un contenu se partage quand il déclenche une émotion. Les gens partagent ce qui les fait rire, ce qui les inspire, ce qui les surprend, ce qui leur sera utile ou ce qui les met en colère (utilise ce dernier avec prudence).",
+        sections: [
+          {
+            heading: "Les 5 émotions qui font partager",
+            body: "",
+            listItems: [
+              "Surprise : 'Je ne savais pas que c'était possible'",
+              "Utilité : 'Ça va m'aider, je garde ça'",
+              "Fierté : 'C'est vrai pour moi / les miens, je partage'",
+              "Humour : 'C'est trop vrai, envoie à tes amis'",
+              "Inspiration : 'Ça me donne envie d'agir'",
+            ],
+          },
+          { type: "tip", body: "Le contenu africain qui performe le plus en ce moment : authenticité et humour local. Les mèmes en langue locale, les situations de la vie quotidienne africaine, les témoignages vrais. Pas besoin d'être parfait — sois vrai." },
+        ],
+      },
+      {
+        title: "Les 3 formules de contenu viral",
+        intro: "Ces formules fonctionnent sur TikTok, Facebook, Instagram et WhatsApp. Adapte-les à ta niche.",
+        sections: [
+          {
+            heading: "Formule 1 — Le 'Ce que personne ne te dit sur...'",
+            body: "Structure : Accroche choc → Information surprenante → Preuve ou exemple → Conseil pratique. Exemple : 'Ce que personne ne te dit sur les prêts bancaires en Afrique (ça m'a coûté 200 000 FCFA de ne pas savoir)'. L'accroche crée la curiosité, le contenu apporte la valeur.",
+          },
+          {
+            heading: "Formule 2 — Le témoignage ou transformation",
+            body: "Structure : Avant (situation difficile) → Déclencheur (ce qui a changé) → Après (résultat obtenu) → Leçon pour l'audience. Les gens adorent les histoires vraies de personnes qui leur ressemblent. C'est le format le plus partagé sur les réseaux africains.",
+          },
+          {
+            heading: "Formule 3 — La liste pratique actionnable",
+            body: "'5 choses à faire avant de signer un contrat de travail', '3 erreurs à éviter si tu veux maigrir', '7 applications qui remplacent un assistant'. Ces contenus sont sauvegardés et partagés parce qu'ils sont directement utiles.",
+          },
+          { type: "exercise", body: "Choisis l'une des 3 formules. Identifie un sujet que tu maîtrises ou qui concerne ton activité. Crée un contenu en suivant exactement la structure. Publie-le aujourd'hui sur au moins un réseau. Observe les réactions dans les 48h." },
+        ],
+      },
+    ],
+  },
+
+  "confiance-en-soi": {
+    id: "confiance-en-soi",
+    title: "Comment avoir confiance en soi quand personne ne croit en toi",
+    subtitle: "Développer une confiance solide même dans les moments de doute, critique et échec",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#f59e0b",
+    accentLight: "#fef3c7",
+    conclusion: "La confiance en soi ne vient pas de l'absence d'échec. Elle vient de la capacité à continuer malgré l'échec. Chaque action que tu poses alors que tu doutes te rend un peu plus confiant. Commence maintenant.",
+    chapters: [
+      {
+        title: "Comprendre d'où vient le manque de confiance",
+        intro: "Le manque de confiance n'est pas une fatalité et ce n'est pas une caractéristique de ta personnalité. C'est le résultat de ce qu'on t'a dit et de ce que tu t'es dit pendant des années.",
+        sections: [
+          {
+            heading: "Les 3 sources du manque de confiance",
+            body: "",
+            listItems: [
+              "Les critiques et comparaisons de l'entourage depuis l'enfance",
+              "Les échecs passés mal gérés et mal interprétés",
+              "Les croyances négatives que tu as répétées si souvent qu'elles semblent vraies",
+            ],
+          },
+          { type: "info", body: "Vérité importante : 90% des peurs que tu as sur toi-même sont fausses. Elles sont des opinions — souvent d'autres personnes — que tu as acceptées comme des faits. La première étape pour changer, c'est de les remettre en question." },
+          {
+            heading: "Exercice : identifier tes croyances limitantes",
+            body: "",
+            listItems: [
+              "Écris 5 choses que tu penses ne pas être capable de faire",
+              "Pour chacune, demande-toi : d'où vient cette conviction ?",
+              "Qui me l'a dit pour la première fois ? Est-ce que c'est vraiment vrai ?",
+              "Est-ce qu'il existe des personnes dans ma situation qui y sont arrivées ?",
+            ],
+          },
+        ],
+      },
+      {
+        title: "Construire une confiance solide au quotidien",
+        intro: "La confiance se construit par l'action, pas par la réflexion. Voici des pratiques concrètes à intégrer dans ta vie.",
+        sections: [
+          {
+            heading: "La règle des petits succès",
+            body: "La confiance se nourrit de réussites. Commence par des objectifs très petits, accomplis-les, et augmente progressivement. Chaque petit succès envoie un signal à ton cerveau : 'Je suis quelqu'un qui réussit ce qu'il entreprend.'",
+          },
+          {
+            heading: "Les 3 habitudes qui changent tout",
+            body: "",
+            listItems: [
+              "1. Agis AVANT d'être prêt — attendre d'être prêt, c'est attendre toujours",
+              "2. Arrête de te comparer aux autres — compare-toi seulement à qui tu étais hier",
+              "3. Parle-toi comme à un ami — tu ne dirais jamais à un ami ce que tu te dis à toi-même",
+            ],
+          },
+          { type: "tip", body: "Quand quelqu'un critique ce que tu fais, demande-toi : est-ce que cette personne a réussi ce qu'elle critique ? Si non, son opinion ne vaut rien. Les gens qui réussissent encouragent — les gens qui ont échoué découragent." },
+          { type: "exercise", body: "Cette semaine : fais une chose que tu as repoussée par peur du jugement. Une seule chose. Peu importe le résultat — l'objectif est juste de la faire. Note comment tu te sens après." },
+        ],
+      },
+    ],
+  },
+
+  "serieux-30-jours": {
+    id: "serieux-30-jours",
+    title: "Comment devenir sérieux et discipliné en 30 jours",
+    subtitle: "Le plan d'action concret pour devenir quelqu'un de fiable, constant et productif",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#f59e0b",
+    accentLight: "#fef3c7",
+    conclusion: "La discipline n'est pas un trait de caractère qu'on a ou qu'on n'a pas. C'est une compétence qui se développe par la répétition. 30 jours suffisent pour poser les bases. 90 jours pour que ça devienne automatique.",
+    chapters: [
+      {
+        title: "Comprendre pourquoi on manque de discipline",
+        intro: "La procrastination et le manque de sérieux ont des causes précises. Les comprendre permet de les corriger efficacement.",
+        sections: [
+          {
+            heading: "Les vraies causes du manque de discipline",
+            body: "",
+            listItems: [
+              "Objectifs flous — tu ne sais pas exactement ce que tu veux",
+              "Récompenses trop lointaines — ton cerveau cherche la satisfaction immédiate",
+              "Manque de structure — sans routine, chaque décision épuise ta volonté",
+              "Distractions accessibles — téléphone, réseaux sociaux, entourage peu motivé",
+            ],
+          },
+          { type: "info", body: "La volonté est une ressource limitée. Plus tu prends de décisions dans une journée, moins tu as d'énergie mentale pour résister aux distractions. La solution : créer des routines pour que les bonnes actions deviennent automatiques." },
+        ],
+      },
+      {
+        title: "Le plan 30 jours pour se transformer",
+        intro: "Ce plan est progressive. Ne saute pas d'étapes. Chaque semaine construit sur la précédente.",
+        sections: [
+          {
+            heading: "Semaine 1 — Poser la structure de base",
+            body: "",
+            listItems: [
+              "Fixe une heure de réveil fixe — même le week-end",
+              "Identifie 3 priorités pour chaque journée (pas plus)",
+              "Bloque les réseaux sociaux de 9h à 12h — travail profond uniquement",
+              "Écris chaque soir 3 choses que tu as accomplies dans la journée",
+            ],
+          },
+          {
+            heading: "Semaine 2 — Renforcer les habitudes",
+            body: "",
+            listItems: [
+              "Ajoute 30 minutes d'activité physique 3 fois par semaine",
+              "Réduis les réseaux à 1 heure maximum par jour",
+              "Commence chaque matin par ta tâche la plus importante avant tout",
+              "Respecte 1 engagement que tu avais l'habitude d'annuler",
+            ],
+          },
+          {
+            heading: "Semaine 3 — Tester sa résistance",
+            body: "",
+            listItems: [
+              "Fais quelque chose que tu redoutes chaque jour (appel difficile, tâche repoussée)",
+              "Tiens ta parole dans toutes les petites choses",
+              "Dis non à 1 distraction par jour que tu aurais habituellement acceptée",
+              "Partage tes objectifs avec 1 personne de confiance pour créer de la responsabilité",
+            ],
+          },
+          {
+            heading: "Semaine 4 — Ancrer les nouvelles habitudes",
+            body: "",
+            listItems: [
+              "Évalue : qu'est-ce qui a le plus changé en toi depuis 3 semaines ?",
+              "Identifie 1 habitude que tu veux garder à vie",
+              "Planifie le mois suivant avec tes nouvelles habitudes intégrées",
+              "Célèbre — tu as changé en 30 jours ce que beaucoup n'osent pas changer en 30 ans",
+            ],
+          },
+          { type: "warning", body: "Tu vas rater certains jours. C'est normal et prévu. La règle : ne rate jamais 2 jours consécutifs. Un jour raté = accident. Deux jours consécutifs = nouvelle habitude (la mauvaise)." },
+        ],
+      },
+    ],
+  },
+
+  "controle-90-jours": {
+    id: "controle-90-jours",
+    title: "Comment reprendre le contrôle de sa vie en 90 jours",
+    subtitle: "Programme de transformation sur 3 mois : finances, mental, santé, relations — tout change",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#f59e0b",
+    accentLight: "#fef3c7",
+    conclusion: "90 jours. C'est tout ce qu'il faut pour changer radicalement ta trajectoire de vie. Pas de magie, pas de raccourci — seulement des actions quotidiennes cohérentes. La version de toi dans 90 jours dépend de ce que tu fais aujourd'hui.",
+    chapters: [
+      {
+        title: "Faire le bilan honnête de sa vie",
+        intro: "On ne peut pas changer ce qu'on ne voit pas. Avant de s'améliorer, il faut regarder en face là où on en est vraiment.",
+        sections: [
+          {
+            heading: "Les 6 domaines à évaluer (sur 10)",
+            body: "",
+            listItems: [
+              "Finances : est-ce que tu épargnes ? Tu as des dettes ? Tu te sens serein financièrement ?",
+              "Santé : comment tu dors ? Tu fais du sport ? Tu manges bien ?",
+              "Relations : tes relations principales sont-elles nourrissantes ou épuisantes ?",
+              "Mental : tu es souvent anxieux ? Pessimiste ? Motivé ? Stressé ?",
+              "Compétences : est-ce que tu apprends quelque chose de nouveau régulièrement ?",
+              "Objectifs : as-tu des objectifs clairs pour les 12 prochains mois ?",
+            ],
+          },
+          { type: "exercise", body: "Note une note sur 10 pour chacun des 6 domaines. Les domaines en dessous de 6 sont tes priorités. Choisis-en 2 ou 3 maximum sur lesquels te concentrer pendant les 90 jours. Vouloir tout changer en même temps, c'est ne rien changer." },
+        ],
+      },
+      {
+        title: "Le programme mois par mois",
+        intro: "Chaque mois a un thème et des actions prioritaires. Le mois 1 pose les fondations, le mois 2 construit, le mois 3 consolide.",
+        sections: [
+          {
+            heading: "Mois 1 — Éliminer ce qui te freine",
+            body: "",
+            listItems: [
+              "Coupe les relations toxiques ou épuisantes",
+              "Supprime les applications ou habitudes qui volent ton temps",
+              "Règle les dettes ou situations non résolues qui pèsent sur ton mental",
+              "Dors 7 à 8 heures minimum — c'est la base de tout le reste",
+              "Commence une routine matinale simple de 30 minutes",
+            ],
+          },
+          {
+            heading: "Mois 2 — Construire les nouvelles bases",
+            body: "",
+            listItems: [
+              "Lance l'activité ou le projet que tu repoussais",
+              "Applique le budget 60-30-10 sur ton revenu",
+              "Commence à apprendre quelque chose de précis (en ligne, livres, podcasts)",
+              "Ajoute 3 séances de sport par semaine",
+              "Fixe-toi des objectifs hebdomadaires et mesure tes progrès",
+            ],
+          },
+          {
+            heading: "Mois 3 — Ancrer et accélérer",
+            body: "",
+            listItems: [
+              "Évalue les résultats des 2 premiers mois avec honnêteté",
+              "Double l'effort sur ce qui a fonctionné, abandonne ce qui n'a pas marché",
+              "Cherche une source de revenus complémentaire ou améliore celle existante",
+              "Entoure-toi de personnes qui ont les objectifs que tu vises",
+              "Planifie les 90 jours suivants avant que ceux-ci se terminent",
+            ],
+          },
+          { type: "tip", body: "Tiens un journal de 5 minutes par jour. Chaque soir : 1 chose positive de la journée, 1 chose à améliorer demain, 1 action concrète pour demain matin. En 90 jours, tu auras un tableau de bord complet de ta transformation." },
+        ],
+      },
+    ],
+  },
+
+  "meilleure-version": {
+    id: "meilleure-version",
+    title: "Comment devenir une meilleure version de soi (plan concret)",
+    subtitle: "Évalue qui tu es, décide qui tu veux être, et applique les changements semaine après semaine",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#f59e0b",
+    accentLight: "#fef3c7",
+    conclusion: "Devenir une meilleure version de soi n'est pas un événement — c'est un processus. Il n'y a pas de ligne d'arrivée. Il y a juste la direction et les petits pas de chaque jour. Tu es déjà en train de changer — le fait de lire ceci le prouve.",
+    chapters: [
+      {
+        title: "Définir qui tu veux devenir",
+        intro: "La plupart des gens savent ce qu'ils ne veulent pas. Peu savent précisément qui ils veulent être. Cette clarté est le point de départ de tout changement durable.",
+        sections: [
+          {
+            heading: "L'exercice du 'moi idéal'",
+            body: "Ferme les yeux et imagine ta vie dans 3 ans si tout se passe comme tu le souhaites. Où est-ce que tu vis ? Qu'est-ce que tu fais chaque matin ? Avec qui ? Quel est ton niveau de vie ? Quel genre de personne es-tu devenu ? Écris ça en détail — pas un résumé, une vraie description.",
+          },
+          {
+            heading: "Les 3 questions qui définissent ton identité cible",
+            body: "",
+            listItems: [
+              "Qu'est-ce que je veux que les gens disent de moi à mes funérailles ?",
+              "Si j'avais toutes les ressources nécessaires, que ferais-je de ma vie ?",
+              "Quelle est la version de moi dont je serais le plus fier ?",
+            ],
+          },
+          { type: "info", body: "Les réponses à ces questions ne sont pas tes objectifs — elles définissent ton identité cible. Chaque décision quotidienne devrait être filtrée par : 'Est-ce que la personne que je veux devenir ferait ça ?'" },
+        ],
+      },
+      {
+        title: "Les changements concrets à mettre en place",
+        intro: "La transformation personnelle ne vient pas des grandes décisions. Elle vient des petites actions répétées tous les jours.",
+        sections: [
+          {
+            heading: "Les 5 piliers d'une vie améliorée",
+            body: "",
+            listItems: [
+              "Santé : dors bien, bouge, mange avec intention — tout le reste en dépend",
+              "Apprentissage : 20 minutes de lecture ou d'apprentissage par jour minimum",
+              "Productivité : fais une chose importante par jour, vraiment — pas 10 choses à moitié",
+              "Relations : investis dans 3-5 relations profondes plutôt que 50 relations superficielles",
+              "Finances : contrôle ce qui entre et sort — tu ne peux pas améliorer ce que tu ne mesures pas",
+            ],
+          },
+          { type: "exercise", body: "Identifie UNE action dans chacun des 5 piliers que tu pourrais faire cette semaine. 5 actions, une par pilier. Pas plus. Fais-les toutes les 5 avant la fin de la semaine. C'est ça, construire progressivement." },
+          {
+            heading: "Comment ne pas abandonner après 2 semaines",
+            body: "",
+            listItems: [
+              "Attache-toi à l'identité, pas aux objectifs : 'Je suis quelqu'un qui fait du sport' plutôt que 'Je veux perdre 5 kg'",
+              "Rends tes nouvelles habitudes impossibles à rater (très petites au départ)",
+              "Célèbre chaque petite victoire — ton cerveau associe plaisir et bonne habitude",
+              "Rejoins une communauté de personnes qui ont les mêmes objectifs",
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  "telephone": {
+    id: "telephone",
+    title: "Comment utiliser son téléphone sans gâcher sa vie",
+    subtitle: "Transformer son smartphone en outil de croissance plutôt qu'en aspirateur de temps",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#f59e0b",
+    accentLight: "#fef3c7",
+    conclusion: "Ton téléphone est l'outil le plus puissant que tu possèdes. En l'utilisant avec intention, il peut te faire apprendre, gagner de l'argent, construire un réseau et créer du contenu. En l'utilisant sans intention, il peut te voler des années de vie.",
+    chapters: [
+      {
+        title: "Le problème du téléphone sans intention",
+        intro: "Le téléphone moyen est utilisé 4 à 6 heures par jour. Sur ces 4 à 6 heures, combien sont vraiment utiles ? La plupart des gens utilisent leur téléphone de manière réactive — ils répondent aux notifications, scrollent, et se laissent distraire.",
+        sections: [
+          {
+            heading: "Ce que ça te coûte vraiment",
+            body: "",
+            listItems: [
+              "4h de téléphone par jour = 28h par semaine = 1 500h par an",
+              "1 500h par an, c'est assez pour apprendre 3 nouvelles compétences, lire 60 livres, ou lancer un business",
+              "Chaque notification interrompue = 23 minutes pour récupérer ta concentration",
+              "Le scroll passif active les mêmes mécanismes cérébraux que les drogues légères",
+            ],
+          },
+          { type: "warning", body: "Les applications sont conçues par des ingénieurs dont le travail est de te garder le plus longtemps possible sur leur plateforme. TikTok, Facebook, Instagram — tout est optimisé pour créer une dépendance. C'est intentionnel." },
+        ],
+      },
+      {
+        title: "Transformer son téléphone en outil de succès",
+        intro: "Le problème n'est pas le téléphone — c'est comment tu l'utilises. Voici comment le transformer en outil de croissance.",
+        sections: [
+          {
+            heading: "Étape 1 — Faire le ménage",
+            body: "",
+            listItems: [
+              "Supprime toutes les applications que tu n'as pas utilisées depuis 30 jours",
+              "Désactive toutes les notifications sauf les appels et messages directs",
+              "Déplace les applications de réseaux sociaux hors de l'écran d'accueil",
+              "Mets ton téléphone en niveaux de gris — les couleurs stimulent l'envie de scroller",
+            ],
+          },
+          {
+            heading: "Étape 2 — Définir des plages d'utilisation",
+            body: "",
+            listItems: [
+              "Pas de téléphone dans les 30 premières minutes du matin",
+              "Pas de téléphone pendant les repas",
+              "Réseaux sociaux : 2 créneaux de 20 minutes maximum par jour",
+              "Pas de téléphone 1 heure avant de dormir",
+            ],
+          },
+          {
+            heading: "Étape 3 — Utiliser le téléphone pour apprendre et gagner",
+            body: "",
+            listItems: [
+              "Remplace 1h de scroll par 30 minutes de podcast ou cours en ligne",
+              "Utilise Notion ou Google Keep pour noter tes idées et tâches",
+              "Rejoins des groupes WhatsApp ou Telegram d'apprentissage dans ton domaine",
+              "Utilise YouTube pour apprendre une compétence précise, pas pour se divertir",
+              "Crée du contenu sur tes réseaux au lieu de consommer passivement",
+            ],
+          },
+          { type: "exercise", body: "Vérifie dans les paramètres de ton téléphone combien d'heures tu l'as utilisé cette semaine. Note le total. Cette semaine, réduis de 1 heure par jour. Dans 7 jours, vérifie à nouveau. C'est ça le début du changement." },
+        ],
+      },
+    ],
+  },
+
+  "intelligence-artificielle": {
+    id: "intelligence-artificielle",
+    title: "Comment utiliser l'intelligence artificielle pour améliorer sa vie quotidienne",
+    subtitle: "ChatGPT, Gemini et les autres IA — comment les utiliser concrètement depuis l'Afrique",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#06b6d4",
+    accentLight: "#cffafe",
+    conclusion: "L'IA ne va pas te remplacer — mais la personne qui sait utiliser l'IA va remplacer celle qui ne sait pas. En 2024-2025, maîtriser ces outils est un avantage compétitif massif. Commence aujourd'hui, commence maintenant.",
+    chapters: [
+      {
+        title: "L'IA en pratique — ce que c'est vraiment",
+        intro: "L'intelligence artificielle n'est pas de la magie et ce n'est pas compliqué. C'est un assistant ultra-puissant disponible 24h/24, gratuitement, depuis ton téléphone.",
+        sections: [
+          {
+            heading: "Les outils IA gratuits disponibles depuis l'Afrique",
+            body: "",
+            listItems: [
+              "ChatGPT (chat.openai.com) — le plus connu, accès gratuit sans carte bleue",
+              "Google Gemini (gemini.google.com) — intégré à Google, fonctionne très bien",
+              "Microsoft Copilot (copilot.microsoft.com) — accès gratuit depuis le navigateur",
+              "Meta AI — directement intégré dans WhatsApp (envoie un message à Meta AI)",
+              "Claude (claude.ai) — excellent pour la rédaction et l'analyse",
+            ],
+          },
+          { type: "tip", body: "Tu peux accéder à Meta AI directement depuis WhatsApp en cherchant 'Meta AI' dans tes contacts ou en tapant '@Meta AI' dans une conversation. C'est gratuit, en français, et ne nécessite aucun compte supplémentaire." },
+        ],
+      },
+      {
+        title: "Les usages pratiques pour la vie quotidienne",
+        intro: "Voici des cas d'usage concrets que tu peux appliquer dès aujourd'hui. Chaque exemple inclut le prompt exact à copier-coller.",
+        sections: [
+          {
+            heading: "Pour gagner du temps au travail et dans les études",
+            body: "",
+            listItems: [
+              "Résumer un document long : 'Voici un texte, résume-le en 10 points essentiels : [colle le texte]'",
+              "Corriger une lettre ou un email : 'Corrige et améliore ce texte en gardant le même sens : [ton texte]'",
+              "Préparer un exposé : 'Fais-moi un plan détaillé sur le sujet : [ton sujet]'",
+              "Traduire un document : 'Traduis ce texte en français en gardant le style professionnel : [texte]'",
+            ],
+          },
+          {
+            heading: "Pour gagner de l'argent",
+            body: "",
+            listItems: [
+              "Créer un texte de vente : 'Écris un message WhatsApp pour vendre [produit] à [cible] — 3 lignes maximum'",
+              "Générer des idées de business : 'Donne-moi 10 idées de business faisables en Afrique avec moins de 50 000 FCFA de capital'",
+              "Répondre à un client difficile : 'Comment répondre à un client qui se plaint de [problème] de façon professionnelle ?'",
+              "Créer du contenu : 'Écris 5 accroches TikTok sur le thème [sujet] pour une audience africaine'",
+            ],
+          },
+          {
+            heading: "Pour apprendre plus vite",
+            body: "",
+            listItems: [
+              "'Explique-moi [concept] comme si j'avais 15 ans'",
+              "'Crée-moi un plan d'apprentissage de 30 jours pour apprendre [compétence]'",
+              "'Donne-moi 10 questions d'examen sur [sujet] pour que je m'entraîne'",
+              "'Qu'est-ce que je devrais savoir sur [domaine] pour débuter ?'",
+            ],
+          },
+          { type: "exercise", body: "Ouvre ChatGPT ou Meta AI maintenant. Tape ce prompt : 'Je veux gagner de l'argent supplémentaire en Afrique avec mon téléphone. Donne-moi 5 idées adaptées à quelqu'un qui n'a pas de capital de départ.' Lis les réponses et choisis une idée à explorer cette semaine." },
+        ],
+      },
+    ],
+  },
 };
 
 export function generateFormationPDF(

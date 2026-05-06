@@ -8,7 +8,7 @@ import {
   Ban, Trash2, Key, Edit3, ChevronRight, CheckCircle,
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
   Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
-  Globe, AlertTriangle, Info, BookUser
+  Globe, AlertTriangle, Info, BookUser, GraduationCap, Star, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -1306,13 +1306,199 @@ function ContactsSection() {
   );
 }
 
+// ─── Section : Formations ─────────────────────────────────────────
+const PRO_FORMATION_LABELS: Record<string, string> = {
+  "tiktok-monetisable":    "TikTok Monétisable",
+  "tiktok-clients":        "TikTok Clients",
+  "whatsapp-systeme":      "WhatsApp Système",
+  "ia-vendre":             "IA pour Vendre",
+  "whatsapp-business":     "WhatsApp Business",
+  "marketing-affiliation": "Affiliation",
+  "business-telephone":    "Business Téléphone",
+  "recruter-trixhub":      "Recruter TRIXHUB (gratuit)",
+};
+
+const FREE_FORMATION_LABELS: Record<string, string> = {
+  "vie-financiere":            "Vie Financière",
+  "fin-mois-sans-argent":      "Fin de mois",
+  "deuxieme-source-revenu":    "2ème Source Revenu",
+  "business-stable":           "Business Stable",
+  "revenus-etudes":            "Revenus Études",
+  "canal-plus":                "Canal+",
+  "vendre-whatsapp":           "Vendre WhatsApp",
+  "convertir-contacts":        "Convertir Contacts",
+  "viral-reseaux":             "Viral Réseaux",
+  "confiance-en-soi":          "Confiance en Soi",
+  "serieux-30-jours":          "Sérieux 30 Jours",
+  "controle-90-jours":         "Contrôle 90 Jours",
+  "meilleure-version":         "Meilleure Version",
+  "telephone":                 "Téléphone",
+  "intelligence-artificielle": "Intelligence Artificielle",
+};
+
+interface ProPurchaseRow {
+  id: number;
+  formationId: string;
+  priceFcfa: number;
+  currency: string;
+  priceInCurrency: string;
+  createdAt: string;
+  buyerName: string | null;
+  buyerEmail: string | null;
+}
+
+interface FreeDownloadRow {
+  id: number;
+  formationId: string;
+  downloadedAt: string;
+  userName: string | null;
+  userEmail: string | null;
+}
+
+interface FormationsData {
+  pro: { totalRevenue: number; totalPurchases: number; history: ProPurchaseRow[] };
+  free: { totalDownloads: number; history: FreeDownloadRow[] };
+}
+
+function FormationsSection() {
+  const [data, setData] = useState<FormationsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"pro" | "free">("pro");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setData(await apiFetch("/api/admin/formations")); } catch {}
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Formations</h2>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw size={13} /> Actualiser
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-muted-foreground" /></div>
+      ) : !data ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">Erreur de chargement.</div>
+      ) : (
+        <>
+          {/* Stats globales */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <StatCard icon={DollarSign}      label="Revenus Formations Pro"         value={data.pro.totalRevenue.toLocaleString("fr-FR") + " FCFA"} color="bg-emerald-500" />
+            <StatCard icon={Star}            label="Achats Formations Pro"           value={data.pro.totalPurchases.toLocaleString("fr-FR")}          color="bg-purple-500" />
+            <StatCard icon={Download}        label="Téléchargements Gratuits"        value={data.free.totalDownloads.toLocaleString("fr-FR")}         color="bg-blue-500"   />
+          </div>
+
+          {/* Sous-onglets */}
+          <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
+            <button onClick={() => setTab("pro")}  className={cn("flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all", tab === "pro"  ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}><Star size={14} /> Pro</button>
+            <button onClick={() => setTab("free")} className={cn("flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all", tab === "free" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}><GraduationCap size={14} /> Gratuites</button>
+          </div>
+
+          {/* Table Formations Pro */}
+          {tab === "pro" && (
+            data.pro.history.length === 0 ? (
+              <div className="bg-card border border-border rounded-2xl p-8 text-center text-sm text-muted-foreground">Aucun achat de formation pro pour l'instant.</div>
+            ) : (
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center gap-2">
+                  <Star size={16} className="text-purple-500" />
+                  <span className="font-semibold text-sm">Achats Formations Pro ({data.pro.history.length})</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Acheteur</th>
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Formation</th>
+                        <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Prix FCFA</th>
+                        <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.pro.history.map(row => (
+                        <tr key={row.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-foreground truncate max-w-[140px]">{row.buyerName ?? "—"}</p>
+                            <p className="text-[11px] text-muted-foreground truncate max-w-[140px]">{row.buyerEmail ?? "—"}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded font-medium">
+                              {PRO_FORMATION_LABELS[row.formationId] ?? row.formationId}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                            {row.priceFcfa === 0 ? <span className="text-xs text-muted-foreground">Gratuit</span> : `${row.priceFcfa} F`}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">{fmtDate(row.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Table Formations Gratuites */}
+          {tab === "free" && (
+            data.free.history.length === 0 ? (
+              <div className="bg-card border border-border rounded-2xl p-8 text-center text-sm text-muted-foreground">Aucun téléchargement de formation gratuite pour l'instant.</div>
+            ) : (
+              <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center gap-2">
+                  <GraduationCap size={16} className="text-blue-500" />
+                  <span className="font-semibold text-sm">Téléchargements Formations Gratuites ({data.free.history.length})</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Utilisateur</th>
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Formation</th>
+                        <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.free.history.map(row => (
+                        <tr key={row.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-foreground truncate max-w-[140px]">{row.userName ?? "—"}</p>
+                            <p className="text-[11px] text-muted-foreground truncate max-w-[140px]">{row.userEmail ?? "—"}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-medium">
+                              {FREE_FORMATION_LABELS[row.formationId] ?? row.formationId}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">{fmtDate(row.downloadedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Page principale Admin ────────────────────────────────────────
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
   usePageTitle('Administration');
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets" | "contacts">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets" | "contacts" | "formations">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -1338,12 +1524,13 @@ export default function AdminPage() {
   }
 
   const tabs = [
-    { id: "overview",    label: "Vue d'ensemble", icon: BarChart3  },
-    { id: "users",       label: "Utilisateurs",   icon: Users      },
-    { id: "withdrawals", label: "Retraits",        icon: Wallet     },
-    { id: "activities",  label: "Activités",       icon: Activity   },
-    { id: "wallets",     label: "Portefeuilles",   icon: Globe      },
-    { id: "contacts",    label: "Contacts",        icon: BookUser   },
+    { id: "overview",    label: "Vue d'ensemble", icon: BarChart3      },
+    { id: "users",       label: "Utilisateurs",   icon: Users          },
+    { id: "withdrawals", label: "Retraits",        icon: Wallet         },
+    { id: "activities",  label: "Activités",       icon: Activity       },
+    { id: "wallets",     label: "Portefeuilles",   icon: Globe          },
+    { id: "contacts",    label: "Contacts",        icon: BookUser       },
+    { id: "formations",  label: "Formations",      icon: GraduationCap  },
   ] as const;
 
   return (
@@ -1374,6 +1561,7 @@ export default function AdminPage() {
         {activeTab === "activities"  && <ActivitiesSection />}
         {activeTab === "wallets"     && <WalletsSection />}
         {activeTab === "contacts"    && <ContactsSection />}
+        {activeTab === "formations"  && <FormationsSection />}
       </div>
     </Layout>
   );

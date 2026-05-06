@@ -581,6 +581,65 @@ router.get("/admin/wallet-exposure", authenticate, requireAdmin, async (_req, re
   res.json(rows);
 });
 
+// ─── GET /admin/formations ─────────────────────────────────────
+router.get("/admin/formations", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  const { premiumFormationPurchasesTable, freeFormationDownloadsTable } = await import("@workspace/db/schema");
+
+  // Achats formations pro
+  const proHistory = await db
+    .select({
+      id: premiumFormationPurchasesTable.id,
+      formationId: premiumFormationPurchasesTable.formationId,
+      priceFcfa: premiumFormationPurchasesTable.priceFcfa,
+      currency: premiumFormationPurchasesTable.currency,
+      priceInCurrency: premiumFormationPurchasesTable.priceInCurrency,
+      createdAt: premiumFormationPurchasesTable.createdAt,
+      buyerName: usersTable.displayName,
+      buyerEmail: usersTable.email,
+    })
+    .from(premiumFormationPurchasesTable)
+    .leftJoin(usersTable, eq(usersTable.id, premiumFormationPurchasesTable.buyerId))
+    .orderBy(desc(premiumFormationPurchasesTable.createdAt))
+    .limit(300);
+
+  const [proSummary] = await db
+    .select({
+      totalRevenue: sql<string>`COALESCE(SUM(price_fcfa::numeric), 0)`,
+      totalPurchases: count(),
+    })
+    .from(premiumFormationPurchasesTable);
+
+  // Téléchargements formations gratuites
+  const freeHistory = await db
+    .select({
+      id: freeFormationDownloadsTable.id,
+      formationId: freeFormationDownloadsTable.formationId,
+      downloadedAt: freeFormationDownloadsTable.downloadedAt,
+      userName: usersTable.displayName,
+      userEmail: usersTable.email,
+    })
+    .from(freeFormationDownloadsTable)
+    .leftJoin(usersTable, eq(usersTable.id, freeFormationDownloadsTable.userId))
+    .orderBy(desc(freeFormationDownloadsTable.downloadedAt))
+    .limit(300);
+
+  const [freeSummary] = await db
+    .select({ totalDownloads: count() })
+    .from(freeFormationDownloadsTable);
+
+  res.json({
+    pro: {
+      totalRevenue: parseFloat(proSummary?.totalRevenue ?? "0"),
+      totalPurchases: proSummary?.totalPurchases ?? 0,
+      history: proHistory,
+    },
+    free: {
+      totalDownloads: freeSummary?.totalDownloads ?? 0,
+      history: freeHistory,
+    },
+  });
+});
+
 // ─── GET /admin/contacts-revenue ────────────────────────────────
 router.get("/admin/contacts-revenue", authenticate, requireAdmin, async (_req, res): Promise<void> => {
   const [summary] = await db
