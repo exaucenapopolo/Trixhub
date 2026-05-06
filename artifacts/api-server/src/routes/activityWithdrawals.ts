@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import { withdrawalLimiter } from "../middlewares/rateLimiters";
 import { ACTIVITY_WITHDRAWAL_MIN } from "../lib/weeklyPoints";
 import {
@@ -221,19 +222,10 @@ router.get(
 router.patch(
   "/admin/withdrawals/activity/:id",
   authenticate,
+  requireAdmin,
   (req: Request, res: Response) => {
     void (async () => {
       try {
-        // Check admin
-        const [me] = await db
-          .select({ isAdmin: usersTable.isAdmin })
-          .from(usersTable)
-          .where(eq(usersTable.id, req.userId!));
-        if (!me?.isAdmin) {
-          res.status(403).json({ error: "Réservé aux admins" });
-          return;
-        }
-
         const id = parseInt(String(req.params.id ?? ""), 10);
         if (!Number.isInteger(id) || id <= 0) {
           res.status(400).json({ error: "ID invalide" });
