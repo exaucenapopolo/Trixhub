@@ -689,61 +689,88 @@ router.get("/admin/top-users", authenticate, requireAdmin, async (_req, res): Pr
   weekStart.setHours(0, 0, 0, 0);
   const weekStartStr = weekStart.toISOString().slice(0, 10);
 
-  const userCols = {
-    id: usersTable.id,
-    displayName: usersTable.displayName,
-    email: usersTable.email,
-    phone: usersTable.phone,
-    avatarUrl: usersTable.avatarUrl,
-    country: usersTable.country,
+  // Toutes les requêtes utilisent du SQL brut pour éviter les ambiguïtés
+  // de référence de colonne que Drizzle génère dans les sous-requêtes corrélées.
+
+  type TopRow = {
+    id: number; displayName: string; email: string;
+    phone: string | null; avatarUrl: string | null; country: string | null;
+    metric: number;
   };
 
-  // Top recruteurs — correlated subquery
-  const recruitCountSql = sql<number>`(SELECT COUNT(*)::int FROM users u2 WHERE u2.referred_by_code = ${usersTable.referralCode})`;
-  const topRecruiters = await db
-    .select({ ...userCols, metric: recruitCountSql })
-    .from(usersTable)
-    .where(eq(usersTable.isActivated, true))
-    .orderBy(desc(recruitCountSql))
-    .limit(10);
+  // Top recruteurs — nombre de filleuls (tous statuts confondus)
+  const topRecruiters = (await db.execute<TopRow>(sql`
+    SELECT
+      u.id,
+      u.display_name   AS "displayName",
+      u.email,
+      u.phone,
+      u.avatar_url     AS "avatarUrl",
+      u.country,
+      (SELECT COUNT(*)::int FROM users u2 WHERE u2.referred_by_code = u.referral_code) AS metric
+    FROM users u
+    WHERE u.is_activated = true
+    ORDER BY metric DESC
+    LIMIT 10
+  `)).rows;
 
-  // Top activités — semaine en cours
-  const topActivities = await db
-    .select({ ...userCols, metric: weeklyPointsTable.totalPoints })
-    .from(weeklyPointsTable)
-    .innerJoin(usersTable, eq(usersTable.id, weeklyPointsTable.userId))
-    .where(and(
-      sql`${weeklyPointsTable.weekStart} = ${weekStartStr}::date`,
-      eq(usersTable.isActivated, true),
-    ))
-    .orderBy(desc(weeklyPointsTable.totalPoints))
-    .limit(10);
+  // Top activités — points de la semaine en cours
+  const topActivities = (await db.execute<TopRow>(sql`
+    SELECT
+      u.id,
+      u.display_name   AS "displayName",
+      u.email,
+      u.phone,
+      u.avatar_url     AS "avatarUrl",
+      u.country,
+      wp.total_points  AS metric
+    FROM weekly_points wp
+    INNER JOIN users u ON u.id = wp.user_id
+    WHERE wp.week_start = ${weekStartStr}::date
+      AND u.is_activated = true
+    ORDER BY metric DESC
+    LIMIT 10
+  `)).rows;
 
   // Gros soldes — somme de tous les soldes
-  const totalBalanceSql = sql<number>`(
-    COALESCE(${balancesTable.referralBalance}::numeric,0) +
-    COALESCE(${balancesTable.taskBalance}::numeric,0) +
-    COALESCE(${balancesTable.bonusBalance}::numeric,0) +
-    COALESCE(${balancesTable.depositBalance}::numeric,0) +
-    COALESCE(${balancesTable.activityBalance}::numeric,0)
-  )`;
-  const topBalances = await db
-    .select({ ...userCols, metric: totalBalanceSql })
-    .from(usersTable)
-    .innerJoin(balancesTable, eq(balancesTable.userId, usersTable.id))
-    .where(eq(usersTable.isActivated, true))
-    .orderBy(desc(totalBalanceSql))
-    .limit(10);
+  const topBalances = (await db.execute<TopRow>(sql`
+    SELECT
+      u.id,
+      u.display_name   AS "displayName",
+      u.email,
+      u.phone,
+      u.avatar_url     AS "avatarUrl",
+      u.country,
+      (
+        COALESCE(b.referral_balance::numeric, 0) +
+        COALESCE(b.task_balance::numeric,     0) +
+        COALESCE(b.bonus_balance::numeric,    0) +
+        COALESCE(b.deposit_balance::numeric,  0) +
+        COALESCE(b.activity_balance::numeric, 0)
+      ) AS metric
+    FROM users u
+    INNER JOIN balances b ON b.user_id = u.id
+    WHERE u.is_activated = true
+    ORDER BY metric DESC
+    LIMIT 10
+  `)).rows;
 
   // Gros retraits — montant total retiré
-  const withdrawnSql = sql<number>`COALESCE(${balancesTable.withdrawnAmount}::numeric, 0)`;
-  const topWithdrawals = await db
-    .select({ ...userCols, metric: withdrawnSql })
-    .from(usersTable)
-    .innerJoin(balancesTable, eq(balancesTable.userId, usersTable.id))
-    .where(eq(usersTable.isActivated, true))
-    .orderBy(desc(withdrawnSql))
-    .limit(10);
+  const topWithdrawals = (await db.execute<TopRow>(sql`
+    SELECT
+      u.id,
+      u.display_name   AS "displayName",
+      u.email,
+      u.phone,
+      u.avatar_url     AS "avatarUrl",
+      u.country,
+      COALESCE(b.withdrawn_amount::numeric, 0) AS metric
+    FROM users u
+    INNER JOIN balances b ON b.user_id = u.id
+    WHERE u.is_activated = true
+    ORDER BY metric DESC
+    LIMIT 10
+  `)).rows;
 
   res.json({ recruiters: topRecruiters, activities: topActivities, balances: topBalances, withdrawals: topWithdrawals });
 });
