@@ -2092,47 +2092,107 @@ const FORMATION_CONTENTS: Record<string, FormationContent> = {
   "viral-reseaux": {
     id: "viral-reseaux",
     title: "Comment devenir viral sur les réseaux sociaux",
-    subtitle: "Les formules de contenu qui se partagent seules — sans budget publicitaire",
+    subtitle: "La plateforme africaine qui booste tes réseaux automatiquement — et te permet de lancer ton business",
     tagline: "✦ Formation Gratuite ✦",
     accentColor: "#8b5cf6",
     accentLight: "#ede9fe",
-    conclusion: "Le contenu viral n'est pas une question de chance. C'est une question de formule. Applique les 3 formules de ce guide, publie régulièrement, et observe lequel marche le mieux pour ton audience. Ensuite, réplique.",
+    conclusion: "Social Boost Horizon est l'outil le plus complet disponible en Afrique pour grandir sur les réseaux sociaux. Que tu veuilles booster ta propre page, revendre des services à tes clients, ou créer ton propre business en ligne — tout est là. Va sur le site, crée ton compte, et commence aujourd'hui.",
     chapters: [
       {
-        title: "Pourquoi certains contenus deviennent viraux",
-        intro: "Un contenu se partage quand il déclenche une émotion. Les gens partagent ce qui les fait rire, ce qui les inspire, ce qui les surprend, ce qui leur sera utile ou ce qui les met en colère (utilise ce dernier avec prudence).",
+        title: "C'est quoi Social Boost Horizon ?",
+        intro: "Social Boost Horizon est une plateforme africaine de croissance sur les réseaux sociaux. Elle regroupe plus de 14 000 services disponibles sur plus de 46 réseaux sociaux — tout fonctionne automatiquement.",
         sections: [
           {
-            heading: "Les 5 émotions qui font partager",
+            heading: "Ce que la plateforme te permet de faire",
             body: "",
             listItems: [
-              "Surprise : 'Je ne savais pas que c'était possible'",
-              "Utilité : 'Ça va m'aider, je garde ça'",
-              "Fierté : 'C'est vrai pour moi / les miens, je partage'",
-              "Humour : 'C'est trop vrai, envoie à tes amis'",
-              "Inspiration : 'Ça me donne envie d'agir'",
+              "Acheter des abonnés, des likes, des vues, des partages sur n'importe quel réseau",
+              "Booster TikTok, Facebook, Instagram, YouTube, Twitter/X, Snapchat et 40+ autres",
+              "Cibler ton audience en Afrique ou à l'international selon ton business",
+              "Accéder à 14 000+ services qui s'exécutent automatiquement 24h/24",
+              "Acheter des abonnements premium (Netflix, Canva, ChatGPT, etc.) à prix réduit",
             ],
           },
-          { type: "tip", body: "Le contenu africain qui performe le plus en ce moment : authenticité et humour local. Les mèmes en langue locale, les situations de la vie quotidienne africaine, les témoignages vrais. Pas besoin d'être parfait — sois vrai." },
+          {
+            type: "tip",
+            body: "Site officiel : https://socialboosthorizon.com/\nApplication mobile : https://socialboosthorizon.com/telecharger.html?app=sbh\n\nTélécharge l'application sur ton téléphone pour passer tes commandes directement depuis chez toi.",
+          },
         ],
       },
       {
-        title: "Les 3 formules de contenu viral",
-        intro: "Ces formules fonctionnent sur TikTok, Facebook, Instagram et WhatsApp. Adapte-les à ta niche.",
+        title: "Comment utiliser Social Boost Horizon pour toi",
+        intro: "Que tu sois créateur de contenu, entrepreneur, ou simple particulier — voici comment tirer profit de la plateforme pour ta propre croissance.",
         sections: [
           {
-            heading: "Formule 1 — Le 'Ce que personne ne te dit sur...'",
-            body: "Structure : Accroche choc → Information surprenante → Preuve ou exemple → Conseil pratique. Exemple : 'Ce que personne ne te dit sur les prêts bancaires en Afrique (ça m'a coûté 200 000 FCFA de ne pas savoir)'. L'accroche crée la curiosité, le contenu apporte la valeur.",
+            heading: "Étape 1 : Crée ton compte",
+            body: "Va sur socialboosthorizon.com et crée ton compte gratuitement. L'inscription est rapide et disponible depuis tous les pays africains.",
           },
           {
-            heading: "Formule 2 — Le témoignage ou transformation",
-            body: "Structure : Avant (situation difficile) → Déclencheur (ce qui a changé) → Après (résultat obtenu) → Leçon pour l'audience. Les gens adorent les histoires vraies de personnes qui leur ressemblent. C'est le format le plus partagé sur les réseaux africains.",
+            heading: "Étape 2 : Recharge ton compte",
+            body: "Ajoute du crédit à ton compte via les modes de paiement mobile disponibles (Mobile Money, Orange Money, etc.). Les montants sont accessibles — tu peux commencer avec très peu.",
           },
           {
-            heading: "Formule 3 — La liste pratique actionnable",
-            body: "'5 choses à faire avant de signer un contrat de travail', '3 erreurs à éviter si tu veux maigrir', '7 applications qui remplacent un assistant'. Ces contenus sont sauvegardés et partagés parce qu'ils sont directement utiles.",
+            heading: "Étape 3 : Choisis ton service et commande",
+            body: "",
+            listItems: [
+              "Sélectionne le réseau social que tu veux booster (TikTok, Facebook, Instagram...)",
+              "Choisis le type de service : abonnés, likes, vues, partages, commentaires",
+              "Indique le lien de ta page ou de ta publication",
+              "Choisis la quantité et confirme la commande",
+              "Le service démarre automatiquement — aucune action supplémentaire requise",
+            ],
           },
-          { type: "exercise", body: "Choisis l'une des 3 formules. Identifie un sujet que tu maîtrises ou qui concerne ton activité. Crée un contenu en suivant exactement la structure. Publie-le aujourd'hui sur au moins un réseau. Observe les réactions dans les 48h." },
+          {
+            heading: "Le système de réclamation",
+            body: "Si après ta commande tu constates une baisse (exemple : tu avais acheté 1 000 abonnés et tu en perds 200 après), tu peux faire une réclamation directement sur la plateforme. Social Boost Horizon te recompense gratuitement sans paiement supplémentaire.",
+            type: "tip",
+          },
+          {
+            heading: "Les abonnements premium à prix cassés",
+            body: "",
+            listItems: [
+              "Netflix — accès premium à une fraction du prix habituel",
+              "Canva Pro — design professionnel sans abonnement plein tarif",
+              "ChatGPT Plus — intelligence artificielle avancée à prix réduit",
+              "Et bien d'autres services premium disponibles sur la plateforme",
+            ],
+          },
+          {
+            type: "info",
+            body: "Social Boost Horizon est disponible dans plus de 20 pays africains. Les services abonnés sont ciblés : tu choisis si tu veux des abonnés africains (pour les pages locales) ou internationaux (pour un business global).",
+          },
+        ],
+      },
+      {
+        title: "Comment gagner de l'argent avec Social Boost Horizon",
+        intro: "Social Boost Horizon n'est pas seulement pour toi — c'est aussi une opportunité de business. Tu peux devenir revendeur et créer ta propre activité.",
+        sections: [
+          {
+            heading: "Le programme revendeur",
+            body: "En devenant revendeur sur Social Boost Horizon, tu achètes les services à prix réduit (jusqu'à 20% de réduction sur toutes tes commandes) et tu les revends à tes propres clients au prix que tu veux. La différence = ton bénéfice.",
+          },
+          {
+            heading: "Ce que tu peux revendre à tes clients",
+            body: "",
+            listItems: [
+              "Abonnés Facebook, Instagram, TikTok, YouTube ciblés Afrique",
+              "Likes et vues sur leurs publications et vidéos",
+              "Abonnements Netflix, Canva, ChatGPT à prix réduit",
+              "Boost pour leurs pages professionnelles et e-commerces",
+            ],
+          },
+          {
+            heading: "Créer ton propre site web ou application",
+            body: "Social Boost Horizon permet à tout revendeur de créer son propre site web ou son application mobile qui se connecte directement à leurs services. Ton site sera automatique : tes clients commandent, paient, et le service part tout seul. Tu n'as rien à gérer manuellement. Même si tu n'es pas revendeur, tu peux créer un site ou une application pour ton entreprise via Social Boost Horizon.",
+          },
+          {
+            type: "example",
+            body: "Exemple concret : Tu deviens revendeur. Tu crées une page WhatsApp Business. Tu proposes '1 000 abonnés Facebook ciblés Cameroun pour 3 000 FCFA'. Tu achètes ce service sur Social Boost Horizon pour 2 500 FCFA. Tu gagnes 500 FCFA par commande. Avec 10 clients par semaine = 5 000 FCFA de bénéfice sans bouger.",
+          },
+          {
+            type: "exercise",
+            body: "Action immédiate : Télécharge l'application Social Boost Horizon, crée ton compte, et explore les services disponibles. Identifie 3 services que tu pourrais revendre dans ton réseau WhatsApp. Note les prix d'achat et les prix auxquels tu pourrais les proposer.",
+          },
         ],
       },
     ],
