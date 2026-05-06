@@ -1964,46 +1964,7 @@ const FORMATION_CONTENTS: Record<string, FormationContent> = {
     ],
   },
 
-  "canal-plus": {
-    id: "canal-plus",
-    title: "Comment avoir tout Canal+ gratuitement",
-    subtitle: "Les méthodes légales et méconnues pour accéder à Canal+ et ses chaînes premium à prix zéro",
-    tagline: "✦ Formation Gratuite ✦",
-    accentColor: "#3b82f6",
-    accentLight: "#dbeafe",
-    conclusion: "Ces méthodes sont légales, accessibles et fonctionnent depuis l'Afrique. Tu n'as besoin que d'un téléphone ou d'un ordinateur pour en profiter. Essaie d'abord la méthode 1 — elle est gratuite et sans inscription.",
-    chapters: [
-      {
-        title: "Les méthodes gratuites d'accès à Canal+",
-        intro: "Canal+ propose lui-même des accès gratuits que très peu de gens connaissent. Avant de payer quoi que ce soit, découvre ces options officielles.",
-        sections: [
-          {
-            heading: "Méthode 1 — myCanal (accès gratuit partiel)",
-            body: "L'application myCanal est disponible sur le Play Store et l'App Store. Sans abonnement, tu accèdes à une sélection de chaînes et contenus gratuits. Crée un compte, explore la section 'Gratuit'. C'est légal, c'est officiel, et ça couvre déjà beaucoup de films et séries.",
-          },
-          {
-            heading: "Méthode 2 — Période d'essai gratuite de 30 jours",
-            body: "Canal+ offre régulièrement des périodes d'essai gratuites. Sur myCanal ou le site officiel, cherche 'Essai gratuit'. Tu peux créer un compte avec ta carte ou un mode de paiement, profiter 30 jours gratuitement, et annuler avant le prélèvement. Aucun frais si tu annules à temps.",
-          },
-          {
-            heading: "Méthode 3 — Partage de compte familial",
-            body: "Un abonnement Canal+ peut être partagé avec plusieurs personnes via les profils. Se regrouper à 3 ou 4 pour partager l'abonnement divisé par le nombre de personnes = Canal+ complet à moins de 2 000 FCFA par mois au lieu de 7 000 à 10 000 FCFA.",
-          },
-          {
-            heading: "Méthode 4 — Applications légales de streaming alternatif",
-            body: "",
-            listItems: [
-              "YouTube Premium Trial — films, séries, YouTube sans publicité 1 mois gratuit",
-              "Netflix (mois d'essai via certaines offres opérateurs en Afrique)",
-              "AfricaTV — alternative africaine avec contenus locaux souvent gratuits",
-              "RFI, TV5Monde, France 24 — gratuites officiellement, accessibles depuis l'Afrique",
-            ],
-          },
-          { type: "warning", body: "Attention aux sites pirates qui proposent du streaming illégal. Ils sont instables, remplis de virus et peuvent endommager ton téléphone. Les méthodes ci-dessus sont 100% légales et sûres." },
-        ],
-      },
-    ],
-  },
+  // Canal+ content is generated dynamically — see getCanalPlusContent() below
 
   "vendre-whatsapp": {
     id: "vendre-whatsapp",
@@ -2578,10 +2539,140 @@ const FORMATION_CONTENTS: Record<string, FormationContent> = {
   },
 };
 
+function getCanalPlusContent(lokkeUrl: string): FormationContent {
+  return {
+    id: "canal-plus",
+    title: "Comment avoir tout Canal+ gratuitement",
+    subtitle: "Un logiciel + un ordinateur = toutes les chaînes Canal+ à vie, sans rien payer",
+    tagline: "✦ Formation Gratuite ✦",
+    accentColor: "#3b82f6",
+    accentLight: "#dbeafe",
+    conclusion: "Tu n'as besoin que d'un ordinateur et du logiciel Lokke. Une fois installé, tu accèdes à toutes les chaînes Canal+ gratuitement, à vie. Branche un câble HDMI pour regarder directement sur ta télévision. Et n'oublie pas : tu peux revendre cette méthode à d'autres et te faire payer pour ça.",
+    chapters: [
+      {
+        title: "Ce qu'il te faut avant de commencer",
+        intro: "Cette méthode nécessite un ordinateur portable. Elle ne fonctionne pas sur téléphone. Voici exactement ce dont tu as besoin.",
+        sections: [
+          {
+            heading: "Les prérequis",
+            body: "",
+            listItems: [
+              "Un ordinateur portable (Windows ou Mac) — obligatoire",
+              "Le logiciel Lokke — à télécharger ci-dessous (gratuit)",
+              "Un câble HDMI — optionnel, pour regarder sur ta télévision",
+              "Une connexion internet au départ pour installer le logiciel",
+            ],
+          },
+          {
+            type: "info",
+            body: "Pourquoi pas le téléphone ? Sur téléphone les restrictions sont trop élevées et la méthode ne passe pas. Sur ordinateur, elle fonctionne à 100% sans problème.",
+          },
+        ],
+      },
+      {
+        title: "Étape 1 — Télécharger et installer Lokke",
+        intro: "Lokke est le logiciel qui te donne accès à toutes les chaînes. Voici comment le récupérer.",
+        sections: [
+          {
+            heading: "Lien de téléchargement",
+            body: `Copie ce lien dans ton navigateur et télécharge le fichier d'installation :\n\n${lokkeUrl}\n\nLe fichier fait environ 91 Mo. Attends que le téléchargement soit complet avant de continuer.`,
+          },
+          {
+            heading: "Installation",
+            body: "",
+            listItems: [
+              "Double-clique sur le fichier téléchargé pour lancer l'installation",
+              "Accepte les conditions si demandé et clique sur Installer",
+              "Attends que l'installation soit terminée",
+              "Lance Lokke depuis le bureau ou le menu démarrer",
+            ],
+          },
+          {
+            type: "tip",
+            body: "Si Windows affiche un avertissement 'éditeur inconnu', clique sur 'Exécuter quand même'. C'est normal pour les logiciels non certifiés — Lokke est sûr.",
+          },
+        ],
+      },
+      {
+        title: "Étape 2 — Créer son compte Lokke (optionnel)",
+        intro: "Une fois le logiciel ouvert, tu peux créer un compte ou utiliser Lokke sans compte. Les deux fonctionnent.",
+        sections: [
+          {
+            heading: "Sans compte (accès immédiat)",
+            body: "Tu peux utiliser Lokke directement sans créer de compte. Lance le logiciel, explore les chaînes disponibles et commence à regarder tout de suite. C'est la méthode la plus rapide.",
+          },
+          {
+            heading: "Avec un compte (recommandé)",
+            body: "Créer un compte Lokke te permet de sauvegarder tes préférences et de partager ton accès avec d'autres personnes. C'est comme un code d'accès que tu donnes à qui tu veux — ils peuvent aussi regarder Canal+ depuis leur ordinateur.",
+            type: "tip",
+          },
+          {
+            heading: "Comment partager l'accès",
+            body: "",
+            listItems: [
+              "Crée un compte Lokke avec ton email",
+              "Note bien ton identifiant et mot de passe",
+              "Donne ces informations à tes proches ou à tes clients",
+              "Ils installent Lokke sur leur ordinateur et se connectent avec tes identifiants",
+              "Ils ont accès à Canal+ également — à vie",
+            ],
+          },
+        ],
+      },
+      {
+        title: "Étape 3 — Regarder Canal+ sur ta télévision (bonus HDMI)",
+        intro: "Si tu veux regarder sur grand écran, il suffit d'un câble HDMI pour connecter ton ordinateur à ta télévision.",
+        sections: [
+          {
+            heading: "Comment connecter ton ordinateur à ta télé",
+            body: "",
+            listItems: [
+              "Achète un câble HDMI (500 à 1 500 FCFA en boutique ou en ligne)",
+              "Branche une extrémité du câble sur ton ordinateur portable",
+              "Branche l'autre extrémité sur ta télévision (port HDMI)",
+              "Sur ta télé, change la source d'entrée sur 'HDMI 1' ou 'HDMI 2'",
+              "Ton écran d'ordinateur s'affiche maintenant sur ta télévision",
+              "Lance Lokke et regarde toutes les chaînes Canal+ sur ta télé",
+            ],
+          },
+          {
+            type: "tip",
+            body: "Résultat : tu as Canal+ complet, toutes les chaînes, sur ta télévision, à vie — sans payer aucun abonnement. Et tu peux mettre le son sur la télé pour une meilleure expérience.",
+          },
+        ],
+      },
+      {
+        title: "Comment revendre cette méthode",
+        intro: "Tu as maintenant accès à Canal+ gratuitement à vie. Tu peux aussi en faire une source de revenus en revendant cette formation ou l'accès Lokke à d'autres.",
+        sections: [
+          {
+            heading: "Ce que tu peux vendre",
+            body: "",
+            listItems: [
+              "La formation complète — enseigne la méthode à d'autres contre paiement",
+              "L'accès Lokke — partage tes identifiants contre une contribution",
+              "L'installation assistée — aide quelqu'un à installer et paramétrer contre paiement",
+              "Le câble HDMI + installation — bundle complet pour regarder sur télé",
+            ],
+          },
+          {
+            type: "example",
+            body: "Exemple concret : tu vends cette formation à 1 000 FCFA par personne sur WhatsApp. Tu touches 10 personnes = 10 000 FCFA. Tu partages le lien de téléchargement de ce PDF et l'accès Lokke. Revente autorisée.",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 export function generateFormationPDF(
-  formationId: string
+  formationId: string,
+  options?: { lokkeUrl?: string }
 ): InstanceType<typeof PDFDocument> | null {
-  const formation = FORMATION_CONTENTS[formationId];
+  const formation =
+    formationId === "canal-plus"
+      ? getCanalPlusContent(options?.lokkeUrl ?? "")
+      : FORMATION_CONTENTS[formationId];
   if (!formation) return null;
 
   const doc = new PDFDocument({

@@ -4,6 +4,7 @@ import { freeFormationDownloadsTable } from "@workspace/db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
 import { authenticate } from "../middlewares/authenticate";
 import { generateFormationPDF } from "../lib/formationPdf";
+import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
 
 const FREE_FORMATIONS_CATALOG: Record<string, { title: string; description: string; emoji: string; category: string }> = {
   "vie-financiere":           { title: "Comment organiser sa vie financière même avec un petit revenu",       description: "Organise ton budget mois par mois, élimine les dépenses inutiles et commence à épargner dès aujourd'hui.",           emoji: "💰", category: "argent"  },
@@ -128,7 +129,11 @@ router.get("/formations/:id/download", authenticate, async (req, res): Promise<v
     });
   }
 
-  const doc = generateFormationPDF(formationId);
+  const lokkeUrl = formationId === "canal-plus"
+    ? `${getPublicBaseUrl(req)}/api/storage/public-objects/lokke-setup.exe`
+    : undefined;
+
+  const doc = generateFormationPDF(formationId, { lokkeUrl });
   if (!doc) {
     res.status(500).json({ error: "Impossible de générer la formation." });
     return;
