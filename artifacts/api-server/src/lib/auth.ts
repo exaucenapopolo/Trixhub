@@ -2,7 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { logger } from "./logger";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "trixhub-secret-key-change-in-production";
+if (!process.env.SESSION_SECRET) throw new Error("SESSION_SECRET env var is required");
+const JWT_SECRET: string = process.env.SESSION_SECRET;
 const JWT_EXPIRES_IN = "7d";
 const SALT_ROUNDS = 12;
 
