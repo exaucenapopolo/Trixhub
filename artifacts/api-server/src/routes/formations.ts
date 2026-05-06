@@ -35,7 +35,7 @@ function getTodayStr(): string {
 
 const router = Router();
 
-// GET /api/formations/lokke/download — redirect signé GCS pour télécharger Lokke
+// GET /api/formations/lokke/download — redirect signé GCS pour télécharger Lokke (utilisé dans les PDFs)
 router.get("/formations/lokke/download", authenticate, async (req, res): Promise<void> => {
   if (!req.user?.isActivated) {
     res.status(403).json({ error: "Compte non activé." });
@@ -50,6 +50,25 @@ router.get("/formations/lokke/download", authenticate, async (req, res): Promise
     res.redirect(302, signedUrl);
   } catch (err) {
     req.log.error({ err }, "Lokke signed URL error");
+    res.status(500).json({ error: "Impossible de générer le lien de téléchargement." });
+  }
+});
+
+// GET /api/formations/lokke/url — retourne la signed URL en JSON (pour le frontend)
+router.get("/formations/lokke/url", authenticate, async (req, res): Promise<void> => {
+  if (!req.user?.isActivated) {
+    res.status(403).json({ error: "Compte non activé." });
+    return;
+  }
+  try {
+    const signedUrl = await objectStorageService.signPublicObjectUrl("lokke-setup.exe", 3600 * 4);
+    if (!signedUrl) {
+      res.status(404).json({ error: "Fichier Lokke introuvable." });
+      return;
+    }
+    res.json({ url: signedUrl });
+  } catch (err) {
+    req.log.error({ err }, "Lokke URL error");
     res.status(500).json({ error: "Impossible de générer le lien de téléchargement." });
   }
 });

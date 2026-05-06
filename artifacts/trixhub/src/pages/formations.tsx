@@ -6,9 +6,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
-  GraduationCap, CheckCircle2, Lock, Loader2, CalendarClock,
-  DollarSign, Rocket, MessageSquare, Brain, Zap, ChevronRight,
-  Star, Download, ZoomIn, X,
+  GraduationCap, CheckCircle2, Loader2, CalendarClock, Lock,
+  DollarSign, Rocket, MessageSquare, Brain, Zap,
+  Star, Download, ZoomIn, X, ExternalLink, MonitorDown, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,18 @@ type FormationsData = {
   downloadedToday: boolean;
   totalDownloaded: number;
   total: number;
+};
+
+type ExtraLink = { label: string; icon: React.ElementType; variant: "lokke" | "external"; href?: string };
+
+const FORMATION_EXTRA_LINKS: Record<string, ExtraLink[]> = {
+  "canal-plus": [
+    { label: "Télécharger Lokke (logiciel requis)", icon: MonitorDown, variant: "lokke" },
+  ],
+  "viral-reseaux": [
+    { label: "Visiter Social Boost Horizon", icon: ExternalLink, variant: "external", href: "https://socialboosthorizon.com/" },
+    { label: "Télécharger l'application mobile", icon: Download, variant: "external", href: "https://socialboosthorizon.com/telecharger.html?app=sbh" },
+  ],
 };
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string; iconBg: string }> = {
@@ -100,16 +112,21 @@ function FormationCard({
   onDownload,
   downloading,
   onImageClick,
+  onLokkeDownload,
+  lokkeLoading,
 }: {
   formation: FreeFormation;
   downloadedToday: boolean;
   onDownload: () => void;
   downloading: boolean;
   onImageClick: (src: string, alt: string) => void;
+  onLokkeDownload: () => void;
+  lokkeLoading: boolean;
 }) {
   const meta = CATEGORY_META[formation.category] ?? CATEGORY_META.argent;
   const Icon = meta.icon;
   const imgSrc = IMAGE_MAP[formation.id];
+  const extraLinks = FORMATION_EXTRA_LINKS[formation.id] ?? [];
 
   const canDownload = !formation.downloaded && !downloadedToday;
   const blocked = !canDownload || downloading;
@@ -173,7 +190,7 @@ function FormationCard({
             className="w-full text-xs font-semibold h-9 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
           >
             {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-            Retélécharger
+            Retélécharger le PDF
           </Button>
         ) : downloadedToday ? (
           <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -188,8 +205,41 @@ function FormationCard({
             className="w-full text-xs font-bold h-9"
           >
             {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-            Télécharger · Gratuit
+            Télécharger le PDF · Gratuit
           </Button>
+        )}
+
+        {/* Liens spéciaux (Lokke, Social Boost Horizon...) */}
+        {extraLinks.length > 0 && (
+          <div className="flex flex-col gap-2 pt-1 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Liens utiles</p>
+            {extraLinks.map((link, i) => {
+              const LinkIcon = link.icon;
+              if (link.variant === "lokke") {
+                return (
+                  <Button
+                    key={i}
+                    size="sm"
+                    variant="outline"
+                    onClick={onLokkeDownload}
+                    disabled={lokkeLoading}
+                    className="w-full text-xs font-semibold h-9 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
+                  >
+                    {lokkeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <LinkIcon className="w-3.5 h-3.5 mr-1.5" />}
+                    {link.label}
+                  </Button>
+                );
+              }
+              return (
+                <a key={i} href={link.href} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline" className="w-full text-xs font-semibold h-9 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10">
+                    <LinkIcon className="w-3.5 h-3.5 mr-1.5" />
+                    {link.label}
+                  </Button>
+                </a>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
@@ -202,6 +252,7 @@ export default function FormationsPage() {
   const { toast } = useToast();
   const { data, loading, refresh } = useFormations();
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [lokkeLoading, setLokkeLoading] = useState(false);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   if (!user) return null;
@@ -251,6 +302,32 @@ export default function FormationsPage() {
       refresh();
     } finally {
       setDownloading(null);
+    }
+  }
+
+  async function handleLokkeDownload() {
+    setLokkeLoading(true);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const res = await fetch(`${BASE}/api/formations/lokke/url`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const json = await res.json() as { error?: string };
+        toast({ title: "Erreur", description: json.error ?? "Impossible d'obtenir le lien.", variant: "destructive" });
+        return;
+      }
+      const { url } = await res.json() as { url: string };
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "lokke-setup.exe";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de lancer le téléchargement.", variant: "destructive" });
+    } finally {
+      setLokkeLoading(false);
     }
   }
 
@@ -358,6 +435,8 @@ export default function FormationsPage() {
                         onDownload={() => handleDownload(f)}
                         downloading={downloading === f.id}
                         onImageClick={(src, alt) => setLightbox({ src, alt })}
+                        onLokkeDownload={handleLokkeDownload}
+                        lokkeLoading={lokkeLoading}
                       />
                     ))}
                   </div>
