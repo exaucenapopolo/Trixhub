@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { sendActivityWithdrawalStatusEmail } from "../lib/email";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import {
   db,
@@ -321,21 +322,27 @@ router.patch(
         }
 
         if ("withdrawal" in updated && updated.previousStatus !== updated.withdrawal.status) {
-          // Notif Twilio (best-effort)
           try {
             const [user] = await db
               .select()
               .from(usersTable)
               .where(eq(usersTable.id, updated.withdrawal.userId));
             if (user) {
-              await reportActivityWithdrawalStatusChange(
+              // Notif Twilio (best-effort)
+              reportActivityWithdrawalStatusChange(
                 updated.withdrawal,
                 user,
                 updated.previousStatus,
-              );
+              ).catch((err) => req.log.warn({ err }, "Notif statut Twilio échouée"));
+              // Email (best-effort)
+              sendActivityWithdrawalStatusEmail(
+                user,
+                String(updated.withdrawal.amount),
+                updated.withdrawal.status,
+              ).catch((err) => req.log.warn({ err }, "Email statut retrait activité échoué"));
             }
           } catch (notifErr) {
-            req.log.warn({ err: notifErr }, "Notif statut Twilio échouée");
+            req.log.warn({ err: notifErr }, "Notif/Email statut échoués");
           }
         }
 

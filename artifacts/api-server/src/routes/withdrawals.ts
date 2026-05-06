@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { sendWithdrawalCreatedEmail, sendWithdrawalStatusEmail } from "../lib/email";
 import multer from "multer";
 import { eq, desc, sql, and, gte, isNull } from "drizzle-orm";
 import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } from "@workspace/db";
@@ -188,6 +189,11 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
   }
 
   req.log.info({ userId, amount, totalDebit, fee, feeMode, source: src }, "Withdrawal requested");
+
+  // Email confirmation (best-effort)
+  sendWithdrawalCreatedEmail(user, result.withdrawal.amount, src, method ?? payoutMethod ?? "").catch((err) => {
+    req.log.warn({ err }, "Email retrait créé échoué");
+  });
 
   // ─── Payout SYNCHRONE AccountPE pour les retraits parrainage ────────────────
   // On attend la réponse d'AccountPE avant de notifier l'admin ou de répondre.
@@ -476,6 +482,9 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
   if (user) {
     reportWithdrawalStatusChange(updated, user, existing.status, update.rejectionReason).catch((err) => {
       req.log.warn({ err: err?.message ?? String(err) }, "Échec envoi changement statut Twilio");
+    });
+    sendWithdrawalStatusEmail(user, updated.amount, updated.status, updated.rejectionReason).catch((err) => {
+      req.log.warn({ err }, "Email statut retrait échoué");
     });
   }
 

@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { sendWelcomeEmail } from "../lib/email";
 import { eq, or, sql } from "drizzle-orm";
 import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
 import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth";
@@ -148,6 +149,7 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
 
   const token = generateToken(finalUser.id);
   req.log.info({ userId: finalUser.id }, "User registered");
+  sendWelcomeEmail(finalUser).catch((err) => req.log.warn({ err }, "Email bienvenue échoué"));
   res.status(201).json({ user: formatUser(finalUser), token });
 });
 

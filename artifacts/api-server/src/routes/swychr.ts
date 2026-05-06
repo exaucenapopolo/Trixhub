@@ -12,6 +12,11 @@ import {
   COUNTRY_CODES,
 } from "../lib/swychr";
 import { activateUserTx, creditDepositTx, ACTIVATION_AMOUNT } from "../lib/activation";
+import {
+  sendActivationConfirmEmail,
+  sendCommissionEmail,
+  sendDepositConfirmEmail,
+} from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -271,6 +276,9 @@ async function handlePaymentSuccess(
   source: string,
   log: import("pino").Logger,
 ) {
+  // Capturé hors transaction pour l'envoi d'emails post-commit
+  let emailData: { purpose: string; userId: number; amount: number } | null = null;
+
   try {
     await db.transaction(async (tx) => {
       // 1. Verrou logique : SUCCESS atomique uniquement si encore "pending"
@@ -302,9 +310,12 @@ async function handlePaymentSuccess(
         if (!ok) {
           log.warn({ targetUserId, transactionId }, "[AccountPE] race activation self-payée, refund vers solde dépôt");
           await creditDepositTx(tx, targetUserId, amount, `${source}_refund_already_active`, log);
+        } else {
+          emailData = { purpose: "activation", userId: targetUserId, amount };
         }
       } else if (purpose === "deposit") {
         await creditDepositTx(tx, swyTx.userId, amount, source, log);
+        emailData = { purpose: "deposit", userId: swyTx.userId, amount };
       } else if (purpose === "child_activation") {
         // Vérification rapide pour éviter la tentative inutile.
         const [child] = await tx.select().from(usersTable).where(eq(usersTable.id, targetUserId));
@@ -319,6 +330,8 @@ async function handlePaymentSuccess(
           if (!ok) {
             log.warn({ targetUserId, transactionId }, "[AccountPE] race child_activation, refund vers solde dépôt parent");
             await creditDepositTx(tx, swyTx.userId, amount, `${source}_refund_race`, log);
+          } else {
+            emailData = { purpose: "activation", userId: targetUserId, amount };
           }
         }
       } else {
@@ -329,6 +342,45 @@ async function handlePaymentSuccess(
     });
   } catch (err) {
     log.error({ err, transactionId }, "[AccountPE] handlePaymentSuccess rollbacké, tx restera en pending pour retry");
+    return; // Ne pas envoyer d'emails si la transaction a échoué
+  }
+
+  // ── Emails post-commit (best-effort, hors transaction) ──────────────────
+  // Cast nécessaire : TypeScript ne suit pas les mutations de `let` dans les callbacks async.
+  const ed = emailData as { purpose: string; userId: number; amount: number } | null;
+  if (!ed) return;
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, ed.userId));
+    if (!user) return;
+
+    if (ed.purpose === "activation") {
+      // Confirmation à l'utilisateur activé
+      sendActivationConfirmEmail(user).catch((err) => log.warn({ err }, "Email activation échoué"));
+
+      // Commissions aux parrains N1/N2/N3
+      if (user.referredByCode) {
+        const [ref1] = await db.select().from(usersTable).where(eq(usersTable.referralCode, user.referredByCode));
+        if (ref1) {
+          sendCommissionEmail(ref1, user, 1700, 1).catch((err) => log.warn({ err }, "Email commission N1 échoué"));
+          if (ref1.referredByCode) {
+            const [ref2] = await db.select().from(usersTable).where(eq(usersTable.referralCode, ref1.referredByCode));
+            if (ref2) {
+              sendCommissionEmail(ref2, user, 700, 2).catch((err) => log.warn({ err }, "Email commission N2 échoué"));
+              if (ref2.referredByCode) {
+                const [ref3] = await db.select().from(usersTable).where(eq(usersTable.referralCode, ref2.referredByCode));
+                if (ref3) {
+                  sendCommissionEmail(ref3, user, 300, 3).catch((err) => log.warn({ err }, "Email commission N3 échoué"));
+                }
+              }
+            }
+          }
+        }
+      }
+    } else if (ed.purpose === "deposit") {
+      sendDepositConfirmEmail(user, ed.amount).catch((err) => log.warn({ err }, "Email dépôt échoué"));
+    }
+  } catch (emailErr) {
+    log.warn({ emailErr }, "Emails post-paiement échoués (non bloquant)");
   }
 }
 
