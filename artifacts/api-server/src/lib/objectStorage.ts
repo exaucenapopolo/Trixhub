@@ -204,6 +204,20 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
+
+  async signPublicObjectUrl(filePath: string, ttlSec = 3600): Promise<string | null> {
+    for (const searchPath of this.getPublicObjectSearchPaths()) {
+      const fullPath = `${searchPath}/${filePath}`;
+      const { bucketName, objectName } = parseObjectPath(fullPath);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      const [exists] = await file.exists();
+      if (exists) {
+        return signObjectURL({ bucketName, objectName, method: "GET", ttlSec });
+      }
+    }
+    return null;
+  }
 }
 
 function parseObjectPath(path: string): {

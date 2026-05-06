@@ -24,6 +24,8 @@ type Chapter = {
     body: string;
     type?: "normal" | "tip" | "example" | "exercise" | "warning" | "info";
     listItems?: string[];
+    linkUrl?: string;
+    linkLabel?: string;
   }[];
 };
 
@@ -152,6 +154,29 @@ function infoBox(doc: InstanceType<typeof PDFDocument>, text: string, listItems?
   sectionCallout(doc, "📚 BON À SAVOIR", text, listItems, PURPLE_LIGHT, PURPLE);
 }
 
+function linkButton(
+  doc: InstanceType<typeof PDFDocument>,
+  label: string,
+  url: string,
+  accent: string
+) {
+  const x = MARGIN;
+  const w = pageWidth(doc);
+  const y = doc.y + 6;
+  const btnH = 48;
+
+  drawRect(doc, x, y, w, btnH, accent, 8);
+
+  doc.font("Helvetica-Bold").fontSize(11).fillColor(WHITE)
+    .text(label, x + 12, y + 9, { width: w - 24, align: "center" });
+
+  doc.font("Helvetica").fontSize(8).fillColor("rgba(255,255,255,0.85)")
+    .text(url, x + 12, y + 27, { width: w - 24, align: "center" });
+
+  doc.link(x, y, w, btnH, url);
+  doc.moveDown(1.4);
+}
+
 function renderChapter(
   doc: InstanceType<typeof PDFDocument>,
   num: number,
@@ -194,8 +219,11 @@ function renderChapter(
           });
           doc.moveDown(0.5);
         } else {
-          bodyText(doc, section.body);
+          if (section.body) bodyText(doc, section.body);
         }
+    }
+    if (section.linkUrl) {
+      linkButton(doc, section.linkLabel ?? "CLIQUER ICI", section.linkUrl, accent);
     }
   }
 }
@@ -2114,8 +2142,14 @@ const FORMATION_CONTENTS: Record<string, FormationContent> = {
             ],
           },
           {
-            type: "tip",
-            body: "Site officiel : https://socialboosthorizon.com/\nApplication mobile : https://socialboosthorizon.com/telecharger.html?app=sbh\n\nTélécharge l'application sur ton téléphone pour passer tes commandes directement depuis chez toi.",
+            body: "Accède à la plateforme directement depuis le site ou télécharge l'application sur ton téléphone :",
+            linkUrl: "https://socialboosthorizon.com/",
+            linkLabel: "VISITER SOCIAL BOOST HORIZON",
+          },
+          {
+            body: "",
+            linkUrl: "https://socialboosthorizon.com/telecharger.html?app=sbh",
+            linkLabel: "TÉLÉCHARGER L'APPLICATION MOBILE",
           },
         ],
       },
@@ -2634,8 +2668,10 @@ function getCanalPlusContent(lokkeUrl: string): FormationContent {
         intro: "Lokke est le logiciel qui te donne accès à toutes les chaînes. Voici comment le récupérer.",
         sections: [
           {
-            heading: "Lien de téléchargement",
-            body: `Copie ce lien dans ton navigateur et télécharge le fichier d'installation :\n\n${lokkeUrl}\n\nLe fichier fait environ 91 Mo. Attends que le téléchargement soit complet avant de continuer.`,
+            heading: "Téléchargement de Lokke",
+            body: "Clique sur le bouton ci-dessous pour télécharger le logiciel Lokke (91 Mo). Le téléchargement démarre automatiquement. Attends qu'il soit complet avant de continuer.",
+            linkUrl: lokkeUrl,
+            linkLabel: "TÉLÉCHARGER LOKKE GRATUITEMENT",
           },
           {
             heading: "Installation",

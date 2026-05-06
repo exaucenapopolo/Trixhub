@@ -5,6 +5,9 @@ import { eq, and, sql, count } from "drizzle-orm";
 import { authenticate } from "../middlewares/authenticate";
 import { generateFormationPDF } from "../lib/formationPdf";
 import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
+import { ObjectStorageService } from "../lib/objectStorage";
+
+const objectStorageService = new ObjectStorageService();
 
 const FREE_FORMATIONS_CATALOG: Record<string, { title: string; description: string; emoji: string; category: string }> = {
   "vie-financiere":           { title: "Comment organiser sa vie financière même avec un petit revenu",       description: "Organise ton budget mois par mois, élimine les dépenses inutiles et commence à épargner dès aujourd'hui.",           emoji: "💰", category: "argent"  },
@@ -31,6 +34,25 @@ function getTodayStr(): string {
 }
 
 const router = Router();
+
+// GET /api/formations/lokke/download — redirect signé GCS pour télécharger Lokke
+router.get("/formations/lokke/download", authenticate, async (req, res): Promise<void> => {
+  if (!req.user?.isActivated) {
+    res.status(403).json({ error: "Compte non activé." });
+    return;
+  }
+  try {
+    const signedUrl = await objectStorageService.signPublicObjectUrl("lokke-setup.exe", 3600 * 4);
+    if (!signedUrl) {
+      res.status(404).json({ error: "Fichier Lokke introuvable." });
+      return;
+    }
+    res.redirect(302, signedUrl);
+  } catch (err) {
+    req.log.error({ err }, "Lokke signed URL error");
+    res.status(500).json({ error: "Impossible de générer le lien de téléchargement." });
+  }
+});
 
 // GET /api/formations/list — liste toutes les formations gratuites avec statut utilisateur
 router.get("/formations/list", authenticate, async (req, res): Promise<void> => {
@@ -130,7 +152,7 @@ router.get("/formations/:id/download", authenticate, async (req, res): Promise<v
   }
 
   const lokkeUrl = formationId === "canal-plus"
-    ? `${getPublicBaseUrl(req)}/api/storage/public-objects/lokke-setup.exe`
+    ? `${getPublicBaseUrl(req)}/api/formations/lokke/download`
     : undefined;
 
   const doc = generateFormationPDF(formationId, { lokkeUrl });
