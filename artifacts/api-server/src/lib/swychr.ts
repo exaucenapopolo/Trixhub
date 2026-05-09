@@ -397,10 +397,9 @@ export async function createPayout(params: {
 }): Promise<{ id: string; status: "pending" | "success" | "failed" }> {
   let token = await getPayoutToken();
 
-  // Normaliser le payout_method au format attendu par create_transaction ("mtn_cm")
-  const payoutMethodId = params.payoutMethod.includes("_")
-    ? params.payoutMethod                                          // déjà au bon format
-    : toPayoutMethodId(params.payoutMethod, params.countryCode);  // convertir "MTN" → "mtn_cm"
+  // AccountPE attend le nom court tel quel : "MTN", "Orange", "Wave", etc.
+  // Ne pas convertir en "mtn_cm" — l'API rejette ce format.
+  const payoutMethodId = params.payoutMethod;
 
   const body = {
     country_code:      params.countryCode,
