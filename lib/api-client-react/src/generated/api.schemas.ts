@@ -25,6 +25,8 @@ export interface RegisterBody {
   password: string;
   /** @nullable */
   referralCode?: string | null;
+  /** L'utilisateur accepte que son numéro soit visible par les autres membres */
+  phoneVisible?: boolean;
 }
 
 export interface LoginBody {
@@ -45,6 +47,8 @@ export interface UpdateProfileBody {
   phone?: string | null;
   /** @nullable */
   country?: string | null;
+  /** Rendre son numéro visible ou non aux autres membres */
+  phoneVisible?: boolean;
 }
 
 export interface UpdateCurrencyBody {
@@ -78,6 +82,8 @@ export interface User {
    * @nullable
    */
   avatarUrl?: string | null;
+  /** Numéro visible par les autres membres (opt-in) */
+  phoneVisible: boolean;
   createdAt: string;
 }
 

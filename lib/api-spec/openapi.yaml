@@ -825,6 +825,9 @@ components:
           type: string
         referralCode:
           type: ["string", "null"]
+        phoneVisible:
+          type: boolean
+          description: L'utilisateur accepte que son numéro soit visible par les autres membres
       required: [email, phone, country, password]
 
     LoginBody:
@@ -856,6 +859,9 @@ components:
           type: ["string", "null"]
         country:
           type: ["string", "null"]
+        phoneVisible:
+          type: boolean
+          description: Rendre son numéro visible ou non aux autres membres
 
     UpdateCurrencyBody:
       type: object
@@ -908,9 +914,12 @@ components:
         avatarUrl:
           type: ["string", "null"]
           description: Chemin Object Storage de la photo de profil (null si non définie)
+        phoneVisible:
+          type: boolean
+          description: Numéro visible par les autres membres (opt-in)
         createdAt:
           type: string
-      required: [id, displayName, email, phone, country, isActivated, referralCode, preferredCurrency, themePreference, createdAt]
+      required: [id, displayName, email, phone, country, isActivated, referralCode, preferredCurrency, themePreference, phoneVisible, createdAt]
 
     AuthResponse:
       type: object

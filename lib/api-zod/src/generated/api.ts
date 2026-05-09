@@ -23,6 +23,12 @@ export const RegisterBody = zod.object({
   country: zod.string(),
   password: zod.string(),
   referralCode: zod.string().nullish(),
+  phoneVisible: zod
+    .boolean()
+    .optional()
+    .describe(
+      "L'utilisateur accepte que son numéro soit visible par les autres membres",
+    ),
 });
 
 /**
@@ -51,6 +57,9 @@ export const LoginResponse = zod.object({
       .describe(
         "Chemin Object Storage de la photo de profil (null si non définie)",
       ),
+    phoneVisible: zod
+      .boolean()
+      .describe("Numéro visible par les autres membres (opt-in)"),
     createdAt: zod.string(),
   }),
   token: zod.string(),
@@ -84,6 +93,9 @@ export const GetMeResponse = zod.object({
     .describe(
       "Chemin Object Storage de la photo de profil (null si non définie)",
     ),
+  phoneVisible: zod
+    .boolean()
+    .describe("Numéro visible par les autres membres (opt-in)"),
   createdAt: zod.string(),
 });
 
@@ -114,6 +126,9 @@ export const ActivateAccountResponse = zod.object({
       .describe(
         "Chemin Object Storage de la photo de profil (null si non définie)",
       ),
+    phoneVisible: zod
+      .boolean()
+      .describe("Numéro visible par les autres membres (opt-in)"),
     createdAt: zod.string(),
   }),
   token: zod.string(),
@@ -139,6 +154,10 @@ export const UpdateProfileBody = zod.object({
   displayName: zod.string().nullish(),
   phone: zod.string().nullish(),
   country: zod.string().nullish(),
+  phoneVisible: zod
+    .boolean()
+    .optional()
+    .describe("Rendre son numéro visible ou non aux autres membres"),
 });
 
 export const UpdateProfileResponse = zod.object({
@@ -158,6 +177,9 @@ export const UpdateProfileResponse = zod.object({
     .describe(
       "Chemin Object Storage de la photo de profil (null si non définie)",
     ),
+  phoneVisible: zod
+    .boolean()
+    .describe("Numéro visible par les autres membres (opt-in)"),
   createdAt: zod.string(),
 });
 
@@ -225,6 +247,9 @@ export const UpdatePreferredCurrencyResponse = zod.object({
     .describe(
       "Chemin Object Storage de la photo de profil (null si non définie)",
     ),
+  phoneVisible: zod
+    .boolean()
+    .describe("Numéro visible par les autres membres (opt-in)"),
   createdAt: zod.string(),
 });
 
@@ -252,6 +277,9 @@ export const UpdateThemeResponse = zod.object({
     .describe(
       "Chemin Object Storage de la photo de profil (null si non définie)",
     ),
+  phoneVisible: zod
+    .boolean()
+    .describe("Numéro visible par les autres membres (opt-in)"),
   createdAt: zod.string(),
 });
 

@@ -12,15 +12,20 @@ import { z } from "zod";
 import { useUpdateProfile, useUpdatePreferredCurrency, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, User, Globe, Copy, CheckCircle, Link as LinkIcon, Camera, Trash2, Loader2 } from "lucide-react";
+import {
+  Shield, User, Globe, Copy, CheckCircle, Link as LinkIcon, Camera, Trash2, Loader2,
+  Users2, Briefcase, TrendingUp, Star, Info, X,
+} from "lucide-react";
 import { CURRENCY_LABELS } from "@/lib/currency";
 import { resolveAvatarUrl } from "@/lib/utils";
 import { useRef, useState } from "react";
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { cn } from "@/lib/utils";
 
 const TOKEN_KEY = "trixhub_token";
 const ACCEPTED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const profileSchema = z.object({
   displayName: z.string().min(2, "Nom d'affichage requis (min. 2 caractères)"),
@@ -34,7 +39,52 @@ const AFRICAN_COUNTRIES = [
   "Mali", "Niger", "Nigeria", "Rwanda", "Sénégal", "Togo", "Tanzanie",
 ];
 
-const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+function PhoneVisibleInfoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-2xl shadow-2xl max-w-sm w-full p-6 relative"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-muted text-muted-foreground"
+          aria-label="Fermer"
+        >
+          <X size={16} />
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <Users2 size={20} className="text-emerald-500" />
+          </div>
+          <h3 className="font-bold text-foreground text-base">Visibilité de votre contact</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Votre numéro WhatsApp sera disponible dans l'annuaire communautaire TRIXHUB, accessible uniquement aux membres ayant un compte activé.
+        </p>
+        <div className="space-y-3 mb-4">
+          <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Les avantages de partager</p>
+          {[
+            { icon: Briefcase, text: "Des entrepreneurs et chefs d'entreprise pourront vous contacter pour des opportunités de partenariat ou de collaboration." },
+            { icon: TrendingUp, text: "Des professionnels pourront vous solliciter pour des projets communs ou des opportunités d'affaires." },
+            { icon: Star, text: "Chaque contact est une porte ouverte : clients, partenaires, opportunités inattendues." },
+            { icon: Users2, text: "Vous bénéficiez aussi de l'annuaire pour contacter d'autres membres selon vos besoins." },
+          ].map(({ icon: Icon, text }, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Icon size={12} className="text-emerald-500" />
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-xs text-muted-foreground">
+          <strong className="text-foreground">Totalement libre :</strong> Activer ou désactiver cette option n'a aucune incidence sur vos soldes, commissions ou quoi que ce soit d'autre sur votre compte.
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   usePageTitle('Mon profil');
@@ -45,6 +95,8 @@ export default function ProfilePage() {
   const updateCurrency = useUpdatePreferredCurrency();
   const [linkCopied, setLinkCopied] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState<"upload" | "delete" | null>(null);
+  const [showPhoneVisibleInfo, setShowPhoneVisibleInfo] = useState(false);
+  const [phoneVisiblePending, setPhoneVisiblePending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const avatarSrc = resolveAvatarUrl(user?.avatarUrl);
@@ -56,7 +108,7 @@ export default function ProfilePage() {
 
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = ""; // permet de réuploader le même fichier
+    e.target.value = "";
     if (!file) return;
 
     if (!ACCEPTED_AVATAR_TYPES.includes(file.type)) {
@@ -117,6 +169,25 @@ export default function ProfilePage() {
     }
   };
 
+  const handlePhoneVisibleToggle = async (newValue: boolean) => {
+    setPhoneVisiblePending(true);
+    try {
+      await updateProfile.mutateAsync({ data: { phoneVisible: newValue } });
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      refreshUser();
+      toast({
+        title: newValue ? "Numéro rendu visible" : "Numéro masqué",
+        description: newValue
+          ? "Votre numéro est maintenant accessible aux membres activés."
+          : "Votre numéro n'est plus visible dans l'annuaire.",
+      });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de modifier la visibilité.", variant: "destructive" });
+    } finally {
+      setPhoneVisiblePending(false);
+    }
+  };
+
   const referralLink = `${window.location.origin}${BASE}/?ref=${user?.referralCode}`;
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -158,9 +229,12 @@ export default function ProfilePage() {
   };
 
   const initials = (user?.displayName || user?.email || "?").charAt(0).toUpperCase();
+  const isPhoneVisible = user?.phoneVisible ?? false;
 
   return (
     <Layout>
+      {showPhoneVisibleInfo && <PhoneVisibleInfoModal onClose={() => setShowPhoneVisibleInfo(false)} />}
+
       <div className="space-y-6 max-w-2xl">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Mon Profil</h1>
@@ -179,7 +253,6 @@ export default function ProfilePage() {
               data-testid="input-avatar-file"
             />
             <div className="flex items-center gap-4">
-              {/* Avatar avec overlay caméra */}
               <div className="relative shrink-0 group">
                 <button
                   type="button"
@@ -203,7 +276,6 @@ export default function ProfilePage() {
                       <span className="text-white text-3xl font-bold">{initials}</span>
                     </div>
                   )}
-                  {/* Overlay au hover/click */}
                   <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     {avatarBusy === "upload" ? (
                       <Loader2 size={18} className="text-white animate-spin" />
@@ -228,6 +300,11 @@ export default function ProfilePage() {
                   <Badge variant="secondary" className="text-xs gap-1">
                     <Globe size={10} />{user?.country}
                   </Badge>
+                  {isPhoneVisible && (
+                    <Badge className="gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs">
+                      <Users2 size={10} />Visible
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -284,6 +361,80 @@ export default function ProfilePage() {
             <p className="text-xs text-muted-foreground mt-2">
               Partagez ce lien pour parrainer de nouveaux membres et gagner des commissions.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Contact visibility */}
+        <Card className={cn("border-card-border", isPhoneVisible && "border-emerald-500/30")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users2 size={18} className={isPhoneVisible ? "text-emerald-500" : "text-muted-foreground"} />
+              Visibilité de mon contact
+              <button
+                type="button"
+                onClick={() => setShowPhoneVisibleInfo(true)}
+                className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline font-normal"
+              >
+                <Info size={12} /> En savoir plus
+              </button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start gap-4">
+              {/* Toggle switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isPhoneVisible}
+                disabled={phoneVisiblePending}
+                onClick={() => handlePhoneVisibleToggle(!isPhoneVisible)}
+                className={cn(
+                  "relative shrink-0 w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 disabled:opacity-50",
+                  isPhoneVisible ? "bg-emerald-500" : "bg-muted-foreground/30"
+                )}
+                data-testid="toggle-phone-visible"
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-200",
+                    isPhoneVisible ? "translate-x-6" : "translate-x-0"
+                  )}
+                >
+                  {phoneVisiblePending && <Loader2 size={12} className="absolute inset-0 m-auto text-emerald-500 animate-spin" />}
+                </span>
+              </button>
+
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  {isPhoneVisible ? "Mon numéro est visible par la communauté" : "Mon numéro est masqué"}
+                </p>
+                {isPhoneVisible ? (
+                  <div className="mt-1.5 space-y-1">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      Votre numéro WhatsApp est accessible aux membres ayant un compte activé.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {[
+                        { icon: Briefcase, label: "Partenariats" },
+                        { icon: TrendingUp, label: "Opportunités" },
+                        { icon: Star, label: "Clients potentiels" },
+                      ].map(({ icon: Icon, label }) => (
+                        <span key={label} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                          <Icon size={9} />{label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Activez pour apparaître dans l'annuaire communautaire et recevoir des opportunités professionnelles.
+                  </p>
+                )}
+                <p className="text-[11px] text-blue-500 dark:text-blue-400 mt-2 font-medium">
+                  Vous pouvez changer ce choix à tout moment — aucun impact sur votre compte ou vos gains.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

@@ -72,32 +72,30 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">4b. Consentement au partage de contact au sein de la communauté TRIXHUB</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">4b. Visibilité du contact dans la communauté TRIXHUB — choix libre</h2>
               <p>
-                En vous inscrivant sur TRIXHUB, vous acceptez expressément que votre <strong className="text-foreground">nom d'affichage et votre numéro WhatsApp</strong> puissent être rendus accessibles aux autres membres de la plateforme ayant un compte activé, dans le cadre exclusif du système de contacts communautaires de TRIXHUB.
+                TRIXHUB propose un système de contacts communautaires optionnel : lors de votre inscription, et à tout moment depuis votre profil, vous pouvez choisir librement de rendre votre <strong className="text-foreground">numéro WhatsApp visible</strong> aux autres membres ayant un compte activé.
               </p>
-              <p className="mt-3 font-medium text-foreground">Pourquoi ce partage ?</p>
+              <p className="mt-3 bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-sm">
+                <strong className="text-foreground">Totalement optionnel :</strong> Partager ou non votre numéro n'a aucune incidence sur votre compte, vos soldes, vos commissions ou l'accès aux fonctionnalités de la plateforme. Vous êtes entièrement libre de votre choix, et pouvez le modifier à tout moment.
+              </p>
+              <p className="mt-3 font-medium text-foreground">Pourquoi choisir de partager ?</p>
               <p className="mt-1">
-                TRIXHUB est une communauté de personnes partageant les mêmes centres d'intérêt : l'entrepreneuriat, le développement personnel et la génération de revenus. Le système de contacts communautaires permet à chaque membre activé d'accéder aux coordonnées d'autres membres pour :
+                TRIXHUB réunit des personnes engagées dans l'entrepreneuriat, le développement personnel et la génération de revenus. Rendre votre numéro visible vous permet de bénéficier d'opportunités au sein de cette communauté qualifiée :
               </p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
-                <li>Développer leur réseau professionnel au sein de la communauté</li>
-                <li>Créer des synergies, des partenariats ou des collaborations</li>
-                <li>Prospecter des clients potentiels sensibles aux mêmes opportunités</li>
-                <li>Partager des projets, services ou produits avec un public déjà engagé dans une démarche entrepreneuriale</li>
+                <li>Des <strong className="text-foreground">chefs d'entreprise et entrepreneurs</strong> pourront vous contacter pour des partenariats ou collaborations</li>
+                <li>Des <strong className="text-foreground">professionnels</strong> partageant vos centres d'intérêt pourront vous solliciter pour des projets communs</li>
+                <li>Des <strong className="text-foreground">clients potentiels</strong> sensibles aux mêmes opportunités pourront vous découvrir</li>
+                <li>Chaque contact est une porte ouverte — une opportunité inattendue peut changer votre trajectoire</li>
               </ul>
-              <p className="mt-3 font-medium text-foreground">Ce que ce partage n'est PAS :</p>
+              <p className="mt-3 font-medium text-foreground">Garanties :</p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
                 <li>Vos données ne sont <strong className="text-foreground">jamais vendues à des tiers externes</strong> à la plateforme</li>
-                <li>Vos données ne sont <strong className="text-foreground">jamais transmises à des entreprises commerciales</strong> hors de la communauté TRIXHUB</li>
-                <li>L'accès à vos coordonnées reste limité aux <strong className="text-foreground">membres ayant activé leur compte</strong> — les simples inscrits ne peuvent pas y accéder</li>
+                <li>Vos coordonnées ne sont <strong className="text-foreground">jamais transmises à des entreprises commerciales</strong> hors de TRIXHUB</li>
+                <li>L'accès reste limité aux <strong className="text-foreground">membres ayant activé leur compte</strong> — les inscrits non activés n'y ont pas accès</li>
+                <li>Vous pouvez <strong className="text-foreground">désactiver cette visibilité à tout moment</strong> depuis votre profil</li>
               </ul>
-              <p className="mt-3">
-                En vous inscrivant, vous bénéficiez vous-même de ce même réseau : votre profil intègre la base communautaire accessible aux membres, ce qui peut générer pour vous des opportunités de collaboration, de partenariat ou de clientèle inattendues.
-              </p>
-              <p className="mt-3 text-sm bg-muted/60 rounded-xl p-3">
-                <strong className="text-foreground">Important :</strong> En cas de désaccord avec ce principe de partage communautaire, vous ne devez pas vous inscrire sur TRIXHUB. L'inscription vaut acceptation de cette clause. Pour toute demande de retrait de vos données, contactez-nous via la page support de la plateforme.
-              </p>
             </section>
 
             <section>
@@ -147,7 +145,13 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-lg font-semibold text-foreground mb-2">8. Retraits</h2>
-              <p>Le retrait minimum depuis le solde parrainage est de <strong className="text-foreground">3 000 FCFA</strong>, et depuis le solde activités est de <strong className="text-foreground">3 500 FCFA</strong>. Les demandes de retrait sont vérifiées par notre équipe avant tout paiement. TRIXHUB se réserve le droit de refuser toute demande de retrait en cas de suspicion de fraude ou de non-respect des présentes conditions.</p>
+              <p>Le retrait minimum depuis le solde parrainage est de <strong className="text-foreground">3 100 FCFA</strong>, et depuis le solde activités est de <strong className="text-foreground">3 500 FCFA</strong>. Les paiements sont traités automatiquement via notre partenaire de paiement (AccountPE) en temps réel.</p>
+              <p className="mt-2">
+                <strong className="text-foreground">Cas où un retrait peut être refusé ou suspendu :</strong> TRIXHUB se réserve le droit de bloquer ou de refuser un retrait <strong className="text-foreground">uniquement</strong> lorsqu'une fraude avérée ou une violation grave des présentes conditions est constatée (multi-comptes, manipulation du système, fausses informations, activité frauduleuse détectée). Aucun retrait n'est refusé automatiquement ou sans raison fondée.
+              </p>
+              <p className="mt-2">
+                En dehors de ces cas, tout membre en règle peut retirer librement les fonds présents dans son solde dans la limite des minimums applicables.
+              </p>
             </section>
 
             <section>

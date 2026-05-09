@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, ChevronDown } from "lucide-react";
+import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, ChevronDown, Info, X, Users2, Briefcase, Star, TrendingUp } from "lucide-react";
 import PartnersFooter from "@/components/PartnersFooter";
 import JoinCommunityButton from "@/components/JoinCommunityButton";
 import { formatLocal } from "@/lib/currency";
@@ -14,8 +14,6 @@ const SBH_URL = "https://socialboosthorizon.com";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
-// Liste des 18 pays africains réellement supportés par notre partenaire de paiement.
-// Vérifiée en direct via l'API publique des méthodes de paiement.
 const AFRICAN_COUNTRIES = [
   { code: "BJ", name: "Bénin", flag: "🇧🇯", dial: "+229" },
   { code: "BF", name: "Burkina Faso", flag: "🇧🇫", dial: "+226" },
@@ -47,6 +45,53 @@ interface ReferrerInfo {
   country: string;
 }
 
+function PhoneVisibleInfoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-2xl shadow-2xl max-w-sm w-full p-6 relative"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-muted text-muted-foreground"
+          aria-label="Fermer"
+        >
+          <X size={16} />
+        </button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+            <Users2 size={20} className="text-emerald-500" />
+          </div>
+          <h3 className="font-bold text-foreground text-base">Rendre mon numéro visible</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          En cochant cette case, votre numéro WhatsApp sera disponible dans l'annuaire communautaire TRIXHUB, accessible uniquement aux membres ayant un compte activé.
+        </p>
+        <div className="space-y-3 mb-4">
+          <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Pourquoi partager ?</p>
+          {[
+            { icon: Briefcase, text: "Des entrepreneurs et chefs d'entreprise pourront vous contacter pour des opportunités de partenariat ou de collaboration." },
+            { icon: TrendingUp, text: "Des professionnels dans votre domaine pourront vous solliciter pour des projets communs." },
+            { icon: Star, text: "Chaque contact est une porte ouverte : clients, partenaires, opportunités d'affaires inattendues." },
+            { icon: Users, text: "Vous bénéficiez aussi de l'annuaire pour contacter d'autres membres selon vos besoins." },
+          ].map(({ icon: Icon, text }, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Icon size={12} className="text-emerald-500" />
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-xs text-muted-foreground">
+          <strong className="text-foreground">Totalement libre :</strong> Cocher ou ne pas cocher cette case n'a aucune incidence sur votre compte, vos soldes, vos commissions ou quoi que ce soit d'autre. Vous pouvez changer ce choix à tout moment dans votre profil.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   usePageTitle('Inscription');
   const [, navigate] = useLocation();
@@ -60,6 +105,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [phoneVisible, setPhoneVisible] = useState(false);
+  const [showPhoneVisibleInfo, setShowPhoneVisibleInfo] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [referrerInfo, setReferrerInfo] = useState<ReferrerInfo | null>(null);
@@ -68,11 +115,9 @@ export default function RegisterPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlRef = params.get("ref");
-    // Si un code parrain est dans l'URL, on le stocke en localStorage pour ne pas le perdre au rechargement
     if (urlRef) {
       localStorage.setItem("trixhub_referral", urlRef);
     }
-    // On utilise le code de l'URL ou celui stocké en localStorage
     const ref = urlRef || localStorage.getItem("trixhub_referral");
     if (ref) {
       setRefCode(ref);
@@ -85,19 +130,14 @@ export default function RegisterPage() {
 
   const selectedCountry = AFRICAN_COUNTRIES.find(c => c.name === country);
 
-  // Quand l'utilisateur change de pays, on remplace automatiquement l'indicatif téléphonique
-  // dans le champ téléphone. Exemple : pays=Cameroun → téléphone commence par "+237 ".
   const applyDialCode = (currentPhone: string, newDial: string): string => {
     const trimmed = currentPhone.trim();
-    // Si le téléphone commence déjà par un indicatif connu, on le remplace
     for (const c of AFRICAN_COUNTRIES) {
       if (trimmed.startsWith(c.dial)) {
         return newDial + trimmed.slice(c.dial.length);
       }
     }
-    // Si le champ est vide, on met juste l'indicatif suivi d'un espace
     if (!trimmed) return newDial + " ";
-    // Sinon on préfixe
     return newDial + " " + trimmed;
   };
 
@@ -123,7 +163,7 @@ export default function RegisterPage() {
       const res = await fetch(`${BASE}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, phone, country, password, referralCode: refCode ?? null }),
+        body: JSON.stringify({ email, phone, country, password, referralCode: refCode ?? null, phoneVisible }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -131,7 +171,6 @@ export default function RegisterPage() {
         return;
       }
       login(data.token, data.user);
-      // Nettoyer le code parrain stocké après inscription réussie
       localStorage.removeItem("trixhub_referral");
       toast({ title: "Bienvenue !", description: "Compte créé avec succès." });
       navigate("/activate");
@@ -144,6 +183,8 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex bg-background transition-colors duration-300">
+      {showPhoneVisibleInfo && <PhoneVisibleInfoModal onClose={() => setShowPhoneVisibleInfo(false)} />}
+
       {/* Left panel — visible on lg+ */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex-col justify-between p-10">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -284,6 +325,36 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              {/* Phone Visible checkbox */}
+              <div className="rounded-xl border border-border bg-muted/30 p-3.5">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    onClick={() => setPhoneVisible(v => !v)}
+                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${phoneVisible ? "bg-emerald-500 border-emerald-500" : "border-border bg-background group-hover:border-emerald-500/50"}`}
+                  >
+                    {phoneVisible && <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">Rendre mon numéro visible dans la communauté</span>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setShowPhoneVisibleInfo(true); }}
+                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline shrink-0"
+                      >
+                        <Info size={12} /> En savoir plus
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Votre numéro pourra être consulté et acheté par d'autres membres activés. Chaque contact = une opportunité.
+                    </p>
+                    <p className="text-[11px] text-blue-500 dark:text-blue-400 mt-1 font-medium">
+                      Totalement optionnel — aucun impact sur votre compte si vous ne cochez pas.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               {/* Country dropdown */}
               <div className="relative">
                 <label className="block text-sm font-medium text-foreground mb-1.5">Pays</label>
@@ -384,14 +455,10 @@ export default function RegisterPage() {
               </p>
             </form>
 
-            {/* Bouton communauté WhatsApp (visible sur tous écrans, juste après le formulaire) */}
             <div className="mt-6">
               <JoinCommunityButton />
             </div>
 
-            {/* Footer mobile : sur les petits écrans, on remplace l'ancien footer mobile par
-                le PartnersFooter standard (logos cliquables vers SSG / SBH). Le panneau gauche
-                desktop garde son propre rendu. */}
             <div className="lg:hidden mt-8">
               <PartnersFooter />
             </div>

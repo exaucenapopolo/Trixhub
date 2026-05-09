@@ -37,6 +37,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     formationRequestedAt: user.formationRequestedAt ? user.formationRequestedAt.toISOString() : null,
     formationRequestedTitle: user.formationRequestedTitle ?? null,
     avatarUrl: user.avatarUrl ?? null,
+    phoneVisible: user.phoneVisible,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -139,6 +140,7 @@ router.patch("/users/me", authenticate, async (req, res): Promise<void> => {
   if (typeof body.displayName === "string") updates.displayName = body.displayName;
   if (typeof body.phone === "string") updates.phone = body.phone;
   if (typeof body.country === "string") updates.country = body.country;
+  if (typeof body.phoneVisible === "boolean") updates.phoneVisible = body.phoneVisible;
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "Aucune donnée à mettre à jour" });

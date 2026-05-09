@@ -18,6 +18,7 @@ export interface UserData {
   formationRequestedAt?: string | null;
   formationRequestedTitle?: string | null;
   avatarUrl?: string | null;
+  phoneVisible: boolean;
   createdAt: string;
 }
 

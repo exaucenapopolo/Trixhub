@@ -63,22 +63,26 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-foreground mb-2">4b. Partage intra-communautaire des contacts membres</h2>
+              <h2 className="text-lg font-semibold text-foreground mb-2">4b. Visibilité du contact dans la communauté — opt-in libre</h2>
               <p>
-                En vous inscrivant sur TRIXHUB, vous acceptez que votre <strong className="text-foreground">nom d'affichage et votre numéro WhatsApp</strong> soient accessibles aux membres ayant activé leur compte, dans le cadre du <strong className="text-foreground">système de contacts communautaires TRIXHUB</strong>.
+                TRIXHUB propose un système de contacts communautaires entièrement <strong className="text-foreground">optionnel</strong>. Lors de votre inscription ou à tout moment depuis votre profil, vous pouvez choisir de rendre votre numéro WhatsApp visible aux membres ayant activé leur compte.
               </p>
-              <p className="mt-2">
-                Ce partage est une fonctionnalité centrale de la communauté : TRIXHUB réunit des personnes partageant les mêmes centres d'intérêt (entrepreneuriat, développement personnel, génération de revenus). Rendre les contacts accessibles entre membres permet de créer des opportunités de réseau, de collaboration et de partenariat au sein d'une communauté qualifiée et engagée.
-              </p>
-              <p className="mt-3 font-medium text-foreground">Garanties de protection :</p>
+              <p className="mt-3 font-medium text-foreground">Ce choix est entièrement libre :</p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
-                <li>Seuls les membres avec un <strong className="text-foreground">compte activé</strong> peuvent accéder aux contacts — les simples inscrits non activés n'y ont pas accès</li>
+                <li>Vous n'êtes <strong className="text-foreground">jamais obligé</strong> de partager votre numéro — l'option est décochée par défaut</li>
+                <li>Ne pas partager votre numéro <strong className="text-foreground">n'affecte en rien</strong> votre compte, vos soldes, vos commissions ou vos retraits</li>
+                <li>Vous pouvez <strong className="text-foreground">activer ou désactiver</strong> cette visibilité à tout moment depuis la page Profil</li>
+                <li>Si vous choisissez de partager, votre numéro reste accessible <strong className="text-foreground">uniquement aux membres activés</strong> de TRIXHUB</li>
                 <li>Vos coordonnées ne sont <strong className="text-foreground">jamais transmises à des entreprises extérieures</strong> à TRIXHUB</li>
-                <li>L'accès aux contacts est une fonctionnalité payante (2 FCFA/contact) qui génère des revenus réinjectés dans la plateforme</li>
-                <li>Vous bénéficiez réciproquement de l'accès au réseau des autres membres, créant des opportunités mutuelles</li>
+              </ul>
+              <p className="mt-3 font-medium text-foreground">Les avantages si vous choisissez de partager :</p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Des entrepreneurs et professionnels pourront vous contacter pour des partenariats ou collaborations</li>
+                <li>Vous devenez visible dans l'annuaire communautaire d'une communauté qualifiée et engagée</li>
+                <li>Chaque contact est une opportunité potentielle de réseau, d'affaires ou de collaboration</li>
               </ul>
               <p className="mt-3 text-sm bg-muted/60 rounded-xl p-3 border border-border">
-                <strong className="text-foreground">Base légale :</strong> Ce traitement est fondé sur votre consentement libre et éclairé, exprimé lors de l'inscription. Vous pouvez demander la suppression de vos données à tout moment en nous contactant via la page support de la plateforme.
+                <strong className="text-foreground">Base légale :</strong> Ce traitement est fondé sur votre consentement explicite et volontaire, exprimé lors de l'inscription ou modifié à tout moment depuis votre profil. Vous pouvez également demander la suppression de vos données en nous contactant via la page support.
               </p>
             </section>
 

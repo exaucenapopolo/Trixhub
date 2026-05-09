@@ -29,6 +29,7 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     formationRequestedAt: user.formationRequestedAt ? user.formationRequestedAt.toISOString() : null,
     formationRequestedTitle: user.formationRequestedTitle ?? null,
     avatarUrl: user.avatarUrl ?? null,
+    phoneVisible: user.phoneVisible,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -56,7 +57,7 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
     return;
   }
 
-  const { email, phone, country, password, referralCode } = parsed.data;
+  const { email, phone, country, password, referralCode, phoneVisible } = parsed.data;
   const emailLower = email.toLowerCase().trim();
   const phoneClean = phone.trim();
 
@@ -98,6 +99,7 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
         isActivated: false,
         preferredCurrency: "FCFA",
         themePreference: "light",
+        phoneVisible: phoneVisible ?? false,
       }).returning();
 
       const realCode = generateReferralCode(displayName, user.id);

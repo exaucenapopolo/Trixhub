@@ -26,6 +26,8 @@ export const usersTable = pgTable("users", {
   lastDailyBonusAt: timestamp("last_daily_bonus_at", { withTimezone: true }),
   // Photo de profil : chemin Object Storage type "/objects/avatars/u{id}-{rand}.{ext}".
   avatarUrl: text("avatar_url"),
+  // Visibilité du contact : l'utilisateur choisit si son numéro peut être acheté par d'autres membres.
+  phoneVisible: boolean("phone_visible").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [
