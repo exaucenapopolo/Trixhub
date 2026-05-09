@@ -115,6 +115,8 @@ export async function reportPayoutFailed(
   isInsufficientFunds: boolean,
   amountRequested: number,
   totalDebited: number,
+  amountSentToPartner: number,
+  fee: number,
   balanceBefore: number,
   balanceAfterRefund: number,
 ) {
@@ -126,7 +128,9 @@ export async function reportPayoutFailed(
     `🚨 RETRAIT ÉCHOUÉ — #${w.id}\n` +
     `${reason}\n\n` +
     `💰 Montant demandé : ${fmtAmount(amountRequested)}\n` +
-    `💵 Total qui aurait été débité : ${fmtAmount(totalDebited)}\n` +
+    `📤 Montant envoyé au partenaire : ${fmtAmount(amountSentToPartner)}\n` +
+    `🏷️ Frais déduits : ${fmtAmount(fee)}\n` +
+    `💵 Total débité du solde : ${fmtAmount(totalDebited)}\n` +
     `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
     `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
     `📞 N° destinataire : ${w.accountNumber}\n` +
