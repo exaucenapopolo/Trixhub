@@ -388,28 +388,17 @@ export const COUNTRY_DIAL_CODES: Record<string, string> = {
 
 /**
  * Normalise un numéro mobile pour AccountPE.
- * Si le `mobileFormat` retourné par AccountPE commence par l'indicatif pays
- * (ex: CM = "2376XXXXXXXX" → indicatif "237"), on préfixe automatiquement
- * l'indicatif si l'utilisateur ne l'a pas saisi.
- * Pour tous les autres pays, le format local est attendu (sans indicatif).
+ * On renvoie le numéro tel que l'utilisateur l'a saisi (uniquement les chiffres).
+ * L'utilisateur doit saisir le numéro dans le format affiché dans l'interface
+ * (avec ou sans indicatif, selon ce que l'UI indique) — aucun ajout automatique
+ * d'indicatif pays n'est effectué ici.
  */
 export function normalizeMobileForPayout(
   mobile: string,
-  mobileFormat: string | null | undefined,
-  countryCode: string,
+  _mobileFormat: string | null | undefined,
+  _countryCode: string,
 ): string {
-  const digits = mobile.replace(/\D/g, "");
-  if (!mobileFormat) return digits;
-
-  const dialCode = COUNTRY_DIAL_CODES[countryCode];
-  if (!dialCode) return digits;
-
-  // AccountPE exige l'indicatif si mobileFormat commence par lui (ex: CM "2376XXXXXXXX")
-  if (mobileFormat.startsWith(dialCode) && !digits.startsWith(dialCode)) {
-    return dialCode + digits;
-  }
-
-  return digits;
+  return mobile.replace(/\D/g, "");
 }
 
 export async function createPayout(params: {

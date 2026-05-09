@@ -518,9 +518,17 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
               const selectedMethod = payoutMethods.find(m => m.id === watchedPayoutMethodId);
               // Construire un placeholder lisible : remplacer les X par des chiffres exemple
               const rawFormat = selectedMethod?.mobileFormat;
-              const examplePlaceholder = rawFormat
-                ? rawFormat.replace(/X/gi, (_, i) => String((i % 9) + 1))
-                : "6 81 23 45 67";
+              // Construit un placeholder exemple à partir du format AccountPE
+              // Ex: "2376XXXXXXXX" → on retire l'indicatif pays si présent → "6XXXXXXXX"
+              // Puis on remplace les X par des chiffres exemple
+              const buildPlaceholder = () => {
+                if (!rawFormat) return "6 81 23 45 67";
+                // Retire éventuellement un indicatif pays numérique au début (2–4 chiffres)
+                const stripped = rawFormat.replace(/^\d{2,4}/, "");
+                const base = stripped || rawFormat;
+                return base.replace(/X/gi, (_, i) => String((i % 9) + 1));
+              };
+              const examplePlaceholder = buildPlaceholder();
               return (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1.5">
@@ -532,8 +540,7 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
                   <div className="flex items-start gap-1.5 mt-1">
                     <AlertCircle size={11} className="text-amber-500 mt-0.5 shrink-0" />
                     <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-tight">
-                      Saisissez votre numéro <strong>sans l'indicatif pays</strong> (sans +237, +225…). L'indicatif est ajouté automatiquement.
-                      {rawFormat && <span className="text-muted-foreground"> Format attendu : <strong>{rawFormat}</strong></span>}
+                      Saisissez votre numéro <strong>sans l'indicatif pays</strong> (sans +237, +225…).
                     </p>
                   </div>
                   <FormMessage />
