@@ -294,7 +294,7 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 
       // 🚨 Notification WhatsApp admin avec la raison exacte de l'échec
       // Le solde est remboursé → balanceAfter = balanceBefore (solde inchangé après remboursement)
-      reportPayoutFailed(w, user, errMsg, isInsufficientFunds, amount, totalDebit, result.balanceBefore, result.balanceBefore).catch((notifErr) => {
+      reportPayoutFailed(w, user, errMsg, isInsufficientFunds, amount, totalDebit, amountSentToAccountPE, fee, result.balanceBefore, result.balanceBefore).catch((notifErr) => {
         req.log.warn({ err: notifErr }, "Échec envoi WhatsApp échec payout");
       });
 
