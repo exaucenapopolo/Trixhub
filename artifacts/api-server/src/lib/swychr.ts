@@ -379,9 +379,37 @@ export function getPayoutFee(amountFcfa: number): number {
 export const PAYOUT_FEE_BASE = 550; // frais minimum (pour affichage et validation)
 export const PAYOUT_MIN = 3100;     // montant minimum de retrait côté TRIXHUB
 
-// ── Helper : convertit l'ID court (ex: "MTN") vers le format create_transaction (ex: "mtn_cm")
-export function toPayoutMethodId(methodName: string, countryCode: string): string {
-  return `${methodName.toLowerCase().replace(/\s+/g, "")}_${countryCode.toLowerCase()}`;
+// ── Indicatifs téléphoniques par code pays ──────────────────────────────────
+export const COUNTRY_DIAL_CODES: Record<string, string> = {
+  BJ: "229", BF: "226", CM: "237", CI: "225", CG: "242", CD: "243",
+  GA: "241", GH: "233", GN: "224", KE: "254", ML: "223", NE: "227",
+  NG: "234", RW: "250", SN: "221", TG: "228", TZ: "255", UG: "256",
+};
+
+/**
+ * Normalise un numéro mobile pour AccountPE.
+ * Si le `mobileFormat` retourné par AccountPE commence par l'indicatif pays
+ * (ex: CM = "2376XXXXXXXX" → indicatif "237"), on préfixe automatiquement
+ * l'indicatif si l'utilisateur ne l'a pas saisi.
+ * Pour tous les autres pays, le format local est attendu (sans indicatif).
+ */
+export function normalizeMobileForPayout(
+  mobile: string,
+  mobileFormat: string | null | undefined,
+  countryCode: string,
+): string {
+  const digits = mobile.replace(/\D/g, "");
+  if (!mobileFormat) return digits;
+
+  const dialCode = COUNTRY_DIAL_CODES[countryCode];
+  if (!dialCode) return digits;
+
+  // AccountPE exige l'indicatif si mobileFormat commence par lui (ex: CM "2376XXXXXXXX")
+  if (mobileFormat.startsWith(dialCode) && !digits.startsWith(dialCode)) {
+    return dialCode + digits;
+  }
+
+  return digits;
 }
 
 export async function createPayout(params: {

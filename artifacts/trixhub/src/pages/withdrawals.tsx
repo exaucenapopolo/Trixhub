@@ -516,18 +516,26 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
             {/* Numéro Mobile Money */}
             <FormField control={form.control} name="accountNumber" render={({ field }) => {
               const selectedMethod = payoutMethods.find(m => m.id === watchedPayoutMethodId);
-              const formatHint = selectedMethod?.mobileFormat ?? "+237 6XX XX XX XX";
+              // Construire un placeholder lisible : remplacer les X par des chiffres exemple
+              const rawFormat = selectedMethod?.mobileFormat;
+              const examplePlaceholder = rawFormat
+                ? rawFormat.replace(/X/gi, (_, i) => String((i % 9) + 1))
+                : "6 81 23 45 67";
               return (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1.5">
                     <Phone size={13} /> Numéro Mobile Money
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder={formatHint} data-testid="input-withdrawal-account" />
+                    <Input {...field} placeholder={examplePlaceholder} data-testid="input-withdrawal-account" inputMode="numeric" />
                   </FormControl>
-                  {selectedMethod?.mobileFormat && (
-                    <p className="text-[11px] text-muted-foreground">Format : {selectedMethod.mobileFormat}</p>
-                  )}
+                  <div className="flex items-start gap-1.5 mt-1">
+                    <AlertCircle size={11} className="text-amber-500 mt-0.5 shrink-0" />
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-tight">
+                      Saisissez votre numéro <strong>sans l'indicatif pays</strong> (sans +237, +225…). L'indicatif est ajouté automatiquement.
+                      {rawFormat && <span className="text-muted-foreground"> Format attendu : <strong>{rawFormat}</strong></span>}
+                    </p>
+                  </div>
                   <FormMessage />
                 </FormItem>
               );

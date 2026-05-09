@@ -18,7 +18,9 @@ import {
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
 import {
   createPayout,
+  getPayoutMethods,
   getPayoutFee,
+  normalizeMobileForPayout,
   COUNTRY_CODES,
   COUNTRY_CURRENCIES,
   PAYOUT_MIN,
@@ -208,8 +210,21 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     const amountLocalCurrency = Math.round(amountSentToAccountPE * fxRate);
 
     const transactionId = `PAY-${Date.now()}-${userId}`;
-    const mobile = accountNumber.replace(/\D/g, "");
+
+    // Récupérer le mobileFormat depuis AccountPE (cache 30 min — rapide)
+    // pour normaliser le numéro (ajout automatique de l'indicatif si requis)
+    let mobileFormat: string | null = null;
+    try {
+      const methods = await getPayoutMethods(countryCode);
+      const selectedPM = methods.find(m => m.id === payoutMethod);
+      mobileFormat = selectedPM?.mobileFormat ?? null;
+    } catch {
+      // Si getPayoutMethods échoue → on envoie le numéro brut
+    }
+    const mobile = normalizeMobileForPayout(accountNumber, mobileFormat, countryCode);
     const name = user.displayName || accountName;
+
+    req.log.info({ mobile, mobileFormat, countryCode }, "[AccountPE] Numéro normalisé");
 
     req.log.info(
       { transactionId, amount, fee, amountSentToAccountPE, amountLocalCurrency, currency, payoutMethod, countryCode },
