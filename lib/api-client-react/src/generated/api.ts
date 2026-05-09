@@ -36,6 +36,7 @@ import type {
   DiscoveryClaimResult,
   ErrorResponse,
   HealthStatus,
+  ListAdminSurprisesParams,
   LoginBody,
   PayoutMethodsResponse,
   PlatformConfig,
@@ -45,6 +46,8 @@ import type {
   ReferralLevelResponse,
   ReferrerInfo,
   RegisterBody,
+  ReviewSurpriseSubmission200,
+  ReviewSurpriseSubmissionBody,
   ScheduleResponse,
   StartDiscoverySession200,
   StartDiscoverySessionBody,
@@ -52,6 +55,7 @@ import type {
   StartVideoSessionBody,
   SubmitSurpriseActivityBody,
   SuccessResponse,
+  SurpriseSubmission,
   SurpriseSubmitResult,
   Task,
   TeamResponse,
@@ -2890,6 +2894,194 @@ export function useGetActivitiesSchedule<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List surprise activity submissions
+ */
+export const getListAdminSurprisesUrl = (params?: ListAdminSurprisesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/surprises?${stringifiedParams}`
+    : `/api/admin/surprises`;
+};
+
+export const listAdminSurprises = async (
+  params?: ListAdminSurprisesParams,
+  options?: RequestInit,
+): Promise<SurpriseSubmission[]> => {
+  return customFetch<SurpriseSubmission[]>(getListAdminSurprisesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminSurprisesQueryKey = (
+  params?: ListAdminSurprisesParams,
+) => {
+  return [`/api/admin/surprises`, ...(params ? [params] : [])] as const;
+};
+
+export const getListAdminSurprisesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminSurprises>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdminSurprisesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminSurprises>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAdminSurprisesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminSurprises>>
+  > = ({ signal }) => listAdminSurprises(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminSurprises>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminSurprisesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminSurprises>>
+>;
+export type ListAdminSurprisesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List surprise activity submissions
+ */
+
+export function useListAdminSurprises<
+  TData = Awaited<ReturnType<typeof listAdminSurprises>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdminSurprisesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminSurprises>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminSurprisesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Validate or reject a surprise submission
+ */
+export const getReviewSurpriseSubmissionUrl = (id: number) => {
+  return `/api/admin/surprises/${id}`;
+};
+
+export const reviewSurpriseSubmission = async (
+  id: number,
+  reviewSurpriseSubmissionBody: ReviewSurpriseSubmissionBody,
+  options?: RequestInit,
+): Promise<ReviewSurpriseSubmission200> => {
+  return customFetch<ReviewSurpriseSubmission200>(
+    getReviewSurpriseSubmissionUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reviewSurpriseSubmissionBody),
+    },
+  );
+};
+
+export const getReviewSurpriseSubmissionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewSurpriseSubmission>>,
+    TError,
+    { id: number; data: BodyType<ReviewSurpriseSubmissionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reviewSurpriseSubmission>>,
+  TError,
+  { id: number; data: BodyType<ReviewSurpriseSubmissionBody> },
+  TContext
+> => {
+  const mutationKey = ["reviewSurpriseSubmission"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reviewSurpriseSubmission>>,
+    { id: number; data: BodyType<ReviewSurpriseSubmissionBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return reviewSurpriseSubmission(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReviewSurpriseSubmissionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reviewSurpriseSubmission>>
+>;
+export type ReviewSurpriseSubmissionMutationBody =
+  BodyType<ReviewSurpriseSubmissionBody>;
+export type ReviewSurpriseSubmissionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Validate or reject a surprise submission
+ */
+export const useReviewSurpriseSubmission = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reviewSurpriseSubmission>>,
+    TError,
+    { id: number; data: BodyType<ReviewSurpriseSubmissionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reviewSurpriseSubmission>>,
+  TError,
+  { id: number; data: BodyType<ReviewSurpriseSubmissionBody> },
+  TContext
+> => {
+  return useMutation(getReviewSurpriseSubmissionMutationOptions(options));
+};
 
 /**
  * @summary Admin — schedule an activity for a date

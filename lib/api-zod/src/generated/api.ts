@@ -624,10 +624,6 @@ export const SubmitSurpriseActivityBody = zod.object({
 
 export const SubmitSurpriseActivityResponse = zod.object({
   success: zod.boolean(),
-  points: zod.number().describe("Points attribués (0 si <10 vues)"),
-  viewCount: zod.number().describe("Nombre de vues détectées par OCR"),
-  totalToday: zod.number(),
-  totalWeek: zod.number(),
 });
 
 /**
@@ -776,6 +772,47 @@ export const GetActivitiesScheduleResponse = zod.object({
       ),
     }),
   ),
+});
+
+/**
+ * @summary List surprise activity submissions
+ */
+export const ListAdminSurprisesQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+});
+
+export const ListAdminSurprisesResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  userDisplayName: zod.string(),
+  userPhone: zod.string(),
+  userCountry: zod.string(),
+  screenshotUrl: zod.string().nullish(),
+  status: zod.string(),
+  adminNote: zod.string().nullish(),
+  pointsAwarded: zod.number(),
+  weekStart: zod.string(),
+  createdAt: zod.string(),
+});
+export const ListAdminSurprisesResponse = zod.array(
+  ListAdminSurprisesResponseItem,
+);
+
+/**
+ * @summary Validate or reject a surprise submission
+ */
+export const ReviewSurpriseSubmissionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReviewSurpriseSubmissionBody = zod.object({
+  action: zod.enum(["approve", "reject"]),
+  points: zod.number().optional(),
+  adminNote: zod.string().optional(),
+});
+
+export const ReviewSurpriseSubmissionResponse = zod.object({
+  success: zod.boolean(),
 });
 
 /**

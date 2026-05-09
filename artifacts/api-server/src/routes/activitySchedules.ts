@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import {
   db,
   activitySchedulesTable,
@@ -88,7 +88,9 @@ router.get(
         // Completions du user AUJOURD'HUI (pour verrouillage)
         const weekStart = getCurrentWeekStart();
         const dayOfWeek = getDayOfWeek();
-        const completions = await db
+
+        // Activités régulières (quiz, video, discovery) : approuvées aujourd'hui
+        const dailyCompletions = await db
           .select({ activityType: activityCompletionsTable.activityType })
           .from(activityCompletionsTable)
           .where(
@@ -100,7 +102,22 @@ router.get(
             ),
           );
 
-        const completedToday = new Set(completions.map((c) => c.activityType));
+        // Surprise : toute soumission de la semaine (pending ou approved) bloque la re-soumission
+        const surpriseThisWeek = await db
+          .select({ id: activityCompletionsTable.id })
+          .from(activityCompletionsTable)
+          .where(
+            and(
+              eq(activityCompletionsTable.userId, userId),
+              eq(activityCompletionsTable.weekStart, weekStart),
+              eq(activityCompletionsTable.activityType, "surprise"),
+              inArray(activityCompletionsTable.status, ["approved", "pending"]),
+            ),
+          )
+          .limit(1);
+
+        const completedToday = new Set(dailyCompletions.map((c) => c.activityType));
+        if (surpriseThisWeek.length > 0) completedToday.add("surprise");
 
         const days = weekDates.map((dateStr) => {
           const isToday = dateStr === today;

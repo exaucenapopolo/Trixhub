@@ -9,7 +9,7 @@ import {
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
   Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
   Globe, AlertTriangle, Info, BookUser, GraduationCap, Star, Download,
-  Trophy, Medal, Phone, UserCheck,
+  Trophy, Medal, Phone, UserCheck, Sparkles,
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 
@@ -86,6 +86,14 @@ interface ActivityWithdrawal {
   status: string; adminNote: string | null; rejectionReason: string | null;
   createdAt: string; approvedAt: string | null; paidAt: string | null;
   userEmail: string; userDisplayName: string;
+}
+
+interface SurpriseSubmission {
+  id: number; userId: number;
+  userDisplayName: string; userPhone: string; userCountry: string;
+  screenshotUrl: string | null;
+  status: string; adminNote: string | null;
+  pointsAwarded: number; weekStart: string; createdAt: string;
 }
 
 interface UserDetail {
@@ -1060,6 +1068,215 @@ function ActivitiesSection() {
   );
 }
 
+// ─── Section : Activités Surprise ────────────────────────────────
+function SurprisesSection() {
+  const [items, setItems] = useState<SurpriseSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("pending");
+  const [actioning, setActioning] = useState<number | null>(null);
+  const [validateForm, setValidateForm] = useState<{ id: number; points: number } | null>(null);
+  const [rejectForm, setRejectForm] = useState<{ id: number; note: string } | null>(null);
+  const { toast } = useToast();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await apiFetch(`/api/admin/surprises?status=${filter}`);
+      setItems(d as SurpriseSubmission[]);
+    } catch {}
+    setLoading(false);
+  }, [filter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleValidate = async () => {
+    if (!validateForm) return;
+    setActioning(validateForm.id);
+    try {
+      await apiFetch(`/api/admin/surprises/${validateForm.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "approve", points: validateForm.points }),
+      });
+      toast({ title: `✅ +${validateForm.points} pts crédités !` });
+      setValidateForm(null);
+      load();
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" });
+    }
+    setActioning(null);
+  };
+
+  const handleReject = async () => {
+    if (!rejectForm) return;
+    setActioning(rejectForm.id);
+    try {
+      await apiFetch(`/api/admin/surprises/${rejectForm.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "reject", adminNote: rejectForm.note }),
+      });
+      toast({ title: "Soumission refusée" });
+      setRejectForm(null);
+      load();
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" });
+    }
+    setActioning(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Modal Validation */}
+      {validateForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-background rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-2xl border border-border">
+            <div>
+              <h3 className="font-bold text-lg">Valider la soumission</h3>
+              <p className="text-xs text-muted-foreground mt-1">Choisissez le nombre de points à attribuer (1–100)</p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Points</span>
+                <span className="text-2xl font-black text-purple-600">{validateForm.points}</span>
+              </div>
+              <input
+                type="range"
+                min={1} max={100}
+                value={validateForm.points}
+                onChange={(e) => setValidateForm(f => f ? { ...f, points: parseInt(e.target.value) } : null)}
+                className="w-full accent-purple-600"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1 pt (peu de vues)</span>
+                <span>100 pts (max)</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setValidateForm(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium">Annuler</button>
+              <button
+                onClick={() => void handleValidate()}
+                disabled={actioning === validateForm.id}
+                className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-semibold disabled:opacity-50"
+              >
+                {actioning === validateForm.id ? "..." : `Valider +${validateForm.points} pts`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Refus */}
+      {rejectForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-background rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl border border-border">
+            <h3 className="font-bold">Motif de refus (optionnel)</h3>
+            <textarea
+              value={rejectForm.note}
+              onChange={(e) => setRejectForm(f => f ? { ...f, note: e.target.value } : null)}
+              placeholder="Capture illisible, nombre de vues insuffisant..."
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background focus:outline-none resize-none"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setRejectForm(null)} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium">Annuler</button>
+              <button
+                onClick={() => void handleReject()}
+                disabled={actioning === rejectForm.id}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
+              >
+                {actioning === rejectForm.id ? "..." : "Refuser (0 pts)"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Activités Surprise</h2>
+        <button onClick={load} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <RefreshCw size={13} /> Actualiser
+        </button>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {[["pending", "En attente"], ["approved", "Validées"], ["rejected", "Refusées"], ["all", "Toutes"]].map(([val, label]) => (
+          <button key={val} onClick={() => setFilter(val)} className={cn("px-3 py-2 rounded-xl text-xs font-medium transition-colors", filter === val ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-muted-foreground" /></div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground">Aucune soumission dans cette catégorie</div>
+        ) : (
+          <div className="space-y-0 divide-y divide-border/50">
+            {items.map((item) => (
+              <div key={item.id} className="p-4 flex flex-col sm:flex-row gap-4 hover:bg-muted/20 transition-colors">
+                {/* User info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{item.userDisplayName}</span>
+                    <StatusBadge status={item.status} />
+                    {item.pointsAwarded > 0 && (
+                      <span className="text-xs font-bold text-purple-600">+{item.pointsAwarded} pts</span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{item.userPhone} · {item.userCountry}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    Semaine du {item.weekStart} · Soumis le {fmtDate(item.createdAt)}
+                  </div>
+                  {item.adminNote && (
+                    <div className="text-[11px] text-amber-600 mt-1 bg-amber-500/5 px-2 py-1 rounded-lg">
+                      Note : {item.adminNote}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {item.screenshotUrl && (
+                    <a
+                      href={item.screenshotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors text-xs font-medium"
+                    >
+                      <Eye size={13} />
+                      Voir
+                    </a>
+                  )}
+                  {item.status === "pending" && (
+                    <>
+                      <button
+                        onClick={() => setValidateForm({ id: item.id, points: 100 })}
+                        disabled={actioning === item.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors text-xs font-medium disabled:opacity-50"
+                      >
+                        <CheckCircle size={13} />
+                        Valider
+                      </button>
+                      <button
+                        onClick={() => setRejectForm({ id: item.id, note: "" })}
+                        disabled={actioning === item.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors text-xs font-medium disabled:opacity-50"
+                      >
+                        <XCircle size={13} />
+                        Refuser
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Section : Portefeuilles pays ────────────────────────────────
 interface WalletRow {
   country: string; countryCode: string; currency: string;
@@ -1664,7 +1881,7 @@ const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 export default function AdminPage() {
   usePageTitle('Administration');
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "wallets" | "contacts" | "formations" | "top">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "surprises" | "wallets" | "contacts" | "formations" | "top">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -1694,6 +1911,7 @@ export default function AdminPage() {
     { id: "users",       label: "Utilisateurs",   icon: Users          },
     { id: "withdrawals", label: "Retraits",        icon: Wallet         },
     { id: "activities",  label: "Activités",       icon: Activity       },
+    { id: "surprises",   label: "Surprises",       icon: Sparkles       },
     { id: "wallets",     label: "Portefeuilles",   icon: Globe          },
     { id: "contacts",    label: "Contacts",        icon: BookUser       },
     { id: "formations",  label: "Formations",      icon: GraduationCap  },
@@ -1726,6 +1944,7 @@ export default function AdminPage() {
         {activeTab === "users"       && <UsersSection />}
         {activeTab === "withdrawals" && <WithdrawalsSection />}
         {activeTab === "activities"  && <ActivitiesSection />}
+        {activeTab === "surprises"   && <SurprisesSection />}
         {activeTab === "wallets"     && <WalletsSection />}
         {activeTab === "contacts"    && <ContactsSection />}
         {activeTab === "formations"  && <FormationsSection />}

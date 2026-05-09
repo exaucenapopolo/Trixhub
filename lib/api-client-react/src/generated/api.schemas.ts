@@ -496,12 +496,20 @@ export interface VideoClaimResult {
 
 export interface SurpriseSubmitResult {
   success: boolean;
-  /** Points attribués (0 si <10 vues) */
-  points: number;
-  /** Nombre de vues détectées par OCR */
-  viewCount: number;
-  totalToday: number;
-  totalWeek: number;
+}
+
+export interface SurpriseSubmission {
+  id: number;
+  userId: number;
+  userDisplayName: string;
+  userPhone: string;
+  userCountry: string;
+  screenshotUrl?: string | null;
+  status: string;
+  adminNote?: string | null;
+  pointsAwarded: number;
+  weekStart: string;
+  createdAt: string;
 }
 
 export interface DiscoveryClaimResult {
@@ -540,6 +548,28 @@ export type StartVideoSession200 = {
 
 export type ClaimVideoPointsBody = {
   sessionId: string;
+};
+
+export type ListAdminSurprisesParams = {
+  status?: string;
+};
+
+export type ReviewSurpriseSubmissionBodyAction =
+  (typeof ReviewSurpriseSubmissionBodyAction)[keyof typeof ReviewSurpriseSubmissionBodyAction];
+
+export const ReviewSurpriseSubmissionBodyAction = {
+  approve: "approve",
+  reject: "reject",
+} as const;
+
+export type ReviewSurpriseSubmissionBody = {
+  action: ReviewSurpriseSubmissionBodyAction;
+  points?: number;
+  adminNote?: string;
+};
+
+export type ReviewSurpriseSubmission200 = {
+  success: boolean;
 };
 
 export type AdminUpdateActivityScheduleBody = {

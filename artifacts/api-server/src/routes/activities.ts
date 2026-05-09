@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
   db,
   weeklyPointsTable,
@@ -10,9 +10,8 @@ import {
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
-import { extractWhatsAppStatusViewCount } from "../lib/ocr";
 import { uploadSurpriseShot } from "../lib/uploadSurpriseShot";
-import { sendWhatsAppWithMedia } from "../lib/twilio";
+import { sendWhatsAppWithMedia, sendWhatsAppToAssistance } from "../lib/twilio";
 import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
 import {
   awardActivityPoints,
@@ -673,7 +672,7 @@ router.post(
 
         const weekStart = getCurrentWeekStart();
 
-        // Vérifie pas déjà fait cette semaine
+        // Vérifie pas déjà soumis cette semaine (tout statut confondu — pas de re-soumission)
         const existing = await db
           .select({ id: activityCompletionsTable.id })
           .from(activityCompletionsTable)
@@ -718,16 +717,16 @@ router.post(
           userId,
         });
 
-        // OCR — extrait le nombre de vues (silencieux en cas d'échec)
-        let viewCount = 0;
-        try {
-          viewCount = await extractWhatsAppStatusViewCount(imageBase64, mimeType);
-        } catch (ocrErr) {
-          req.log.warn({ err: ocrErr }, "OCR surprise failed, defaulting to 0 views");
-        }
-
-        // Calcule les points : <10 → 0, 10-99 → nb vues, ≥100 → 100
-        const rawPoints = viewCount >= 100 ? 100 : viewCount >= 10 ? viewCount : 0;
+        // Enregistre en "pending" — l'admin valide manuellement, pas d'OCR
+        await db.insert(activityCompletionsTable).values({
+          userId,
+          activityType: "surprise",
+          weekStart,
+          dayOfWeek: 4,
+          pointsAwarded: 0,
+          payloadProof: { objectPath, token, signedUrl },
+          status: "pending",
+        });
 
         // Infos utilisateur pour la notification admin
         const [user] = await db
@@ -735,46 +734,6 @@ router.post(
           .from(usersTable)
           .where(eq(usersTable.id, userId));
 
-        let newDailyTotal = 0;
-        let newWeeklyTotal = 0;
-
-        if (rawPoints > 0) {
-          const result = await awardActivityPoints({
-            userId,
-            activityType: "surprise",
-            points: rawPoints,
-            payloadProof: { objectPath, token, viewCount, signedUrl },
-            log: req.log,
-          });
-
-          if (!result.success) {
-            const messages: Record<string, string> = {
-              daily_cap_reached: "Tu as atteint le maximum de points pour aujourd'hui.",
-              weekly_cap_reached: "Tu as atteint le maximum de points pour cette semaine.",
-              already_completed: "Tu as déjà soumis cette semaine.",
-              invalid_points: "Points invalides.",
-            };
-            res.status(400).json({
-              error: messages[result.reason ?? ""] ?? "Impossible d'attribuer les points.",
-            });
-            return;
-          }
-          newDailyTotal = result.newDailyTotal;
-          newWeeklyTotal = result.newWeeklyTotal;
-        } else {
-          // < 10 vues : marque comme terminé (0 pts) pour éviter le spam
-          await db.insert(activityCompletionsTable).values({
-            userId,
-            activityType: "surprise",
-            weekStart,
-            dayOfWeek: 4,
-            pointsAwarded: 0,
-            payloadProof: { objectPath, token, viewCount, signedUrl },
-            status: "approved",
-          });
-        }
-
-        // Notification admin via Twilio (fire & forget, non bloquant)
         const doubalaTime = new Date(Date.now() + 60 * 60 * 1000);
         const dateStr = doubalaTime.toISOString().slice(0, 16).replace("T", " ") + " Douala";
 
@@ -782,30 +741,231 @@ router.post(
         const permanentUrl = `${getPublicBaseUrl(req)}/api/storage/surprises/${token}`;
 
         const adminMsg =
-          `🎯 *ACTIVITÉ SURPRISE — TRIXHUB*\n\n` +
+          `📸 *ACTIVITÉ SURPRISE — À VALIDER*\n\n` +
           `👤 ${user?.displayName ?? "Inconnu"}\n` +
           `📞 ${user?.phone ?? "N/A"}\n` +
           `🌍 ${user?.country ?? "N/A"}\n` +
           `🆔 User #${userId}\n\n` +
-          `👁 Vues détectées : *${viewCount}*\n` +
-          `🏆 Points attribués : *${rawPoints}*\n\n` +
-          `🔗 Lien permanent : ${permanentUrl}\n\n` +
-          `⏰ ${dateStr}`;
+          `🔗 Capture : ${permanentUrl}\n\n` +
+          `⏰ ${dateStr}\n\n` +
+          `👉 Validez sur le tableau de bord admin`;
 
-        void sendWhatsAppWithMedia(adminMsg, signedUrl).catch((err) => {
+        void sendWhatsAppToAssistance(adminMsg).catch((err) => {
           req.log.warn({ err }, "Twilio admin surprise notification failed");
         });
 
-        res.json({
-          success: true,
-          points: rawPoints,
-          viewCount,
-          totalToday: newDailyTotal,
-          totalWeek: newWeeklyTotal,
-        });
+        res.json({ success: true });
       } catch (err) {
         req.log.error({ err }, "activities/surprise/submit failed");
         res.status(500).json({ error: "Erreur lors du traitement de la capture d'écran." });
+      }
+    })();
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────
+// Admin : gestion des soumissions Surprise
+// ─────────────────────────────────────────────────────────────────
+
+// GET /admin/surprises?status=pending|approved|rejected|all
+router.get(
+  "/admin/surprises",
+  authenticate,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const [me] = await db
+          .select({ isAdmin: usersTable.isAdmin })
+          .from(usersTable)
+          .where(eq(usersTable.id, req.userId!));
+        if (!me?.isAdmin) {
+          res.status(403).json({ error: "Réservé aux admins" });
+          return;
+        }
+
+        const statusFilter = String(req.query.status ?? "pending");
+        const validStatuses = ["pending", "approved", "rejected"];
+
+        const whereConditions = [eq(activityCompletionsTable.activityType, "surprise")];
+        if (validStatuses.includes(statusFilter)) {
+          whereConditions.push(eq(activityCompletionsTable.status, statusFilter));
+        }
+
+        const results = await db
+          .select({
+            id: activityCompletionsTable.id,
+            userId: activityCompletionsTable.userId,
+            pointsAwarded: activityCompletionsTable.pointsAwarded,
+            status: activityCompletionsTable.status,
+            adminNote: activityCompletionsTable.adminNote,
+            payloadProof: activityCompletionsTable.payloadProof,
+            weekStart: activityCompletionsTable.weekStart,
+            createdAt: activityCompletionsTable.createdAt,
+            userDisplayName: usersTable.displayName,
+            userPhone: usersTable.phone,
+            userCountry: usersTable.country,
+          })
+          .from(activityCompletionsTable)
+          .innerJoin(usersTable, eq(activityCompletionsTable.userId, usersTable.id))
+          .where(and(...whereConditions))
+          .orderBy(desc(activityCompletionsTable.createdAt));
+
+        const items = results.map((r) => {
+          const proof = r.payloadProof as Record<string, unknown> | null;
+          const token = proof?.token as string | undefined;
+          const screenshotUrl = token
+            ? `${getPublicBaseUrl(req)}/api/storage/surprises/${token}`
+            : null;
+          return {
+            id: r.id,
+            userId: r.userId,
+            userDisplayName: r.userDisplayName,
+            userPhone: r.userPhone,
+            userCountry: r.userCountry,
+            screenshotUrl,
+            status: r.status,
+            adminNote: r.adminNote,
+            pointsAwarded: r.pointsAwarded,
+            weekStart: r.weekStart,
+            createdAt: r.createdAt,
+          };
+        });
+
+        res.json(items);
+      } catch (err) {
+        req.log.error({ err }, "GET /admin/surprises failed");
+        res.status(500).json({ error: "Erreur" });
+      }
+    })();
+  },
+);
+
+// PATCH /admin/surprises/:id — valider ou refuser une soumission
+router.patch(
+  "/admin/surprises/:id",
+  authenticate,
+  (req: Request, res: Response) => {
+    void (async () => {
+      try {
+        const [me] = await db
+          .select({ isAdmin: usersTable.isAdmin })
+          .from(usersTable)
+          .where(eq(usersTable.id, req.userId!));
+        if (!me?.isAdmin) {
+          res.status(403).json({ error: "Réservé aux admins" });
+          return;
+        }
+
+        const id = parseInt(String(req.params.id ?? ""), 10);
+        if (!Number.isInteger(id) || id <= 0) {
+          res.status(400).json({ error: "ID invalide" });
+          return;
+        }
+
+        const body = req.body as { action?: unknown; points?: unknown; adminNote?: unknown };
+        const action = String(body.action ?? "");
+        const adminNote = body.adminNote ? String(body.adminNote).slice(0, 500) : null;
+
+        if (action !== "approve" && action !== "reject") {
+          res.status(400).json({ error: "action doit être 'approve' ou 'reject'" });
+          return;
+        }
+
+        const points = typeof body.points === "number" ? Math.floor(body.points) : null;
+        if (action === "approve" && (points === null || points < 1 || points > 100)) {
+          res.status(400).json({ error: "points doit être entre 1 et 100 pour une approbation" });
+          return;
+        }
+
+        // Récupère la soumission
+        const [completion] = await db
+          .select()
+          .from(activityCompletionsTable)
+          .where(
+            and(
+              eq(activityCompletionsTable.id, id),
+              eq(activityCompletionsTable.activityType, "surprise"),
+            ),
+          )
+          .limit(1);
+
+        if (!completion) {
+          res.status(404).json({ error: "Soumission introuvable" });
+          return;
+        }
+        if (completion.status !== "pending") {
+          res.status(400).json({ error: "Cette soumission a déjà été traitée" });
+          return;
+        }
+
+        if (action === "approve" && points !== null) {
+          // Crédit atomique des points
+          await db.transaction(async (tx) => {
+            await tx.execute(sql`SELECT pg_advisory_xact_lock(${completion.userId}::bigint)`);
+
+            // Mise à jour du completion
+            await tx
+              .update(activityCompletionsTable)
+              .set({ status: "approved", pointsAwarded: points, adminNote })
+              .where(eq(activityCompletionsTable.id, id));
+
+            // Crédite les points dans weekly_points
+            const weekStart = completion.weekStart;
+            const dayOfWeek = completion.dayOfWeek;
+
+            const [weeklyRow] = await tx
+              .select()
+              .from(weeklyPointsTable)
+              .where(
+                and(
+                  eq(weeklyPointsTable.userId, completion.userId),
+                  eq(weeklyPointsTable.weekStart, weekStart),
+                ),
+              );
+
+            if (weeklyRow && weeklyRow.status === "accumulating") {
+              const breakdown = (weeklyRow.dailyBreakdown ?? {}) as Record<string, number>;
+              const currentDaily = breakdown[String(dayOfWeek)] ?? 0;
+              const newTotal = Math.min(weeklyRow.totalPoints + points, WEEKLY_POINT_CAP);
+              const addedPoints = newTotal - weeklyRow.totalPoints;
+              if (addedPoints > 0) {
+                const newBreakdown = {
+                  ...breakdown,
+                  [String(dayOfWeek)]: currentDaily + addedPoints,
+                };
+                await tx
+                  .update(weeklyPointsTable)
+                  .set({ totalPoints: newTotal, dailyBreakdown: newBreakdown })
+                  .where(eq(weeklyPointsTable.id, weeklyRow.id));
+              }
+            } else if (!weeklyRow) {
+              const cappedPoints = Math.min(points, WEEKLY_POINT_CAP);
+              await tx
+                .insert(weeklyPointsTable)
+                .values({
+                  userId: completion.userId,
+                  weekStart,
+                  totalPoints: cappedPoints,
+                  dailyBreakdown: { [String(dayOfWeek)]: cappedPoints },
+                  status: "accumulating",
+                })
+                .onConflictDoNothing();
+            }
+          });
+          req.log.info({ completionId: id, userId: completion.userId, points }, "SURPRISE_APPROVED");
+        } else {
+          // Refus
+          await db
+            .update(activityCompletionsTable)
+            .set({ status: "rejected", adminNote })
+            .where(eq(activityCompletionsTable.id, id));
+          req.log.info({ completionId: id, userId: completion.userId }, "SURPRISE_REJECTED");
+        }
+
+        res.json({ success: true });
+      } catch (err) {
+        req.log.error({ err }, "PATCH /admin/surprises/:id failed");
+        res.status(500).json({ error: "Erreur" });
       }
     })();
   },

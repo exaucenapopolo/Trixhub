@@ -719,6 +719,68 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScheduleResponse"
 
+  /admin/surprises:
+    get:
+      tags: [admin]
+      summary: List surprise activity submissions
+      operationId: listAdminSurprises
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of surprise submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SurpriseSubmission"
+
+  /admin/surprises/{id}:
+    patch:
+      tags: [admin]
+      summary: Validate or reject a surprise submission
+      operationId: reviewSurpriseSubmission
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject]
+                points:
+                  type: integer
+                adminNote:
+                  type: string
+              required: [action]
+      responses:
+        "200":
+          description: Submission reviewed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required: [success]
+
   /admin/activities/schedule:
     post:
       tags: [admin]
@@ -1594,17 +1656,36 @@ components:
       properties:
         success:
           type: boolean
-        points:
+      required: [success]
+
+    SurpriseSubmission:
+      type: object
+      properties:
+        id:
           type: integer
-          description: Points attribués (0 si <10 vues)
-        viewCount:
+        userId:
           type: integer
-          description: Nombre de vues détectées par OCR
-        totalToday:
+        userDisplayName:
+          type: string
+        userPhone:
+          type: string
+        userCountry:
+          type: string
+        screenshotUrl:
+          type: string
+          nullable: true
+        status:
+          type: string
+        adminNote:
+          type: string
+          nullable: true
+        pointsAwarded:
           type: integer
-        totalWeek:
-          type: integer
-      required: [success, points, viewCount, totalToday, totalWeek]
+        weekStart:
+          type: string
+        createdAt:
+          type: string
+      required: [id, userId, userDisplayName, userPhone, userCountry, status, pointsAwarded, weekStart, createdAt]
 
     DiscoveryClaimResult:
       type: object
