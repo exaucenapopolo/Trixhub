@@ -752,6 +752,21 @@ export default function WithdrawalsPage() {
             </div>
           </div>
 
+          {/* LIEN PREUVES DE RETRAIT */}
+          <a
+            href="/preuves"
+            className="flex items-center gap-3 p-3.5 rounded-2xl border border-green-500/25 bg-green-500/5 hover:bg-green-500/10 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-xl bg-green-500/15 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground leading-tight">Preuves de retrait de la communauté</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Voir les captures envoyées par nos membres après réception</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          </a>
+
           {/* BADGE PAIEMENT AUTO */}
           <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-2xl p-4 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0">

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { sendWithdrawalCreatedEmail, sendWithdrawalStatusEmail } from "../lib/email";
 import multer from "multer";
-import { eq, desc, sql, and, gte, isNull } from "drizzle-orm";
+import { eq, desc, sql, and, gte, isNull, isNotNull } from "drizzle-orm";
 import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
@@ -16,6 +16,7 @@ import {
   reportPayoutFailed,
 } from "../lib/withdrawalReports";
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
+import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
 import {
   createPayout,
   getPayoutMethods,
@@ -65,6 +66,47 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
     payoutStatus: w.payoutStatus ?? null,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────
+// Route publique : preuves de retrait (galerie communautaire)
+// ─────────────────────────────────────────────────────────────────
+router.get("/withdrawals/proofs", async (req, res): Promise<void> => {
+  const rows = await db.select({
+    id: withdrawalsTable.id,
+    amount: withdrawalsTable.amount,
+    method: withdrawalsTable.method,
+    proofToken: withdrawalsTable.proofToken,
+    processedAt: withdrawalsTable.processedAt,
+    displayName: usersTable.displayName,
+    country: usersTable.country,
+  })
+    .from(withdrawalsTable)
+    .innerJoin(usersTable, eq(withdrawalsTable.userId, usersTable.id))
+    .where(and(
+      eq(withdrawalsTable.status, "completed"),
+      isNotNull(withdrawalsTable.proofUrl),
+      isNotNull(withdrawalsTable.proofToken),
+    ))
+    .orderBy(desc(withdrawalsTable.processedAt))
+    .limit(60);
+
+  const base = getPublicBaseUrl(req);
+  res.json(rows.map((r) => {
+    const parts = (r.displayName || "Membre").trim().split(/\s+/);
+    const anonymized = parts.length > 1
+      ? `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`
+      : `${parts[0]}.`;
+    return {
+      id: r.id,
+      amount: parseFloat(r.amount),
+      method: r.method,
+      userName: anonymized,
+      country: r.country ?? null,
+      proofImageUrl: `${base}/api/storage/proofs/${r.id}/${r.proofToken}`,
+      processedAt: r.processedAt?.toISOString() ?? null,
+    };
+  }));
+});
 
 router.get("/withdrawals", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;

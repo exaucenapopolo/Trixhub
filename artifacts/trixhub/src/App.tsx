@@ -31,6 +31,7 @@ import FormationsPage from "@/pages/formations";
 import FormationsProPage from "@/pages/formations-pro";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
+import PreuvesPage from "@/pages/preuves";
 import AdminPage from "@/pages/admin";
 import ContactsPage from "@/pages/contacts";
 import NotFound from "@/pages/not-found";
@@ -120,6 +121,7 @@ function InnerApp() {
         <Route path="/formations-pro" component={() => <ProtectedRoute component={FormationsProPage} />} />
         <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
         <Route path="/contacts" component={() => <ProtectedRoute component={ContactsPage} />} />
+        <Route path="/preuves" component={PreuvesPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route component={NotFound} />
