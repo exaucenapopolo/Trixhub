@@ -437,7 +437,7 @@ export async function createPayout(params: {
     amount:            Math.max(1, Math.round(params.amountToSend)),
     currency:          params.currency,
     transaction_id:    params.transactionId,
-    payout_method:     payoutMethodId,
+    payment_method:    payoutMethodId,
     description:       params.description,
   };
 
