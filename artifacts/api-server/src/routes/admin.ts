@@ -29,6 +29,10 @@ const router: IRouter = Router();
 
 const PROFIT_PER_ACTIVATION = 900;
 
+// Comptes administrateurs exclus de toutes les statistiques
+const STATS_EXCLUDED_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
+const excludeAdmins = sql`${usersTable.email} NOT IN (${sql.join(STATS_EXCLUDED_EMAILS.map(e => sql`${e}`), sql`, `)})`;
+
 // ─────────────────────────────────────────────────────────────────
 // GET /admin/stats — tableau de bord global
 // ─────────────────────────────────────────────────────────────────
@@ -36,9 +40,9 @@ const PROFIT_PER_ACTIVATION = 900;
 const MAX_COMMISSIONS_PER_ACTIVATION = 1700 + 700 + 300; // 2700 FCFA
 
 router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise<void> => {
-  const [totalRow]        = await db.select({ total: count() }).from(usersTable);
-  const [activeRow]       = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isActivated, true));
-  const [bannedRow]       = await db.select({ total: count() }).from(usersTable).where(eq(usersTable.isBanned, true));
+  const [totalRow]        = await db.select({ total: count() }).from(usersTable).where(excludeAdmins);
+  const [activeRow]       = await db.select({ total: count() }).from(usersTable).where(and(eq(usersTable.isActivated, true), excludeAdmins));
+  const [bannedRow]       = await db.select({ total: count() }).from(usersTable).where(and(eq(usersTable.isBanned, true), excludeAdmins));
   const [pendingWRow]     = await db.select({ total: count(), sum: sql<string>`COALESCE(SUM(amount::numeric),0)` }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "pending"));
   const [processingWRow]  = await db.select({ total: count() }).from(withdrawalsTable).where(eq(withdrawalsTable.status, "processing"));
   const [pendingAWRow]    = await db.select({ total: count() }).from(activityWithdrawalsTable).where(eq(activityWithdrawalsTable.status, "pending"));
@@ -47,19 +51,19 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
   const [totalActivationsRevRow] = await db.select({ sum: sql<string>`COALESCE(SUM(spent_amount::numeric),0)` }).from(balancesTable);
 
   // ── Nouvelles métriques réseau ──────────────────────────────────
-  // 1. Inscrits sans parrain (referredByCode IS NULL)
+  // 1. Inscrits sans parrain (referredByCode IS NULL) — hors admins
   const [noSponsorRow] = await db
     .select({ total: count() })
     .from(usersTable)
-    .where(sql`${usersTable.referredByCode} IS NULL`);
+    .where(and(sql`${usersTable.referredByCode} IS NULL`, excludeAdmins));
 
-  // 2. Inscrits avec parrain mais 0 filleul eux-mêmes
-  //    (leur referralCode n'apparaît chez aucun autre utilisateur)
+  // 2. Inscrits avec parrain mais 0 filleul eux-mêmes — hors admins
   const [noReferralsRow] = await db
     .select({ total: count() })
     .from(usersTable)
     .where(and(
       sql`${usersTable.referredByCode} IS NOT NULL`,
+      excludeAdmins,
       sql`NOT EXISTS (
         SELECT 1 FROM users u2
         WHERE u2.referred_by_code = ${usersTable.referralCode}
@@ -80,7 +84,7 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
   const noSponsor   = noSponsorRow?.total    ?? 0;
   const noReferrals = noReferralsRow?.total  ?? 0;
 
-  // Revenu primaire : 900 FCFA × nombre d'activés
+  // Revenu primaire : 900 FCFA × nombre d'activés (hors comptes admin)
   const companyProfit = active * PROFIT_PER_ACTIVATION;
 
   // Revenu secondaire : commissions non versées car chaîne incomplète
