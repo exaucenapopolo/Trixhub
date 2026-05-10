@@ -602,4 +602,42 @@ export const ACCOUNTPE_SUPPORTED_COUNTRY_CODES = new Set([
   "CM", "CI", "SN", "ML", "BF", "TG", "BJ", "GN",
 ]);
 
+// ── Conversion FCFA → devise locale pour les pay-ins (collecte) ─────────────
+//
+// Taux business-agreed : identiques à ceux affichés dans l'UI (currency.ts frontend).
+// Tous les montants XOF/XAF (zone FCFA) restent à 1:1.
+// Les devises locales utilisent les montants exacts communiqués aux utilisateurs.
+//
+// Règle d'arrondi (roundTo) : éviter les centimes sur mobile money.
+const PAYIN_RATES: Record<string, number> = {
+  // Zone CFA — toutes variantes AccountPE
+  XOF:  1, XOFS: 1, XOFT: 1, XOFB: 1, XOFC: 1, XOFF: 1,
+  // Zone BEAC
+  XAF:  1,
+  // Devises locales (taux dérivés du montant d'activation 3 600 FCFA)
+  CDF:  14900 / 3600,   // 3 600 FCFA = 14 900 CDF  (Franc congolais)
+  GHS:  80    / 3600,   // 3 600 FCFA = 80 GHS       (Cedi ghanéen)
+  GNF:  55000 / 3600,   // 3 600 FCFA = 55 000 GNF   (Franc guinéen)
+  KES:  870   / 3600,   // 3 600 FCFA = 870 KES       (Shilling kényan)
+  NGN:  9900  / 3600,   // 3 600 FCFA = 9 900 NGN     (Naira nigérian)
+  RWF:  8400  / 3600,   // 3 600 FCFA = 8 400 RWF     (Franc rwandais)
+  TZS:  15400 / 3600,   // 3 600 FCFA = 15 400 TZS    (Shilling tanzanien)
+  UGX:  23000 / 3600,   // 3 600 FCFA = 23 000 UGX    (Shilling ougandais)
+};
+
+const PAYIN_ROUND: Record<string, number> = {
+  CDF: 100, GHS: 1, GNF: 500, KES: 10, NGN: 50, RWF: 100, TZS: 100, UGX: 100,
+};
+
+/**
+ * Convertit un montant FCFA en devise locale pour le partenaire de paiement.
+ * Résultat arrondi à un multiple "propre" (sans centimes) pour le mobile money.
+ * Les pays XOF/XAF retournent le même montant (taux 1:1).
+ */
+export function convertFcfaToPayin(amountFcfa: number, currency: string): number {
+  const rate   = PAYIN_RATES[currency] ?? 1;
+  const roundTo = PAYIN_ROUND[currency] ?? 1;
+  return Math.round((amountFcfa * rate) / roundTo) * roundTo;
+}
+
 export { ACCOUNTPE };

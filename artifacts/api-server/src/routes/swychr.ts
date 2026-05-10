@@ -10,6 +10,8 @@ import {
   getWebhookUrl,
   ACCOUNTPE,
   COUNTRY_CODES,
+  COUNTRY_CURRENCIES,
+  convertFcfaToPayin,
 } from "../lib/swychr";
 import { activateUserTx, creditDepositTx, ACTIVATION_AMOUNT } from "../lib/activation";
 import {
@@ -113,7 +115,13 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
   const mobile = (body.phoneNumber || user.phone).replace(/\D/g, "");
   const name = user.displayName || deriveDisplayName(user.email);
 
-  req.log.info({ transactionId, purpose, amount, targetUserId }, "[AccountPE] initiate");
+  // Convertir le montant FCFA en devise locale de l'utilisateur.
+  // AccountPE doit recevoir le montant DANS la devise du pays — pas en XAF brut.
+  // Ex: RDC → 3 600 FCFA = 14 900 CDF | Guinée → 3 600 FCFA = 55 000 GNF
+  const payCurrency = COUNTRY_CURRENCIES[user.country] || "XAF";
+  const payAmount   = convertFcfaToPayin(amount, payCurrency);
+
+  req.log.info({ transactionId, purpose, amount, payAmount, payCurrency, targetUserId }, "[AccountPE] initiate");
 
   try {
     const { paymentLink, id } = await createPaymentLink({
@@ -121,20 +129,22 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
       name,
       email: user.email,
       mobile,
-      amount,
-      currency: "XAF",
+      amount:   payAmount,    // montant dans la devise locale (ex: 14 900 CDF)
+      currency: payCurrency,  // devise locale AccountPE (ex: "CDF", "XOFS", "XAF"…)
       transactionId,
       description,
       callbackUrl,
     });
 
+    // On stocke le montant en FCFA dans la DB (comptabilité interne toujours en FCFA).
+    // Le montant réellement débité chez AccountPE = payAmount payCurrency (loggé ci-dessus).
     await db.insert(swychrTransactionsTable).values({
       userId: user.id,
       targetUserId,
       paymentRef: transactionId,
       swychrRef: id,
-      amount: amount.toFixed(2),
-      currency: "XAF",
+      amount: amount.toFixed(2),  // montant FCFA — base comptable interne
+      currency: "XAF",            // devise interne (FCFA)
       phoneNumber: user.phone,
       paymentMethod: "accountpe_checkout",
       status: "pending",
