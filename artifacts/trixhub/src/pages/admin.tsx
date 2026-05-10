@@ -75,7 +75,8 @@ interface TopUsersData {
 interface Withdrawal {
   id: number; userId: number; amount: string; method: string;
   accountNumber: string; accountName: string; source: string;
-  status: string; rejectionReason: string | null; proofUrl: string | null;
+  status: string; payoutStatus: string | null; payoutRef: string | null;
+  rejectionReason: string | null; proofUrl: string | null;
   createdAt: string; processedAt: string | null;
   userEmail: string; userDisplayName: string;
 }
@@ -824,6 +825,8 @@ function WithdrawalsSection() {
   const [actioning, setActioning] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectId, setRejectId] = useState<number | null>(null);
+  const [forceModal, setForceModal] = useState<{ w: Withdrawal; mode: "complete" | "refund" } | null>(null);
+  const [forceNote, setForceNote] = useState("");
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -851,6 +854,33 @@ function WithdrawalsSection() {
     setRejectReason("");
   };
 
+  const forceResolve = async () => {
+    if (!forceModal) return;
+    setActioning(forceModal.w.id);
+    try {
+      await apiFetch(`/api/admin/withdrawals/${forceModal.w.id}/force-resolve`, {
+        method: "POST",
+        body: JSON.stringify({ mode: forceModal.mode, adminNote: forceNote || undefined }),
+      });
+      toast({
+        title: forceModal.mode === "complete" ? "Retrait forcé en complété ✓" : "Remboursement forcé ✓",
+        description: forceModal.mode === "complete"
+          ? "Le solde a été re-débité si nécessaire."
+          : "Le solde a été restitué à l'utilisateur.",
+      });
+      load();
+    } catch (e: unknown) {
+      toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" });
+    }
+    setActioning(null);
+    setForceModal(null);
+    setForceNote("");
+  };
+
+  const isTimeout = (w: Withdrawal) =>
+    w.rejectionReason?.includes("Timeout réseau") ||
+    w.rejectionReason?.includes("vérification AccountPE");
+
   return (
     <div className="space-y-4">
       {rejectId !== null && (
@@ -865,6 +895,70 @@ function WithdrawalsSection() {
           </div>
         </div>
       )}
+
+      {forceModal !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-background rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl border border-border">
+            <div className="flex items-start gap-3">
+              <div className={cn("p-2 rounded-xl", forceModal.mode === "complete" ? "bg-emerald-500/10" : "bg-red-500/10")}>
+                {forceModal.mode === "complete" ? <CheckCircle className="text-emerald-600" size={20} /> : <XCircle className="text-red-500" size={20} />}
+              </div>
+              <div>
+                <h3 className="font-bold text-base">
+                  {forceModal.mode === "complete" ? "Forcer la complétion" : "Forcer le remboursement"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">Retrait #{forceModal.w.id} — {forceModal.w.userDisplayName} — {fmt(forceModal.w.amount)}</p>
+              </div>
+            </div>
+
+            {forceModal.mode === "complete" && forceModal.w.status === "rejected" && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-700 dark:text-amber-400 space-y-1">
+                <p className="font-semibold">⚠️ Re-débit automatique du solde</p>
+                <p>Le retrait était "rejeté" (solde déjà remboursé). Confirmer cela <strong>re-débitera {fmt(forceModal.w.amount)}</strong> du solde de {forceModal.w.userDisplayName}.</p>
+                <p>N'utilisez cette action que si vous avez confirmé sur AccountPE que le paiement a bien eu lieu.</p>
+              </div>
+            )}
+            {forceModal.mode === "complete" && forceModal.w.status === "processing" && (
+              <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-xs text-blue-700 dark:text-blue-400">
+                <p className="font-semibold">ℹ️ Aucune modification du solde</p>
+                <p>Le retrait est en "traitement" (solde non remboursé). Seul le statut sera mis à jour.</p>
+              </div>
+            )}
+            {forceModal.mode === "refund" && (
+              <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-xs text-blue-700 dark:text-blue-400">
+                <p className="font-semibold">ℹ️ Remboursement du solde</p>
+                <p>Le solde bloqué sera restitué à {forceModal.w.userDisplayName} et le retrait sera marqué comme rejeté.</p>
+              </div>
+            )}
+
+            {forceModal.w.payoutRef && (
+              <div className="text-xs text-muted-foreground font-mono bg-muted/50 rounded-lg px-3 py-2">
+                Réf. AccountPE : {forceModal.w.payoutRef}
+              </div>
+            )}
+
+            <textarea
+              value={forceNote}
+              onChange={e => setForceNote(e.target.value)}
+              placeholder="Note admin (optionnelle)..."
+              rows={2}
+              className="w-full px-3 py-2 text-sm border border-border rounded-xl bg-background focus:outline-none resize-none"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => { setForceModal(null); setForceNote(""); }} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium">Annuler</button>
+              <button
+                onClick={forceResolve}
+                disabled={actioning === forceModal.w.id}
+                className={cn("flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors",
+                  forceModal.mode === "complete" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-500 hover:bg-red-600")}
+              >
+                {actioning === forceModal.w.id ? "..." : forceModal.mode === "complete" ? "Confirmer complétion" : "Confirmer remboursement"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Retraits</h2>
         <button onClick={load} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"><RefreshCw size={13} /> Actualiser</button>
@@ -893,7 +987,7 @@ function WithdrawalsSection() {
               </thead>
               <tbody className="divide-y divide-border/50">
                 {items.map(w => (
-                  <tr key={w.id} className="hover:bg-muted/30 transition-colors">
+                  <tr key={w.id} className={cn("hover:bg-muted/30 transition-colors", isTimeout(w) && "bg-amber-500/5")}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-xs">{w.userDisplayName}</p>
                       <p className="text-[10px] text-muted-foreground">{w.userEmail}</p>
@@ -907,7 +1001,12 @@ function WithdrawalsSection() {
                     <td className="px-4 py-3">
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">{w.source}</span>
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={w.status} /></td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={w.status} />
+                      {isTimeout(w) && (
+                        <p className="text-[9px] text-amber-600 font-semibold mt-0.5">⏱ TIMEOUT</p>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-[10px] text-muted-foreground">{fmtDate(w.createdAt)}</td>
                     <td className="px-4 py-3">
                       {w.status === "pending" && (
@@ -924,16 +1023,49 @@ function WithdrawalsSection() {
                         </div>
                       )}
                       {w.status === "processing" && (
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => setStatus(w.id, "completed")} disabled={actioning === w.id} className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors">
-                            <CheckCircle size={13} />
-                          </button>
-                          <button onClick={() => setRejectId(w.id)} disabled={actioning === w.id} className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors">
-                            <XCircle size={13} />
-                          </button>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {w.source === "referral" && isTimeout(w) ? (
+                            <>
+                              <button
+                                onClick={() => setForceModal({ w, mode: "complete" })}
+                                disabled={actioning === w.id}
+                                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors"
+                                title="Paiement confirmé → Forcer complétion"
+                              >
+                                <CheckCircle size={13} />
+                              </button>
+                              <button
+                                onClick={() => setForceModal({ w, mode: "refund" })}
+                                disabled={actioning === w.id}
+                                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                title="Paiement non exécuté → Forcer remboursement"
+                              >
+                                <XCircle size={13} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => setStatus(w.id, "completed")} disabled={actioning === w.id} className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-colors">
+                                <CheckCircle size={13} />
+                              </button>
+                              <button onClick={() => setRejectId(w.id)} disabled={actioning === w.id} className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors">
+                                <XCircle size={13} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
-                      {(w.status === "completed" || w.status === "rejected") && (
+                      {w.status === "rejected" && w.source === "referral" && (
+                        <button
+                          onClick={() => setForceModal({ w, mode: "complete" })}
+                          disabled={actioning === w.id}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 transition-colors text-[10px] font-semibold"
+                          title="Paiement confirmé sur AccountPE — re-débiter et compléter"
+                        >
+                          <AlertTriangle size={11} /> Forcer
+                        </button>
+                      )}
+                      {(w.status === "completed" || (w.status === "rejected" && w.source !== "referral")) && (
                         <span className="text-[10px] text-muted-foreground">{fmtDate(w.processedAt)}</span>
                       )}
                     </td>

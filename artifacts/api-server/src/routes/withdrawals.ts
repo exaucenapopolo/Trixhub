@@ -14,6 +14,7 @@ import {
   reportWithdrawalProof,
   reportPayoutSuccess,
   reportPayoutFailed,
+  reportPayoutTimeout,
 } from "../lib/withdrawalReports";
 import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
 import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
@@ -64,6 +65,7 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
     requestedAt: w.createdAt.toISOString(),
     processedAt: w.processedAt ? w.processedAt.toISOString() : null,
     payoutStatus: w.payoutStatus ?? null,
+    payoutRef: w.payoutRef ?? null,
   };
 }
 
@@ -309,6 +311,38 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
+
+      // ── Distinguer timeout réseau (statut inconnu) vs rejet explicite AccountPE ──
+      // Un AbortError signifie que notre serveur a coupé la connexion faute de réponse.
+      // Dans ce cas on NE SAIT PAS si AccountPE a exécuté le paiement ou non.
+      // → NE PAS rembourser automatiquement : l'admin doit vérifier sur AccountPE.
+      const isNetworkTimeout = err instanceof Error
+        && (err.name === "AbortError" || /this operation was aborted|timed?\s*out|econnreset|network/i.test(errMsg));
+
+      if (isNetworkTimeout) {
+        // ⏱️ Timeout — statut ambigu : laisser le retrait en "processing", NE PAS rembourser
+        req.log.error({ errMsg, withdrawalId: w.id, transactionId }, "[AccountPE] TIMEOUT — statut inconnu, vérification manuelle requise");
+
+        await db.update(withdrawalsTable).set({
+          payoutStatus: "pending",
+          payoutRef: transactionId,
+          rejectionReason: `Timeout réseau — vérification AccountPE requise (ref: ${transactionId})`,
+        }).where(eq(withdrawalsTable.id, w.id)).catch((dbErr: unknown) => {
+          req.log.error({ dbErr }, "[AccountPE] Mise à jour retrait timeout échouée");
+        });
+
+        reportPayoutTimeout(w, user, transactionId, amountSentToAccountPE, fee, result.balanceBefore).catch((notifErr) => {
+          req.log.warn({ err: notifErr }, "Échec envoi WhatsApp timeout payout");
+        });
+
+        res.status(503).json({
+          error: "Le paiement est en cours de vérification. Contactez l'assistance avant de relancer — votre demande est peut-être déjà traitée.",
+          code: "PAYOUT_TIMEOUT",
+        });
+        return;
+      }
+
+      // ── Rejet explicite d'AccountPE : safe to refund ────────────────────────────
       req.log.error({ errMsg, withdrawalId: w.id }, "[AccountPE] Payout échoué — remboursement en cours");
 
       // Détecter si c'est un problème de solde dans le portefeuille AccountPE
@@ -547,6 +581,148 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
 
   req.log.info({ withdrawalId: id, from: existing.status, to: status }, "Statut retrait modifié");
   res.json(formatWithdrawal(updated));
+});
+
+// ─────────────────────────────────────────────────────────────────
+// Admin : forcer la complétion d'un retrait parrainage ambigu (timeout).
+//
+// Deux modes :
+//   • complete — AccountPE a bien payé. On re-débite le solde SI le retrait
+//     était "rejected" (son solde a été remboursé). Si "processing", rien à
+//     débiter (le solde est déjà bloqué).
+//   • refund   — AccountPE n'a PAS payé. On rembourse le solde et marque
+//     "rejected". Réservé aux retraits "processing" en attente de vérif.
+// ─────────────────────────────────────────────────────────────────
+router.post("/admin/withdrawals/:id/force-resolve", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "ID retrait invalide" });
+    return;
+  }
+
+  const { mode, adminNote } = req.body as { mode: "complete" | "refund"; adminNote?: string };
+  if (mode !== "complete" && mode !== "refund") {
+    res.status(400).json({ error: "mode invalide : 'complete' ou 'refund'" });
+    return;
+  }
+
+  const [existing] = await db
+    .select({ w: withdrawalsTable, b: balancesTable })
+    .from(withdrawalsTable)
+    .innerJoin(balancesTable, eq(balancesTable.userId, withdrawalsTable.userId))
+    .where(eq(withdrawalsTable.id, id));
+
+  if (!existing) {
+    res.status(404).json({ error: "Retrait introuvable" });
+    return;
+  }
+
+  const { w, b } = existing;
+
+  // Seuls les retraits parrainage peuvent être forcés (automatisés)
+  if (w.source !== "referral") {
+    res.status(400).json({ error: "Seuls les retraits parrainage peuvent être résolus via cet endpoint" });
+    return;
+  }
+
+  // Ne pas agir deux fois sur un retrait déjà définitivement terminé SAUF
+  // si c'était un "rejected" (remboursé) qu'on veut forcer en completed.
+  if (w.status === "completed") {
+    res.status(409).json({ error: "Ce retrait est déjà complété" });
+    return;
+  }
+  if (w.status === "rejected" && mode === "refund") {
+    res.status(409).json({ error: "Ce retrait est déjà rejeté — solde déjà remboursé" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, w.userId));
+  if (!user) {
+    res.status(404).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  const withdrawalAmount = parseFloat(String(w.amount));
+  const totalDebitStr = (parseFloat(String(w.amount)) + parseFloat(String(w.feeAmount ?? "0"))).toFixed(2);
+
+  req.log.warn(
+    { withdrawalId: id, mode, status: w.status, userId: w.userId, amount: withdrawalAmount, adminNote },
+    "[Admin] Force-resolve retrait",
+  );
+
+  if (mode === "complete") {
+    // Si le retrait était "rejected" → le solde a été remboursé → on le re-débite
+    // Si le retrait était "processing" → le solde n'a jamais été remboursé → rien à faire sur le solde
+    const wasRefunded = w.status === "rejected";
+
+    const updated = await db.transaction(async (tx) => {
+      if (wasRefunded) {
+        // Re-débit : le paiement a bien eu lieu mais TRIXHUB avait remboursé par erreur
+        const currentBalance = parseFloat(String(b.referralBalance));
+        if (currentBalance < parseFloat(totalDebitStr)) {
+          throw new Error(`Solde insuffisant pour le re-débit (${currentBalance} FCFA disponibles, ${totalDebitStr} requis)`);
+        }
+        await tx.update(balancesTable).set({
+          referralBalance: sql`(${balancesTable.referralBalance})::numeric - ${totalDebitStr}::numeric`,
+          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${totalDebitStr}::numeric`,
+        }).where(eq(balancesTable.userId, w.userId));
+      }
+
+      const [row] = await tx.update(withdrawalsTable).set({
+        status: "completed",
+        payoutStatus: "success",
+        processedAt: new Date(),
+        rejectionReason: adminNote
+          ? `[Admin] ${adminNote}`
+          : wasRefunded
+            ? "[Admin] Complété manuellement — paiement confirmé sur AccountPE (solde re-débité)"
+            : "[Admin] Complété manuellement — paiement confirmé sur AccountPE",
+      }).where(eq(withdrawalsTable.id, id)).returning();
+
+      return row;
+    });
+
+    reportPayoutSuccess(
+      updated,
+      user,
+      updated.payoutRef ?? `MANUAL-${id}`,
+      "success",
+      withdrawalAmount - parseFloat(String(w.feeMode === "from_amount" ? (w.feeAmount ?? "0") : "0")),
+      parseFloat(String(w.feeAmount ?? "0")),
+      parseFloat(String(b.referralBalance)),
+      wasRefunded
+        ? Math.max(0, parseFloat(String(b.referralBalance)) - parseFloat(totalDebitStr))
+        : parseFloat(String(b.referralBalance)),
+    ).catch((err) => {
+      req.log.warn({ err }, "Échec rapport WhatsApp force-complete");
+    });
+
+    req.log.info({ withdrawalId: id, wasRefunded }, "[Admin] Retrait forcé en completed");
+    res.json({ ok: true, wasRefunded, withdrawal: formatWithdrawal(updated) });
+    return;
+  }
+
+  // mode === "refund" — le retrait est "processing" (solde non remboursé), on confirme l'échec
+  const updated = await db.transaction(async (tx) => {
+    await tx.update(balancesTable).set({
+      referralBalance: sql`(${balancesTable.referralBalance})::numeric + ${totalDebitStr}::numeric`,
+      withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric - ${totalDebitStr}::numeric`,
+    }).where(eq(balancesTable.userId, w.userId));
+
+    const [row] = await tx.update(withdrawalsTable).set({
+      status: "rejected",
+      payoutStatus: "failed",
+      processedAt: new Date(),
+      rejectionReason: adminNote
+        ? `[Admin] ${adminNote}`
+        : "[Admin] Remboursé manuellement — paiement non exécuté sur AccountPE",
+    }).where(eq(withdrawalsTable.id, id)).returning();
+
+    return row;
+  });
+
+  req.log.info({ withdrawalId: id }, "[Admin] Retrait forcé en rejected (remboursé)");
+  res.json({ ok: true, withdrawal: formatWithdrawal(updated) });
 });
 
 export default router;

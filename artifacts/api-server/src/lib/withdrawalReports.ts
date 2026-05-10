@@ -147,6 +147,43 @@ export async function reportPayoutFailed(
 }
 
 /**
+ * Timeout réseau lors du paiement — statut inconnu chez AccountPE.
+ * Le solde N'A PAS été restitué. L'admin doit vérifier manuellement sur AccountPE.
+ */
+export async function reportPayoutTimeout(
+  w: Withdrawal,
+  user: User,
+  transactionId: string,
+  amountSent: number,
+  fee: number,
+  balanceBefore: number,
+) {
+  const message =
+    `⏱️ TIMEOUT PAIEMENT — #${w.id}\n` +
+    `⚠️ VÉRIFICATION MANUELLE REQUISE SUR ACCOUNTPE\n\n` +
+    `Le serveur n'a pas reçu de réponse d'AccountPE dans les délais.\n` +
+    `Le paiement a PEUT-ÊTRE été exécuté. Le solde N'A PAS été restitué.\n\n` +
+    `💰 Montant demandé : ${fmtAmount(w.amount)}\n` +
+    `📤 Montant envoyé au partenaire : ${fmtAmount(amountSent)}\n` +
+    `🏷️ Frais déduits : ${fmtAmount(fee)}\n` +
+    `📦 Source : ${SOURCE_LABELS[w.source ?? "referral"] ?? w.source}\n` +
+    `🏦 Méthode : ${METHOD_LABELS[w.method] ?? w.method}\n` +
+    `📞 N° destinataire : ${w.accountNumber}\n` +
+    `👤 Titulaire : ${w.accountName}\n` +
+    `🔑 Réf. transaction : ${transactionId}\n\n` +
+    `── Soldes ──\n` +
+    `📊 Avant tentative : ${fmtAmount(balanceBefore)}\n` +
+    `⚠️ Solde NON restitué — en attente de vérification\n\n` +
+    `🔧 ACTIONS ADMIN :\n` +
+    `  1. Vérifier si la transaction ${transactionId} est présente sur AccountPE\n` +
+    `  2. Si OUI → utiliser "Forcer complétion" dans l'admin (retrait #${w.id})\n` +
+    `  3. Si NON → utiliser "Forcer remboursement" dans l'admin (retrait #${w.id})\n\n` +
+    memberBlock(user) + "\n\n" +
+    `🕐 ${now()}`;
+  return sendWhatsAppToAssistance(message);
+}
+
+/**
  * Envoie un rapport de changement de statut (flux admin manuel).
  */
 export async function reportWithdrawalStatusChange(w: Withdrawal, user: User, previousStatus: string, reason?: string | null) {
