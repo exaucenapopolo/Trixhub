@@ -564,29 +564,42 @@ export const COUNTRY_CODES: Record<string, string> = {
 };
 
 /**
- * Devise ISO pour chaque pays supporté.
- * Le montant FCFA sera converti dans cette devise avant d'être envoyé
- * au bon portefeuille de notre partenaire de paiement.
+ * Codes devise EXACTS utilisés par AccountPE pour chaque pays.
+ * Les pays de la zone XOF ont des codes pays-spécifiques dans l'API AccountPE
+ * (XOFS=Sénégal, XOFT=Togo, XOFB=Bénin, XOFC=Côte d'Ivoire, XOFF=Burkina Faso).
+ * Envoyer "XOF" générique causerait un rejet silencieux pour ces pays.
+ *
+ * Pour les pays non supportés par AccountPE (GH, NG, CG, CD, GA, KE, NE, RW, TZ, UG),
+ * le retrait automatique sera bloqué avant même d'appeler AccountPE.
  */
 export const COUNTRY_CURRENCIES: Record<string, string> = {
-  "Bénin":            "XOF",
-  "Burkina Faso":     "XOF",
+  "Bénin":            "XOFB",   // AccountPE code: XOFB (pas XOF générique)
+  "Burkina Faso":     "XOFF",   // AccountPE code: XOFF
   "Cameroun":         "XAF",
-  "Côte d'Ivoire":    "XOF",
-  "Congo-Brazzaville":"XAF",
-  "RD Congo":         "CDF",
-  "Gabon":            "XAF",
-  "Ghana":            "GHS",
+  "Côte d'Ivoire":    "XOFC",  // AccountPE code: XOFC
+  "Congo-Brazzaville":"XAF",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "RD Congo":         "CDF",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "Gabon":            "XAF",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "Ghana":            "GHS",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
   "Guinée":           "GNF",
-  "Kenya":            "KES",
+  "Kenya":            "KES",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
   "Mali":             "XOF",
-  "Niger":            "XOF",
-  "Nigeria":          "NGN",
-  "Rwanda":           "RWF",
-  "Sénégal":          "XOF",
-  "Togo":             "XOF",
-  "Tanzanie":         "TZS",
-  "Ouganda":          "UGX",
+  "Niger":            "XOF",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "Nigeria":          "NGN",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "Rwanda":           "RWF",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "Sénégal":          "XOFS",  // AccountPE code: XOFS (pas XOF générique)
+  "Togo":             "XOFT",   // AccountPE code: XOFT (pas XOF générique)
+  "Tanzanie":         "TZS",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
+  "Ouganda":          "UGX",    // ⚠️ Non supporté AccountPE (bloqué à la validation)
 };
+
+/**
+ * Pays dont les retraits parrainage automatiques sont disponibles via AccountPE.
+ * Les autres pays peuvent s'inscrire et accumuler des commissions,
+ * mais le retrait nécessite un traitement manuel (contact support).
+ */
+export const ACCOUNTPE_SUPPORTED_COUNTRY_CODES = new Set([
+  "CM", "CI", "SN", "ML", "BF", "TG", "BJ", "GN",
+]);
 
 export { ACCOUNTPE };

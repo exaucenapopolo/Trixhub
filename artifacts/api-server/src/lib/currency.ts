@@ -16,6 +16,12 @@ export const CURRENCY_RATES: Record<string, number> = {
   CDF: 4.139,
   XOF: 1,
   XAF: 1,
+  // Codes XOF pays-spécifiques utilisés par AccountPE — tous = 1 FCFA
+  XOFS: 1,   // Sénégal
+  XOFT: 1,   // Togo
+  XOFB: 1,   // Bénin
+  XOFC: 1,   // Côte d'Ivoire
+  XOFF: 1,   // Burkina Faso
   ZAR: 0.0310,
   EGP: 0.0817,
   ETB: 0.201,

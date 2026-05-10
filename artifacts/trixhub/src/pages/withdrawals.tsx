@@ -814,7 +814,7 @@ export default function WithdrawalsPage() {
                     };
                     const hasProof = Boolean(wAny.proofUrl);
                     const isUploading = uploadingId === w.id;
-                    const canUploadProof = !hasProof && (w.status === "completed" || w.status === "processing" || w.status === "pending");
+                    const canUploadProof = !hasProof && (w.status === "completed" || w.status === "processing" || w.status === "pending" || w.status === "rejected");
                     const payoutSt = wAny.payoutStatus;
                     const requestedAtStr = w.requestedAt ? new Date(w.requestedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
                     return (

@@ -25,6 +25,7 @@ import {
   normalizeMobileForPayout,
   COUNTRY_CODES,
   COUNTRY_CURRENCIES,
+  ACCOUNTPE_SUPPORTED_COUNTRY_CODES,
   PAYOUT_MIN,
 } from "../lib/swychr";
 import { CURRENCY_RATES } from "../lib/currency";
@@ -249,6 +250,37 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
     const w = result.withdrawal;
     const countryCode  = COUNTRY_CODES[user.country]      || "CM";
     const currency     = COUNTRY_CURRENCIES[user.country] || "XAF";
+
+    // ── Vérifier que le pays est supporté par AccountPE ─────────────────────────
+    // Les pays non listés dans ACCOUNTPE_SUPPORTED_COUNTRY_CODES n'ont pas de
+    // portefeuille actif chez notre partenaire. Plutôt que de laisser la demande
+    // arriver chez AccountPE et échouer silencieusement, on bloque immédiatement
+    // et on rembourse le solde de l'utilisateur avec un message clair.
+    if (!ACCOUNTPE_SUPPORTED_COUNTRY_CODES.has(countryCode)) {
+      req.log.warn({ userId, country: user.country, countryCode }, "[AccountPE] Pays non supporté — remboursement et rejet préventif");
+
+      await db.transaction(async (tx) => {
+        await tx.update(balancesTable).set({
+          referralBalance: sql`(${balancesTable.referralBalance})::numeric + ${totalDebit.toFixed(2)}::numeric`,
+          withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric - ${totalDebit.toFixed(2)}::numeric`,
+        }).where(eq(balancesTable.userId, userId));
+
+        await tx.update(withdrawalsTable).set({
+          payoutStatus: "failed",
+          status: "rejected",
+          rejectionReason: `Pays non supporté pour les retraits automatiques (${user.country}). Contactez le support.`,
+          processedAt: new Date(),
+        }).where(eq(withdrawalsTable.id, w.id));
+      }).catch((dbErr: unknown) => {
+        req.log.error({ dbErr }, "[AccountPE] Remboursement pays non supporté échoué");
+      });
+
+      res.status(503).json({
+        error: `Les retraits automatiques ne sont pas encore disponibles pour les membres en ${user.country}. Votre solde a été restitué. Contactez l'assistance pour un traitement manuel.`,
+        code: "COUNTRY_NOT_SUPPORTED",
+      });
+      return;
+    }
     // Convertir le montant FCFA → devise locale du portefeuille AccountPE du pays
     const fxRate             = CURRENCY_RATES[currency] ?? 1;
     const amountLocalCurrency = Math.round(amountSentToAccountPE * fxRate);
