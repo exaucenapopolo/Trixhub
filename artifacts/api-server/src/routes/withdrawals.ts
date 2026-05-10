@@ -689,7 +689,7 @@ router.patch("/admin/withdrawals/:id/status", authenticate, requireAdmin, async 
 //   • refund   — AccountPE n'a PAS payé. On rembourse le solde et marque
 //     "rejected". Réservé aux retraits "processing" en attente de vérif.
 // ─────────────────────────────────────────────────────────────────
-router.post("/admin/withdrawals/:id/force-resolve", requireAdmin, async (req, res): Promise<void> => {
+router.post("/admin/withdrawals/:id/force-resolve", authenticate, requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) {
     res.status(400).json({ error: "ID retrait invalide" });
