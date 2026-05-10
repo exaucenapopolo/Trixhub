@@ -8,7 +8,8 @@ import {
   Copy, CheckCheck, Users, Wallet, ArrowDownLeft, Zap, Gift,
   PlayCircle, HelpCircle, Compass, Sparkles, ChevronRight, Clock,
   Bell, TrendingUp, UserPlus, CheckCircle2, XCircle, AlertCircle,
-  Award, PiggyBank, ArrowUpRight, Plus, Star, Crown, Share2
+  Award, PiggyBank, ArrowUpRight, Plus, Star, Crown, Share2,
+  Smartphone, Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -563,6 +564,46 @@ export default function DashboardPage() {
             })()}
           </div>
         )}
+
+        {/* TÉLÉCHARGER L'APPLICATION ANDROID */}
+        <a
+          href={`${BASE}/trixhub.apk`}
+          download="TRIXHUB.apk"
+          className="block group"
+          data-testid="btn-download-apk"
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-card p-5 flex items-center gap-4 hover:border-green-500/60 transition-all hover:shadow-lg hover:shadow-green-500/10 active:scale-[0.99]">
+            {/* Glow pulse */}
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-400/10 blur-2xl pointer-events-none" />
+            {/* Icône Android */}
+            <div className="relative w-14 h-14 rounded-2xl bg-green-500/15 border border-green-500/25 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+              <Smartphone className="w-7 h-7 text-green-500" />
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                <Download className="w-2.5 h-2.5 text-white" />
+              </span>
+            </div>
+            {/* Texte */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-sm font-bold text-foreground">Télécharger l'application</p>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/25">GRATUIT</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug">TRIXHUB Android · Accès rapide depuis ton téléphone</p>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-600 dark:text-green-400">
+                  <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor"><path d="M17.523 15.341c-.217.372-.456.721-.718 1.044L4.477 4.057a9.966 9.966 0 0 1 4.54-2.682l3.327 5.761a4.007 4.007 0 0 0-1.527 3.137c0 .755.21 1.46.574 2.062zm-5.037 3.591a9.965 9.965 0 0 1-2.486-.312L6.673 12.86a3.99 3.99 0 0 0 3.914 3.283c.673 0 1.308-.166 1.869-.459l.03-.052zm3.282-1.882A9.966 9.966 0 0 0 18 12c0-.98-.142-1.928-.408-2.825L13.38 9.18a3.997 3.997 0 0 1 .615 2.82zm-3.39-8.914A9.972 9.972 0 0 1 15 12a9.96 9.96 0 0 1-.547 3.282l-3.875-6.71z"/></svg>
+                  Android uniquement
+                </span>
+                <span className="text-[10px] text-muted-foreground/60">·</span>
+                <span className="text-[10px] text-muted-foreground">Non disponible sur iPhone</span>
+              </div>
+            </div>
+            {/* Flèche */}
+            <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md shadow-green-500/30">
+              <Download className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </a>
 
         {/* TABLEAU D'ACTIVITÉ */}
         <div className="bg-card border border-card-border rounded-2xl overflow-hidden">
