@@ -698,8 +698,9 @@ router.get("/admin/top-users", authenticate, requireAdmin, async (_req, res): Pr
     metric: number;
   };
 
-  // Top recruteurs — nombre de filleuls (tous statuts confondus)
-  const topRecruiters = (await db.execute<TopRow>(sql`
+  // Top recruteurs — filleuls directs (N1) uniquement, avec distinction actifs/inactifs
+  type RecruiterRow = TopRow & { metricActive: number };
+  const topRecruiters = (await db.execute<RecruiterRow>(sql`
     SELECT
       u.id,
       u.display_name   AS "displayName",
@@ -707,7 +708,8 @@ router.get("/admin/top-users", authenticate, requireAdmin, async (_req, res): Pr
       u.phone,
       u.avatar_url     AS "avatarUrl",
       u.country,
-      (SELECT COUNT(*)::int FROM users u2 WHERE u2.referred_by_code = u.referral_code) AS metric
+      (SELECT COUNT(*)::int FROM users u2 WHERE u2.referred_by_code = u.referral_code)                                      AS metric,
+      (SELECT COUNT(*)::int FROM users u2 WHERE u2.referred_by_code = u.referral_code AND u2.is_activated = true)           AS "metricActive"
     FROM users u
     WHERE u.is_activated = true
     ORDER BY metric DESC
@@ -773,6 +775,59 @@ router.get("/admin/top-users", authenticate, requireAdmin, async (_req, res): Pr
   `)).rows;
 
   res.json({ recruiters: topRecruiters, activities: topActivities, balances: topBalances, withdrawals: topWithdrawals });
+});
+
+// ─── GET /admin/wallet-users — liste des membres avec solde (hors comptes admin)
+// Retourne les utilisateurs ayant un solde parrainage > 0, triés par solde décroissant.
+// Les comptes administrateurs sont exclus.
+// ─────────────────────────────────────────────────────────────────
+const ADMIN_ACCOUNT_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
+
+router.get("/admin/wallet-users", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  type WalletUserRow = {
+    id: number;
+    displayName: string;
+    email: string;
+    avatarUrl: string | null;
+    country: string | null;
+    referralBalance: number;
+    activityBalance: number;
+    bonusBalance: number;
+    depositBalance: number;
+    totalBalance: number;
+  };
+
+  const rows = (await db.execute<WalletUserRow>(sql`
+    SELECT
+      u.id,
+      u.display_name   AS "displayName",
+      u.email,
+      u.avatar_url     AS "avatarUrl",
+      u.country,
+      COALESCE(b.referral_balance::numeric,  0)::int AS "referralBalance",
+      COALESCE(b.activity_balance::numeric,  0)::int AS "activityBalance",
+      COALESCE(b.bonus_balance::numeric,     0)::int AS "bonusBalance",
+      COALESCE(b.deposit_balance::numeric,   0)::int AS "depositBalance",
+      (
+        COALESCE(b.referral_balance::numeric, 0) +
+        COALESCE(b.activity_balance::numeric, 0) +
+        COALESCE(b.bonus_balance::numeric,    0) +
+        COALESCE(b.deposit_balance::numeric,  0)
+      )::int AS "totalBalance"
+    FROM users u
+    INNER JOIN balances b ON b.user_id = u.id
+    WHERE u.email NOT IN (${sql.join(ADMIN_ACCOUNT_EMAILS.map(e => sql`${e}`), sql`, `)})
+      AND (
+        COALESCE(b.referral_balance::numeric, 0) +
+        COALESCE(b.activity_balance::numeric, 0) +
+        COALESCE(b.bonus_balance::numeric,    0) +
+        COALESCE(b.deposit_balance::numeric,  0)
+      ) > 0
+    ORDER BY "totalBalance" DESC
+    LIMIT 100
+  `)).rows;
+
+  res.json(rows);
 });
 
 export default router;

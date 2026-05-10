@@ -64,12 +64,19 @@ interface AdminUser {
 interface TopUser {
   id: number; displayName: string; email: string; phone: string;
   avatarUrl: string | null; country: string; metric: number;
+  metricActive?: number;
 }
 interface TopUsersData {
   recruiters: TopUser[];
   activities: TopUser[];
   balances: TopUser[];
   withdrawals: TopUser[];
+}
+interface WalletUser {
+  id: number; displayName: string; email: string;
+  avatarUrl: string | null; country: string | null;
+  referralBalance: number; activityBalance: number;
+  bonusBalance: number; depositBalance: number; totalBalance: number;
 }
 
 interface Withdrawal {
@@ -1431,12 +1438,20 @@ function FundingBadge({ ready, total }: { ready: number; total: number }) {
 
 function WalletsSection() {
   const [rows, setRows] = useState<WalletRow[]>([]);
+  const [walletUsers, setWalletUsers] = useState<WalletUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<WalletRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setRows(await apiFetch("/api/admin/wallet-exposure")); } catch {}
+    try {
+      const [exposure, users] = await Promise.all([
+        apiFetch("/api/admin/wallet-exposure") as Promise<WalletRow[]>,
+        apiFetch("/api/admin/wallet-users") as Promise<WalletUser[]>,
+      ]);
+      setRows(exposure);
+      setWalletUsers(users);
+    } catch {}
     finally { setLoading(false); }
   }, []);
 
@@ -1572,6 +1587,57 @@ function WalletsSection() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Liste individuelle des membres avec solde ─────────────── */}
+      {!loading && walletUsers.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Users size={15} className="text-primary" />
+              Membres avec solde actif
+              <span className="text-[11px] font-normal text-muted-foreground">({walletUsers.length} membres — comptes admin exclus)</span>
+            </h3>
+          </div>
+          <div className="divide-y divide-border border border-border rounded-2xl overflow-hidden bg-card">
+            {walletUsers.map((wu, idx) => (
+              <div key={wu.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                {/* Rang */}
+                <span className="w-6 text-center text-xs font-bold text-muted-foreground flex-shrink-0">
+                  {idx + 1}
+                </span>
+                {/* Avatar */}
+                <UserAvatar avatarUrl={wu.avatarUrl} name={wu.displayName} size="sm" />
+                {/* Infos */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{wu.displayName}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{wu.email}</p>
+                  {wu.country && <p className="text-[10px] text-muted-foreground">{wu.country}</p>}
+                </div>
+                {/* Soldes */}
+                <div className="text-right flex-shrink-0">
+                  <p className="font-bold text-sm tabular-nums text-foreground">
+                    {wu.totalBalance.toLocaleString("fr-FR")} F
+                  </p>
+                  <div className="flex gap-2 mt-0.5 justify-end flex-wrap text-[10px]">
+                    {wu.referralBalance > 0 && (
+                      <span className="text-blue-500">{wu.referralBalance.toLocaleString("fr-FR")} Parr.</span>
+                    )}
+                    {wu.activityBalance > 0 && (
+                      <span className="text-purple-500">{wu.activityBalance.toLocaleString("fr-FR")} Act.</span>
+                    )}
+                    {wu.bonusBalance > 0 && (
+                      <span className="text-amber-500">{wu.bonusBalance.toLocaleString("fr-FR")} Bonus</span>
+                    )}
+                    {wu.depositBalance > 0 && (
+                      <span className="text-emerald-600">{wu.depositBalance.toLocaleString("fr-FR")} Dép.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -1874,9 +1940,9 @@ function FormationsSection() {
 
 // ─── Section : Top Utilisateurs ──────────────────────────────────
 const TOP_CATS = [
-  { id: "recruiters" as const, label: "Top Recruteurs",  icon: Users,     color: "text-blue-500",   bg: "bg-blue-500/10",   fmt: (m: number) => `${m} filleul${m !== 1 ? "s" : ""}` },
-  { id: "activities" as const, label: "Top Activités",   icon: Activity,  color: "text-purple-500", bg: "bg-purple-500/10", fmt: (m: number) => `${m} pts` },
-  { id: "balances"   as const, label: "Gros Soldes",     icon: Wallet,    color: "text-emerald-500",bg: "bg-emerald-500/10",fmt: (m: number) => parseFloat(String(m)).toLocaleString("fr-FR") + " F" },
+  { id: "recruiters" as const, label: "Top Recruteurs",  icon: Users,        color: "text-blue-500",   bg: "bg-blue-500/10",   fmt: (m: number) => `${m} filleul${m !== 1 ? "s" : ""}` },
+  { id: "activities" as const, label: "Top Activités",   icon: Activity,     color: "text-purple-500", bg: "bg-purple-500/10", fmt: (m: number) => `${m} pts` },
+  { id: "balances"   as const, label: "Gros Soldes",     icon: Wallet,       color: "text-emerald-500",bg: "bg-emerald-500/10",fmt: (m: number) => parseFloat(String(m)).toLocaleString("fr-FR") + " F" },
   { id: "withdrawals"as const, label: "Gros Retraits",   icon: ArrowUpRight, color: "text-amber-500",  bg: "bg-amber-500/10",  fmt: (m: number) => parseFloat(String(m)).toLocaleString("fr-FR") + " F" },
 ] as const;
 
@@ -1973,11 +2039,24 @@ function TopSection() {
                   <p className="text-[10px] text-muted-foreground">{u.country}</p>
                 </div>
 
-                {/* WhatsApp / Téléphone */}
+                {/* Métrique + détail actifs pour recruteurs */}
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <div className={cn("text-sm font-bold tabular-nums", catCfg.color)}>
-                    {catCfg.fmt(u.metric)}
-                  </div>
+                  {cat === "recruiters" ? (
+                    <div className="text-right">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <span className={cn("text-sm font-bold tabular-nums", catCfg.color)}>{u.metric} total</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5 justify-end">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">{u.metricActive ?? 0} actif{(u.metricActive ?? 0) !== 1 ? "s" : ""}</span>
+                        <span className="text-[10px] text-muted-foreground">· {(u.metric - (u.metricActive ?? 0))} inactif{(u.metric - (u.metricActive ?? 0)) !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={cn("text-sm font-bold tabular-nums", catCfg.color)}>
+                      {catCfg.fmt(u.metric)}
+                    </div>
+                  )}
                   {u.phone && (
                     <a
                       href={`https://wa.me/${u.phone.replace(/\D/g, "")}`}
