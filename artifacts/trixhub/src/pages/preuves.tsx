@@ -23,13 +23,14 @@ const METHOD_COLORS: Record<string, string> = {
 };
 
 interface ProofItem {
-  id: number;
+  id: string;
   amount: number;
   method: string;
   userName: string;
   country: string | null;
   proofImageUrl: string;
   processedAt: string | null;
+  description: string | null;
 }
 
 function formatAmount(amount: number): string {
@@ -111,6 +112,9 @@ function ProofCard({ item, onZoom }: { item: ProofItem; onZoom: (url: string) =>
             {flag} {item.userName}{item.country ? ` · ${item.country}` : ""}
           </p>
         </div>
+        {item.description && (
+          <p className="text-[11px] text-muted-foreground italic leading-snug">"{item.description}"</p>
+        )}
         {item.processedAt && (
           <p className="text-[10px] text-muted-foreground/70">{formatDate(item.processedAt)}</p>
         )}
