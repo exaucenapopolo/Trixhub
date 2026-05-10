@@ -1,7 +1,8 @@
 const PAYIN_BASE  = "https://api.accountpe.com/api/payin";
 const PAYOUT_BASE = "https://api.accountpe.com/api/payout";
 const TOKEN_TTL_MS = 25 * 60 * 1000;       // 25 minutes
-const FETCH_TIMEOUT_MS = 10_000;            // 10 secondes max par appel HTTP
+const FETCH_TIMEOUT_MS = 10_000;            // 10 secondes max par appel HTTP (auth, status, etc.)
+const PAYOUT_TIMEOUT_MS = 45_000;           // 45 secondes pour create_transaction (AccountPE peut être lent)
 const METHODS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes pour les méthodes
 
 const ACCOUNTPE = {
@@ -437,7 +438,7 @@ export async function createPayout(params: {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
       body: JSON.stringify(body),
-    });
+    }, PAYOUT_TIMEOUT_MS);
   }
 
   let res = await call(token);
