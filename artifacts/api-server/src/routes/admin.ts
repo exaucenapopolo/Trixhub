@@ -17,6 +17,7 @@ import {
   formationRequestsTable,
   freeFormationDownloadsTable,
   premiumFormationPurchasesTable,
+  apkDownloadsTable,
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -859,6 +860,37 @@ router.get("/admin/wallet-users", authenticate, requireAdmin, async (_req, res):
   `)).rows;
 
   res.json(rows);
+});
+
+// ─── GET /api/apk/download — suivi des téléchargements (public)
+// Enregistre le téléchargement et redirige vers le fichier APK statique.
+// ─────────────────────────────────────────────────────────────────
+router.get("/api/apk/download", async (req, res): Promise<void> => {
+  const ip = (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? null;
+  const userAgent = req.headers["user-agent"] ?? null;
+  await db.insert(apkDownloadsTable).values({ ip, userAgent });
+  res.redirect("/trixhub.apk");
+});
+
+// ─── GET /admin/apk-stats — statistiques de téléchargements APK (admin)
+// ─────────────────────────────────────────────────────────────────
+router.get("/admin/apk-stats", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  const now = new Date();
+  const startOfToday    = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+  const startOfThisWeek = new Date(now); startOfThisWeek.setDate(now.getDate() - now.getDay()); startOfThisWeek.setHours(0, 0, 0, 0);
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [totalRow]     = await db.select({ n: count() }).from(apkDownloadsTable);
+  const [todayRow]     = await db.select({ n: count() }).from(apkDownloadsTable).where(gte(apkDownloadsTable.downloadedAt, startOfToday));
+  const [weekRow]      = await db.select({ n: count() }).from(apkDownloadsTable).where(gte(apkDownloadsTable.downloadedAt, startOfThisWeek));
+  const [monthRow]     = await db.select({ n: count() }).from(apkDownloadsTable).where(gte(apkDownloadsTable.downloadedAt, startOfThisMonth));
+
+  res.json({
+    total: Number(totalRow?.n ?? 0),
+    today: Number(todayRow?.n ?? 0),
+    thisWeek: Number(weekRow?.n ?? 0),
+    thisMonth: Number(monthRow?.n ?? 0),
+  });
 });
 
 export default router;

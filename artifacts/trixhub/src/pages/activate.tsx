@@ -842,8 +842,7 @@ export default function ActivatePage() {
       {/* TÉLÉCHARGER L'APPLICATION ANDROID */}
       <div className="px-4 pb-6 max-w-lg mx-auto w-full">
         <a
-          href={`${BASE}/trixhub.apk`}
-          download="TRIXHUB.apk"
+          href={`${BASE}/api/apk/download`}
           className="block group"
         >
           <div className="relative overflow-hidden rounded-2xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent p-5 flex items-center gap-4 hover:border-green-500/60 transition-all hover:shadow-lg hover:shadow-green-500/10 active:scale-[0.99]">

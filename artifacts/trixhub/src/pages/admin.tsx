@@ -234,9 +234,12 @@ function UserAvatar({ avatarUrl, name, size = "sm" }: { avatarUrl: string | null
 }
 
 // ─── Section : Vue d'ensemble ────────────────────────────────────
+interface ApkStats { total: number; today: number; thisWeek: number; thisMonth: number; }
+
 function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRefresh: () => void }) {
   const [growth, setGrowth] = useState<GrowthData | null>(null);
   const [loadingGrowth, setLoadingGrowth] = useState(true);
+  const [apkStats, setApkStats] = useState<ApkStats | null>(null);
 
   const loadGrowth = useCallback(async () => {
     setLoadingGrowth(true);
@@ -244,9 +247,13 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
     setLoadingGrowth(false);
   }, []);
 
-  useEffect(() => { loadGrowth(); }, [loadGrowth]);
+  const loadApkStats = useCallback(async () => {
+    try { setApkStats(await apiFetch("/api/admin/apk-stats")); } catch {}
+  }, []);
 
-  const handleRefreshAll = () => { onRefresh(); loadGrowth(); };
+  useEffect(() => { loadGrowth(); loadApkStats(); }, [loadGrowth, loadApkStats]);
+
+  const handleRefreshAll = () => { onRefresh(); loadGrowth(); loadApkStats(); };
 
   if (!stats) return <div className="flex items-center justify-center h-64"><RefreshCw className="animate-spin text-muted-foreground" /></div>;
   const { users, withdrawals, activityWithdrawals, finance } = stats;
@@ -272,6 +279,51 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
         <StatCard icon={Activity} label="En cours" value={withdrawals.processingCount} color="bg-blue-500" />
         <StatCard icon={Wallet} label="Activités en attente" value={activityWithdrawals.pendingCount} sub={`${activityWithdrawals.approvedCount} approuvées`} color="bg-purple-500" />
         <StatCard icon={DollarSign} label="Total retiré" value={withdrawals.totalPaid.toLocaleString("fr-FR") + " FCFA"} color="bg-teal-500" />
+      </div>
+
+      {/* ── Téléchargements APK Android ────────────────────────────── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2 px-5 py-4 border-b border-border bg-green-500/5">
+          <div className="w-7 h-7 rounded-lg bg-green-500/15 flex items-center justify-center">
+            <Download size={14} className="text-green-500" />
+          </div>
+          <h3 className="text-sm font-bold">Téléchargements de l'application Android</h3>
+          <span className="ml-auto text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-semibold border border-green-500/20">
+            {apkStats ? apkStats.total : "—"} au total
+          </span>
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-border/50">
+          <div className="p-5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <Star size={13} className="text-green-500" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">Aujourd'hui</span>
+            </div>
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400">{apkStats?.today ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground">téléchargements ce jour</p>
+          </div>
+          <div className="p-5 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <TrendingUp size={13} className="text-blue-500" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">Cette semaine</span>
+            </div>
+            <p className="text-3xl font-bold">{apkStats?.thisWeek ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground">téléchargements</p>
+          </div>
+          <div className="p-5 flex flex-col gap-1 bg-green-500/5">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <ArrowUpRight size={13} className="text-emerald-500" />
+              </div>
+              <span className="text-[11px] text-muted-foreground font-medium">Ce mois</span>
+            </div>
+            <p className="text-3xl font-bold text-emerald-600">{apkStats?.thisMonth ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground">téléchargements</p>
+          </div>
+        </div>
       </div>
 
       {/* ── Analyse du réseau ──────────────────────────────────────── */}

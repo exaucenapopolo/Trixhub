@@ -567,8 +567,7 @@ export default function DashboardPage() {
 
         {/* TÉLÉCHARGER L'APPLICATION ANDROID */}
         <a
-          href={`${BASE}/trixhub.apk`}
-          download="TRIXHUB.apk"
+          href={`${BASE}/api/apk/download`}
           className="block group"
           data-testid="btn-download-apk"
         >
