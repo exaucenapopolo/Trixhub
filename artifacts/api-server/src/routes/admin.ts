@@ -9,6 +9,14 @@ import {
   transactionsTable,
   contactPurchasesTable,
   weeklyPointsTable,
+  activityCompletionsTable,
+  quizSessionsTable,
+  sessionsTable,
+  swychrTransactionsTable,
+  userTasksTable,
+  formationRequestsTable,
+  freeFormationDownloadsTable,
+  premiumFormationPurchasesTable,
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -412,6 +420,8 @@ router.patch("/admin/users/:id/block", authenticate, requireAdmin, async (req, r
 
 // ─────────────────────────────────────────────────────────────────
 // DELETE /admin/users/:id — supprimer un utilisateur
+// Supprime toutes les données liées avant de supprimer l'utilisateur
+// pour respecter les contraintes de clé étrangère.
 // ─────────────────────────────────────────────────────────────────
 router.delete("/admin/users/:id", authenticate, requireAdmin, async (req, res): Promise<void> => {
   const id = parseInt(String(req.params.id), 10);
@@ -422,11 +432,24 @@ router.delete("/admin/users/:id", authenticate, requireAdmin, async (req, res): 
     return;
   }
 
+  // Suppression en cascade : toutes les tables qui référencent userId
+  await db.delete(sessionsTable).where(eq(sessionsTable.userId, id));
+  await db.delete(swychrTransactionsTable).where(eq(swychrTransactionsTable.userId, id));
+  await db.delete(activityCompletionsTable).where(eq(activityCompletionsTable.userId, id));
+  await db.delete(quizSessionsTable).where(eq(quizSessionsTable.userId, id));
+  await db.delete(weeklyPointsTable).where(eq(weeklyPointsTable.userId, id));
+  await db.delete(activityWithdrawalsTable).where(eq(activityWithdrawalsTable.userId, id));
+  await db.delete(withdrawalsTable).where(eq(withdrawalsTable.userId, id));
+  await db.delete(premiumFormationPurchasesTable).where(eq(premiumFormationPurchasesTable.buyerId, id));
+  await db.delete(freeFormationDownloadsTable).where(eq(freeFormationDownloadsTable.userId, id));
+  await db.delete(formationRequestsTable).where(eq(formationRequestsTable.userId, id));
+  await db.delete(contactPurchasesTable).where(eq(contactPurchasesTable.buyerId, id));
+  await db.delete(userTasksTable).where(eq(userTasksTable.userId, id));
   await db.delete(transactionsTable).where(eq(transactionsTable.userId, id));
   await db.delete(balancesTable).where(eq(balancesTable.userId, id));
   await db.delete(usersTable).where(eq(usersTable.id, id));
 
-  req.log.warn({ adminId: req.userId, deletedUserId: id }, "[admin] utilisateur supprimé");
+  req.log.warn({ adminId: req.userId, deletedUserId: id }, "[admin] utilisateur supprimé (cascade complète)");
   res.json({ success: true });
 });
 
