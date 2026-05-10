@@ -428,6 +428,70 @@ router.post("/withdrawals", authenticate, requireActivation, withdrawalLimiter, 
 });
 
 // ─────────────────────────────────────────────────────────────────
+// Déclaration utilisateur : "j'ai quand même reçu l'argent"
+// Pour un retrait parrainage rejeté, l'utilisateur signale qu'il a
+// reçu le virement malgré le statut d'échec.
+// → On passe le statut de "rejected" à "processing" pour débloquer
+//   l'upload de preuve. L'admin vérifie et force-complete si confirmé.
+// ─────────────────────────────────────────────────────────────────
+router.post("/withdrawals/:id/claim-received", authenticate, requireActivation, async (req, res): Promise<void> => {
+  const userId = req.userId!;
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "ID retrait invalide" });
+    return;
+  }
+
+  const [w] = await db.select().from(withdrawalsTable).where(and(
+    eq(withdrawalsTable.id, id),
+    eq(withdrawalsTable.userId, userId),
+  ));
+
+  if (!w) {
+    res.status(404).json({ error: "Retrait introuvable" });
+    return;
+  }
+  if (w.status !== "rejected") {
+    res.status(409).json({ error: "Ce retrait n'est pas en statut rejeté" });
+    return;
+  }
+  if (w.source !== "referral") {
+    res.status(400).json({ error: "Uniquement disponible pour les retraits parrainage" });
+    return;
+  }
+
+  // Passer en "processing" pour débloquer l'upload de preuve
+  const [updated] = await db.update(withdrawalsTable)
+    .set({
+      status: "processing",
+      rejectionReason: `[Déclaration utilisateur] Paiement reçu malgré le rejet — preuve en attente. Ancien motif : ${w.rejectionReason ?? "—"}`,
+    })
+    .where(and(
+      eq(withdrawalsTable.id, id),
+      eq(withdrawalsTable.userId, userId),
+      eq(withdrawalsTable.status, "rejected"),
+    ))
+    .returning();
+
+  if (!updated) {
+    res.status(409).json({ error: "Statut déjà modifié" });
+    return;
+  }
+
+  req.log.info({ withdrawalId: id, userId }, "Utilisateur déclare avoir reçu le paiement malgré le rejet");
+
+  // Notifier l'admin
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (user) {
+    reportWithdrawalStatusChange(updated, user, "rejected", "Utilisateur déclare avoir reçu le paiement — preuve en attente de validation").catch((err) => {
+      req.log.warn({ err }, "Échec WhatsApp claim-received");
+    });
+  }
+
+  res.json(formatWithdrawal(updated));
+});
+
+// ─────────────────────────────────────────────────────────────────
 // Upload de la preuve de paiement (capture d'écran SMS) par le membre.
 // ─────────────────────────────────────────────────────────────────
 router.post(

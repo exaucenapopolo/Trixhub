@@ -620,6 +620,7 @@ export default function WithdrawalsPage() {
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [claimingId, setClaimingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const proofTargetRef = useRef<number | null>(null);
 
@@ -656,6 +657,31 @@ export default function WithdrawalsPage() {
   const triggerProofUpload = (withdrawalId: number) => {
     proofTargetRef.current = withdrawalId;
     fileInputRef.current?.click();
+  };
+
+  const handleClaimReceived = async (withdrawalId: number) => {
+    setClaimingId(withdrawalId);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const res = await fetch(`${BASE}/api/withdrawals/${withdrawalId}/claim-received`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: "Erreur", description: data.error || "Réessayez plus tard.", variant: "destructive" });
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
+      toast({
+        title: "Déclaration enregistrée",
+        description: "Vous pouvez maintenant envoyer votre capture d'écran de confirmation.",
+      });
+    } catch {
+      toast({ title: "Connexion impossible", description: "Vérifiez votre internet.", variant: "destructive" });
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   const handleProofFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -814,7 +840,9 @@ export default function WithdrawalsPage() {
                     };
                     const hasProof = Boolean(wAny.proofUrl);
                     const isUploading = uploadingId === w.id;
-                    const canUploadProof = !hasProof && (w.status === "completed" || w.status === "processing" || w.status === "pending" || w.status === "rejected");
+                    const isClaiming = claimingId === w.id;
+                    const canUploadProof = !hasProof && (w.status === "completed" || w.status === "processing" || w.status === "pending");
+                    const canClaimReceived = w.status === "rejected" && w.source === "referral" && !hasProof;
                     const payoutSt = wAny.payoutStatus;
                     const requestedAtStr = w.requestedAt ? new Date(w.requestedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
                     return (
@@ -868,6 +896,29 @@ export default function WithdrawalsPage() {
                             >
                               {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                               {isUploading ? "Envoi..." : "Envoyer preuve"}
+                            </Button>
+                          </div>
+                        )}
+                        {canClaimReceived && (
+                          <div className="mt-3 ml-14 p-3 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 flex items-center justify-between gap-3">
+                            <div className="flex items-start gap-2 text-xs">
+                              <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="font-semibold text-foreground">Vous avez quand même reçu l'argent ?</p>
+                                <p className="text-muted-foreground mt-0.5">
+                                  Si le virement est arrivé malgré ce statut, signalez-le pour envoyer votre preuve.
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isClaiming}
+                              onClick={() => handleClaimReceived(w.id)}
+                              className="shrink-0 gap-1.5 border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+                            >
+                              {isClaiming ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                              {isClaiming ? "..." : "J'ai reçu l'argent"}
                             </Button>
                           </div>
                         )}
