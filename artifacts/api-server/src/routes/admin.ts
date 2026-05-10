@@ -811,12 +811,10 @@ router.get("/admin/top-users", authenticate, requireAdmin, async (_req, res): Pr
   res.json({ recruiters: topRecruiters, activities: topActivities, balances: topBalances, withdrawals: topWithdrawals });
 });
 
-// ─── GET /admin/wallet-users — liste des membres avec solde (hors comptes admin)
-// Retourne les utilisateurs ayant un solde parrainage > 0, triés par solde décroissant.
-// Les comptes administrateurs sont exclus.
+// ─── GET /admin/wallet-users — liste des membres avec solde
+// Retourne tous les utilisateurs ayant un solde > 0, triés par solde décroissant.
+// Les comptes administrateurs sont inclus (l'admin peut modifier ses propres soldes).
 // ─────────────────────────────────────────────────────────────────
-const ADMIN_ACCOUNT_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
-
 router.get("/admin/wallet-users", authenticate, requireAdmin, async (_req, res): Promise<void> => {
   type WalletUserRow = {
     id: number;
@@ -850,8 +848,7 @@ router.get("/admin/wallet-users", authenticate, requireAdmin, async (_req, res):
       )::int AS "totalBalance"
     FROM users u
     INNER JOIN balances b ON b.user_id = u.id
-    WHERE u.email NOT IN (${sql.join(ADMIN_ACCOUNT_EMAILS.map(e => sql`${e}`), sql`, `)})
-      AND (
+    WHERE (
         COALESCE(b.referral_balance::numeric, 0) +
         COALESCE(b.activity_balance::numeric, 0) +
         COALESCE(b.bonus_balance::numeric,    0) +
