@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, ilike, or, sql, and, count, gte, lt } from "drizzle-orm";
+import multer from "multer";
+import { randomBytes, randomUUID } from "crypto";
 import {
   db,
   usersTable,
@@ -18,6 +20,7 @@ import {
   freeFormationDownloadsTable,
   premiumFormationPurchasesTable,
   apkDownloadsTable,
+  adminProofsTable,
 } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -25,6 +28,25 @@ import { hashPassword } from "../lib/auth";
 import { activateUserTx } from "../lib/activation";
 import { COUNTRY_CODES, COUNTRY_CURRENCIES, PAYOUT_MIN } from "../lib/swychr";
 import { CURRENCY_RATES } from "../lib/currency";
+import { objectStorageClient } from "../lib/objectStorage";
+
+function getPrivateObjectDir(): string {
+  const dir = process.env.PRIVATE_OBJECT_DIR || "";
+  if (!dir) throw new Error("PRIVATE_OBJECT_DIR non configuré");
+  return dir;
+}
+
+const uploadProof = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.mimetype)) {
+      cb(new Error("Format invalide : image PNG/JPG/WEBP uniquement"));
+      return;
+    }
+    cb(null, true);
+  },
+});
 
 const router: IRouter = Router();
 
@@ -860,6 +882,92 @@ router.get("/admin/wallet-users", authenticate, requireAdmin, async (_req, res):
   `)).rows;
 
   res.json(rows);
+});
+
+// ─── Admin Preuves de retrait ──────────────────────────────────────
+// POST /admin/proof-publish — Publier une preuve de retrait (capture admin)
+// ─────────────────────────────────────────────────────────────────
+router.post(
+  "/admin/proof-publish",
+  authenticate,
+  requireAdmin,
+  (req, res, next) => {
+    uploadProof.single("file")(req, res, (err) => {
+      if (err) {
+        const msg = err instanceof Error ? err.message : "Upload échoué";
+        res.status(400).json({ error: msg });
+        return;
+      }
+      next();
+    });
+  },
+  async (req, res): Promise<void> => {
+    if (!req.file) {
+      res.status(400).json({ error: "Image manquante" });
+      return;
+    }
+
+    const { userName, country, amount, method, description } = req.body as {
+      userName?: string; country?: string; amount?: string;
+      method?: string; description?: string;
+    };
+
+    if (!userName?.trim() || !country?.trim() || !amount || !method?.trim()) {
+      res.status(400).json({ error: "Champs obligatoires manquants (userName, country, amount, method)" });
+      return;
+    }
+
+    const amountNum = parseInt(amount, 10);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      res.status(400).json({ error: "Montant invalide" });
+      return;
+    }
+
+    const ext = req.file.mimetype.includes("png") ? "png"
+      : req.file.mimetype.includes("webp") ? "webp" : "jpg";
+    const filename = `admin-proofs/ap-${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
+    const fullPath = `${getPrivateObjectDir().replace(/\/$/, "")}/${filename}`;
+    const parts = fullPath.startsWith("/") ? fullPath : `/${fullPath}`;
+    const pathParts = parts.split("/");
+    const bucketName = pathParts[1];
+    const objectName = pathParts.slice(2).join("/");
+
+    const file = objectStorageClient.bucket(bucketName).file(objectName);
+    await file.save(req.file.buffer, {
+      contentType: req.file.mimetype,
+      resumable: false,
+      metadata: { cacheControl: "private, max-age=0, no-store" },
+    });
+
+    const token = randomBytes(32).toString("hex");
+    const objectPath = `/objects/${filename}`;
+
+    const [proof] = await db.insert(adminProofsTable).values({
+      userName: userName.trim(),
+      country: country.trim(),
+      amount: amountNum,
+      method: method.trim(),
+      description: description?.trim() || null,
+      imageUrl: objectPath,
+      imageToken: token,
+    }).returning();
+
+    res.json({ ok: true, id: proof.id });
+  },
+);
+
+// GET /admin/proofs — liste des preuves publiées par l'admin
+router.get("/admin/proofs", authenticate, requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db.select().from(adminProofsTable).orderBy(desc(adminProofsTable.publishedAt));
+  res.json(rows);
+});
+
+// DELETE /admin/proofs/:id — supprimer une preuve admin
+router.delete("/admin/proofs/:id", authenticate, requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
+  await db.delete(adminProofsTable).where(eq(adminProofsTable.id, id));
+  res.json({ ok: true });
 });
 
 // ─── GET /api/apk/download — suivi des téléchargements (public)

@@ -9,7 +9,7 @@ import {
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
   Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
   Globe, AlertTriangle, Info, BookUser, GraduationCap, Star, Download,
-  Trophy, Medal, Phone, UserCheck, Sparkles,
+  Trophy, Medal, Phone, UserCheck, Sparkles, ImagePlus, Send, X as XIcon,
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 
@@ -2138,13 +2138,310 @@ function TopSection() {
   );
 }
 
+// ─── Section Preuves Admin ────────────────────────────────────────
+const PROOF_COUNTRIES = [
+  "Cameroun","Côte d'Ivoire","Sénégal","Mali","Burkina Faso","Togo","Bénin",
+  "Niger","Gabon","Congo-Brazzaville","RD Congo","Ghana","Nigeria","Kenya",
+  "Rwanda","Guinée","Tanzanie","Ouganda",
+];
+
+const PROOF_METHODS = [
+  { value: "mtn_momo", label: "MTN MoMo" },
+  { value: "orange_money", label: "Orange Money" },
+  { value: "wave", label: "Wave" },
+  { value: "moov_money", label: "Moov Money" },
+  { value: "airtel_money", label: "Airtel Money" },
+  { value: "m_pesa", label: "M-Pesa" },
+  { value: "free_money", label: "Free Money" },
+];
+
+interface AdminProofItem {
+  id: number;
+  userName: string;
+  country: string;
+  amount: number;
+  method: string;
+  description: string | null;
+  imageUrl: string;
+  imageToken: string;
+  publishedAt: string;
+}
+
+function ProofsAdminSection() {
+  const { toast } = useToast();
+  const [proofs, setProofs] = useState<AdminProofItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [userName, setUserName] = useState("");
+  const [country, setCountry] = useState("");
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState("");
+  const [description, setDescription] = useState("");
+
+  const token = localStorage.getItem("trixhub_token");
+
+  const loadProofs = async () => {
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/admin/proofs");
+      setProofs(data);
+    } catch { toast({ title: "Erreur", description: "Impossible de charger les preuves", variant: "destructive" }); }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadProofs(); }, []);
+
+  const handleFile = (f: File | null) => {
+    setFile(f);
+    if (f) {
+      const url = URL.createObjectURL(f);
+      setPreview(url);
+    } else {
+      setPreview(null);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) { toast({ title: "Image manquante", variant: "destructive" }); return; }
+    if (!userName.trim() || !country || !amount || !method) {
+      toast({ title: "Remplissez tous les champs obligatoires", variant: "destructive" }); return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("userName", userName.trim());
+      fd.append("country", country);
+      fd.append("amount", amount);
+      fd.append("method", method);
+      if (description.trim()) fd.append("description", description.trim());
+
+      const res = await fetch(`${BASE}/api/admin/proof-publish`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erreur");
+
+      toast({ title: "Preuve publiée !", description: "Elle apparaîtra sur la page /preuves." });
+      setFile(null);
+      setPreview(null);
+      setUserName("");
+      setCountry("");
+      setAmount("");
+      setMethod("");
+      setDescription("");
+      await loadProofs();
+    } catch (err) {
+      toast({ title: "Échec de l'upload", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    }
+    setUploading(false);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Supprimer cette preuve ?")) return;
+    try {
+      await apiFetch(`/api/admin/proofs/${id}`, { method: "DELETE" });
+      setProofs(p => p.filter(x => x.id !== id));
+      toast({ title: "Supprimée" });
+    } catch { toast({ title: "Erreur lors de la suppression", variant: "destructive" }); }
+  };
+
+  const methodLabel = (v: string) => PROOF_METHODS.find(m => m.value === v)?.label ?? v;
+
+  return (
+    <div className="space-y-6">
+      {/* Formulaire d'upload */}
+      <div className="rounded-2xl border bg-card p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+            <ImagePlus size={16} className="text-primary" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-sm">Publier une preuve de retrait</h2>
+            <p className="text-xs text-muted-foreground">L'image apparaîtra sur la page /preuves pour tous les membres.</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Zone image */}
+          <div
+            className="border-2 border-dashed border-muted rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors overflow-hidden"
+            style={{ minHeight: 160 }}
+            onClick={() => document.getElementById("proof-file-input")?.click()}
+          >
+            {preview ? (
+              <img src={preview} alt="Aperçu" className="object-contain max-h-60 w-full" />
+            ) : (
+              <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                <ImagePlus size={28} />
+                <span className="text-sm">Cliquez pour choisir une image (PNG/JPG/WEBP)</span>
+                <span className="text-xs">Max 10 Mo</span>
+              </div>
+            )}
+            <input
+              id="proof-file-input"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={e => handleFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          {preview && (
+            <button type="button" onClick={() => handleFile(null)} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors">
+              <XIcon size={12} /> Retirer l'image
+            </button>
+          )}
+
+          {/* Champs texte */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Nom affiché *</label>
+              <input
+                type="text"
+                value={userName}
+                onChange={e => setUserName(e.target.value)}
+                placeholder="Ex: Jean K."
+                className="w-full px-3 py-2 rounded-xl bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Pays *</label>
+              <select
+                value={country}
+                onChange={e => setCountry(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+              >
+                <option value="">Choisir un pays</option>
+                {PROOF_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Montant (FCFA) *</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="Ex: 5000"
+                min={1}
+                className="w-full px-3 py-2 rounded-xl bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Méthode *</label>
+              <select
+                value={method}
+                onChange={e => setMethod(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+              >
+                <option value="">Choisir une méthode</option>
+                {PROOF_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Description (optionnelle)</label>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Ex: Retrait validé en 2h, service impeccable !"
+              rows={2}
+              className="w-full px-3 py-2 rounded-xl bg-muted/50 border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={uploading}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all",
+              uploading ? "bg-primary/50 cursor-not-allowed" : "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            <Send size={15} />
+            {uploading ? "Publication en cours…" : "Publier la preuve"}
+          </button>
+        </form>
+      </div>
+
+      {/* Liste des preuves publiées */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-sm">Preuves publiées ({proofs.length})</h3>
+          <button onClick={loadProofs} className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors">
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw size={20} className="animate-spin text-muted-foreground" />
+          </div>
+        ) : proofs.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Aucune preuve publiée pour l'instant.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {proofs.map(p => {
+              const imgUrl = `${BASE}/api/storage/admin-proofs/${p.id}/${p.imageToken}`;
+              return (
+                <div key={p.id} className="rounded-2xl border bg-card overflow-hidden">
+                  <img
+                    src={imgUrl}
+                    alt="Preuve"
+                    className="w-full object-cover"
+                    style={{ maxHeight: 200 }}
+                    loading="lazy"
+                  />
+                  <div className="p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-sm">{p.userName}</span>
+                      <span className="text-xs text-muted-foreground">{p.country}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-semibold text-primary">{p.amount.toLocaleString("fr-FR")} FCFA</span>
+                      <span>•</span>
+                      <span>{methodLabel(p.method)}</span>
+                    </div>
+                    {p.description && <p className="text-xs text-muted-foreground italic">"{p.description}"</p>}
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-muted-foreground">{new Date(p.publishedAt).toLocaleDateString("fr-FR")}</span>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page principale Admin ────────────────────────────────────────
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
   usePageTitle('Administration');
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "surprises" | "wallets" | "contacts" | "formations" | "top">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "surprises" | "wallets" | "contacts" | "formations" | "top" | "preuves">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -2179,6 +2476,7 @@ export default function AdminPage() {
     { id: "contacts",    label: "Contacts",        icon: BookUser       },
     { id: "formations",  label: "Formations",      icon: GraduationCap  },
     { id: "top",         label: "Top Membres",     icon: Trophy         },
+    { id: "preuves",     label: "Preuves",          icon: ImagePlus      },
   ] as const;
 
   return (
@@ -2212,6 +2510,7 @@ export default function AdminPage() {
         {activeTab === "contacts"    && <ContactsSection />}
         {activeTab === "formations"  && <FormationsSection />}
         {activeTab === "top"         && <TopSection />}
+        {activeTab === "preuves"     && <ProofsAdminSection />}
       </div>
     </Layout>
   );

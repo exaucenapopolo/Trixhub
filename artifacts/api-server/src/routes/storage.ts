@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { timingSafeEqual } from "crypto";
 import { eq, and, sql } from "drizzle-orm";
-import { db, withdrawalsTable, activityCompletionsTable } from "@workspace/db";
+import { db, withdrawalsTable, activityCompletionsTable, adminProofsTable } from "@workspace/db";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage";
 
 const router: IRouter = Router();
@@ -202,6 +202,50 @@ router.get("/storage/surprises/:token", async (req: Request, res: Response) => {
       return;
     }
     res.status(500).json({ error: "Échec du chargement" });
+  }
+});
+
+/**
+ * GET /storage/admin-proofs/:id/:token
+ * Sert une preuve de retrait publiée par l'admin via un jeton opaque.
+ */
+router.get("/storage/admin-proofs/:id/:token", async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    const token = String(req.params.token ?? "");
+    if (!Number.isFinite(id) || token.length < 32 || token.length > 128) {
+      res.status(404).json({ error: "Preuve introuvable" });
+      return;
+    }
+
+    const [proof] = await db.select({
+      imageUrl: adminProofsTable.imageUrl,
+      imageToken: adminProofsTable.imageToken,
+    }).from(adminProofsTable).where(eq(adminProofsTable.id, id));
+
+    if (!proof || !proof.imageUrl || !proof.imageToken || !safeEqual(proof.imageToken, token)) {
+      res.status(404).json({ error: "Preuve introuvable" });
+      return;
+    }
+
+    const objectFile = await objectStorageService.getObjectEntityFile(proof.imageUrl);
+    const response = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    res.setHeader("Cache-Control", "public, max-age=86400");
+
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Preuve introuvable" });
+      return;
+    }
+    res.status(500).json({ error: "Échec du chargement de la preuve" });
   }
 });
 

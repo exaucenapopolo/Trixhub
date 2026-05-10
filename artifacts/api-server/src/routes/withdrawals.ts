@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { sendWithdrawalCreatedEmail, sendWithdrawalStatusEmail } from "../lib/email";
 import multer from "multer";
 import { eq, desc, sql, and, gte, isNull, isNotNull } from "drizzle-orm";
-import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } from "@workspace/db";
+import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable, adminProofsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { requireActivation } from "../middlewares/requireActivation";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -74,6 +74,9 @@ function formatWithdrawal(w: typeof withdrawalsTable.$inferSelect) {
 // Route publique : preuves de retrait (galerie communautaire)
 // ─────────────────────────────────────────────────────────────────
 router.get("/withdrawals/proofs", async (req, res): Promise<void> => {
+  const base = getPublicBaseUrl(req);
+
+  // Preuves réelles (uploads utilisateurs)
   const rows = await db.select({
     id: withdrawalsTable.id,
     amount: withdrawalsTable.amount,
@@ -93,22 +96,42 @@ router.get("/withdrawals/proofs", async (req, res): Promise<void> => {
     .orderBy(desc(withdrawalsTable.processedAt))
     .limit(60);
 
-  const base = getPublicBaseUrl(req);
-  res.json(rows.map((r) => {
+  const realProofs = rows.map((r) => {
     const parts = (r.displayName || "Membre").trim().split(/\s+/);
     const anonymized = parts.length > 1
       ? `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`
       : `${parts[0]}.`;
     return {
-      id: r.id,
+      id: `w-${r.id}`,
       amount: parseFloat(r.amount),
       method: r.method,
       userName: anonymized,
       country: r.country ?? null,
       proofImageUrl: `${base}/api/storage/proofs/${r.id}/${r.proofToken}`,
       processedAt: r.processedAt?.toISOString() ?? null,
+      description: null as string | null,
     };
+  });
+
+  // Preuves publiées par l'admin
+  const adminRows = await db.select().from(adminProofsTable).orderBy(desc(adminProofsTable.publishedAt)).limit(100);
+  const adminProofs = adminRows.map((r) => ({
+    id: `a-${r.id}`,
+    amount: r.amount,
+    method: r.method,
+    userName: r.userName,
+    country: r.country,
+    proofImageUrl: `${base}/api/storage/admin-proofs/${r.id}/${r.imageToken}`,
+    processedAt: r.publishedAt.toISOString(),
+    description: r.description ?? null,
   }));
+
+  // Fusion, triée du plus récent au plus ancien
+  const all = [...realProofs, ...adminProofs].sort(
+    (a, b) => new Date(b.processedAt ?? 0).getTime() - new Date(a.processedAt ?? 0).getTime(),
+  );
+
+  res.json(all);
 });
 
 router.get("/withdrawals", authenticate, requireActivation, async (req, res): Promise<void> => {
