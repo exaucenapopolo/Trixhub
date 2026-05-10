@@ -17,6 +17,7 @@ import { formatLocal } from "@/lib/currency";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+const TRIXHUB_LOGO = "/logo.png";
 
 
 function activityVisuals(type: string) {
@@ -574,9 +575,9 @@ export default function DashboardPage() {
           <div className="relative overflow-hidden rounded-2xl border border-green-500/30 bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-card p-5 flex items-center gap-4 hover:border-green-500/60 transition-all hover:shadow-lg hover:shadow-green-500/10 active:scale-[0.99]">
             {/* Glow pulse */}
             <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-green-400/10 blur-2xl pointer-events-none" />
-            {/* Icône Android */}
-            <div className="relative w-14 h-14 rounded-2xl bg-green-500/15 border border-green-500/25 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-              <Smartphone className="w-7 h-7 text-green-500" />
+            {/* Logo TRIXHUB */}
+            <div className="relative w-14 h-14 rounded-2xl bg-white/10 border border-green-500/25 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
+              <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="w-12 h-12 object-contain rounded-xl" />
               <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                 <Download className="w-2.5 h-2.5 text-white" />
               </span>
