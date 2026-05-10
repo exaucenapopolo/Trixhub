@@ -536,7 +536,10 @@ router.get("/admin/withdrawals/all", authenticate, requireAdmin, async (req, res
 // GET /admin/wallet-exposure — besoin de financement par pays
 // ─────────────────────────────────────────────────────────────────
 router.get("/admin/wallet-exposure", authenticate, requireAdmin, async (_req, res): Promise<void> => {
-  // 1. Soldes parrainage agrégés par pays
+  // Comptes administrateurs exclus du calcul d'exposition
+  const EXCLUDED_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
+
+  // 1. Soldes parrainage agrégés par pays (comptes admin exclus)
   const balanceRows = await db
     .select({
       country: usersTable.country,
@@ -548,7 +551,11 @@ router.get("/admin/wallet-exposure", authenticate, requireAdmin, async (_req, re
     })
     .from(usersTable)
     .leftJoin(balancesTable, eq(balancesTable.userId, usersTable.id))
-    .where(and(sql`${usersTable.country} IS NOT NULL`, sql`${usersTable.country} != ''`))
+    .where(and(
+      sql`${usersTable.country} IS NOT NULL`,
+      sql`${usersTable.country} != ''`,
+      sql`${usersTable.email} NOT IN (${sql.join(EXCLUDED_EMAILS.map(e => sql`${e}`), sql`, `)})`,
+    ))
     .groupBy(usersTable.country)
     .orderBy(sql`SUM(${balancesTable.referralBalance}::numeric) DESC NULLS LAST`);
 
