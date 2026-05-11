@@ -1,6 +1,6 @@
 // Conversion automatique FCFA → devise locale selon le pays de l'utilisateur.
 // Les taux INCLUENT les frais de paiement (le client final doit voir le montant exact qu'il paie).
-// Référence donnée par le métier : 3 600 FCFA = 14 900 CDF (taux 4.139, inclut frais).
+// Référence donnée par le métier : 3 600 FCFA = 17 100 CDF (taux 4.75, inclut frais).
 // Pour les autres devises, marge ~6-8% appliquée sur le taux interbancaire indicatif.
 
 export type CountryName =
@@ -45,7 +45,7 @@ const COUNTRY_TO_CURRENCY: Record<string, string> = {
 const CURRENCIES: Record<string, CurrencyInfo> = {
   XOF: { code: "XOF", symbol: "FCFA", rate: 1,                 roundTo: 1 },
   XAF: { code: "XAF", symbol: "FCFA", rate: 1,                 roundTo: 1 },
-  CDF: { code: "CDF", symbol: "CDF",  rate: 14900 / 3600,      roundTo: 100 },   // ≈ 4.1389
+  CDF: { code: "CDF", symbol: "CDF",  rate: 17100 / 3600,      roundTo: 100 },   // ≈ 4.75
   GHS: { code: "GHS", symbol: "GHS",  rate: 80 / 3600,         roundTo: 1 },     // ≈ 0.0222
   GNF: { code: "GNF", symbol: "GNF",  rate: 55000 / 3600,      roundTo: 500 },   // ≈ 15.28
   KES: { code: "KES", symbol: "KES",  rate: 870 / 3600,        roundTo: 10 },    // ≈ 0.2417

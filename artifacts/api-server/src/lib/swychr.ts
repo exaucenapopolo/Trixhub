@@ -615,7 +615,7 @@ const PAYIN_RATES: Record<string, number> = {
   // Zone BEAC
   XAF:  1,
   // Devises locales (taux dérivés du montant d'activation 3 600 FCFA)
-  CDF:  14900 / 3600,   // 3 600 FCFA = 14 900 CDF  (Franc congolais)
+  CDF:  17100 / 3600,   // 3 600 FCFA = 17 100 CDF  (Franc congolais)
   GHS:  80    / 3600,   // 3 600 FCFA = 80 GHS       (Cedi ghanéen)
   GNF:  55000 / 3600,   // 3 600 FCFA = 55 000 GNF   (Franc guinéen)
   KES:  870   / 3600,   // 3 600 FCFA = 870 KES       (Shilling kényan)
