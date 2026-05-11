@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CheckSquare, Wallet, User, LogOut,
   Menu, Sun, Moon, ChevronDown, PlayCircle, HelpCircle, Compass,
   Gift, GraduationCap, Palette, Shield, Sparkles, ExternalLink, ShieldCheck,
-  MessageCircleQuestion, BookUser, Star
+  MessageCircleQuestion, BookUser, Star, Info, MessageCircle, FileText, Lock
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 import PartnersFooter from "@/components/PartnersFooter";
@@ -19,7 +19,8 @@ const TOKEN_KEY = "trixhub_token";
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
-const TRIXHUB_LOGO = "https://raw.githubusercontent.com/exaucenapopolo/SOCIAL-SUCC-S-GROUP-/refs/heads/main/Tof/Logo%20Initiales%20Typographique%20Vintage%20Noir%20Beige%20Rouge_20260423_215340_0000.png";
+const TRIXHUB_LOGO = "/logo.png";
+const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/0029Vb7W0X4IyPtXGFuPoK3W";
 
 const mainNavItems = [
   { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
@@ -57,6 +58,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [missionsOpen, setMissionsOpen] = useState(false);
   const [bonusOpen, setBonusOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -264,8 +266,86 @@ export default function Layout({ children }: { children: ReactNode }) {
         )}
       </div>
 
+      {/* Canal WhatsApp */}
+      <div className="px-3 pt-2 border-t border-sidebar-border/50">
+        <a
+          href={WHATSAPP_CHANNEL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-green-600 dark:text-green-400 hover:bg-green-500/10"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <MessageCircle size={17} className="text-green-500 shrink-0" />
+          <span className="flex-1 text-left">Canal WhatsApp officiel</span>
+          <ExternalLink size={11} className="opacity-60 shrink-0" />
+        </a>
+      </div>
+
+      {/* À propos */}
+      <div className="px-3 pt-1 border-t border-sidebar-border/50">
+        <button
+          onClick={() => setAboutOpen(!aboutOpen)}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          <Info size={17} className="shrink-0" />
+          <span className="flex-1 text-left">À propos</span>
+          <ChevronDown size={14} className={cn("transition-transform shrink-0", aboutOpen ? "rotate-180" : "")} />
+        </button>
+        {aboutOpen && (
+          <div className="mx-3 mb-2 rounded-xl bg-sidebar-accent/40 border border-sidebar-border/50 p-4 space-y-3">
+            {/* Logo + nom */}
+            <div className="flex items-center gap-2.5">
+              <img src={TRIXHUB_LOGO} alt="TRIXHUB" className="h-9 w-9 rounded-xl object-contain" />
+              <div>
+                <p className="text-sm font-bold text-sidebar-foreground">TRIXHUB</p>
+                <p className="text-[10px] text-muted-foreground">Plateforme d'Affiliation Africaine</p>
+              </div>
+            </div>
+            {/* Description */}
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              TRIXHUB est la première plateforme africaine de marketing d'affiliation multi-niveaux.
+              Parrainez vos proches, gagnez des commissions sur 3 niveaux de réseau et retirez
+              vos gains via Mobile Money. Accessible depuis 18 pays africains.
+            </p>
+            {/* Stats clés */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "18", label: "Pays" },
+                { value: "3", label: "Niveaux" },
+                { value: "100%", label: "Mobile" },
+              ].map(s => (
+                <div key={s.label} className="text-center rounded-lg bg-sidebar-accent/60 py-2">
+                  <p className="text-xs font-bold text-primary">{s.value}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {/* Liens légaux */}
+            <div className="space-y-1.5 pt-1 border-t border-sidebar-border/50">
+              <Link
+                href="/terms"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <FileText size={12} className="shrink-0" />
+                Conditions d'utilisation
+              </Link>
+              <Link
+                href="/privacy"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Lock size={12} className="shrink-0" />
+                Politique de confidentialité
+              </Link>
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 text-center">v1.0 · Fait avec ❤️ pour l'Afrique</p>
+          </div>
+        )}
+      </div>
+
       {/* Support */}
-      <div className="px-3 pb-2 pt-2 border-t border-sidebar-border/50">
+      <div className="px-3 pb-2 pt-1">
         <button
           onClick={() => { setSidebarOpen(false); setSupportOpen(true); }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-sidebar-foreground hover:bg-sidebar-accent"

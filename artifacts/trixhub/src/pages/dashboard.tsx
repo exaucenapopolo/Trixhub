@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, Redirect } from "wouter";
+import JoinCommunityButton from "@/components/JoinCommunityButton";
 import { useGetDashboard, useGetReferralActivity, useGetPlatformConfig } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/Layout";
@@ -9,7 +10,7 @@ import {
   PlayCircle, HelpCircle, Compass, Sparkles, ChevronRight, Clock,
   Bell, TrendingUp, UserPlus, CheckCircle2, XCircle, AlertCircle,
   Award, PiggyBank, ArrowUpRight, Plus, Star, Crown, Share2,
-  Smartphone, Download
+  Smartphone, Download, ExternalLink
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -601,6 +602,38 @@ export default function DashboardPage() {
             {/* Flèche */}
             <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md shadow-green-500/30">
               <Download className="w-4 h-4 text-white" />
+            </div>
+          </div>
+        </a>
+
+        {/* REJOINDRE LE CANAL WHATSAPP */}
+        <a
+          href="https://whatsapp.com/channel/0029Vb7W0X4IyPtXGFuPoK3W"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block group"
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-[#25D366]/30 bg-gradient-to-br from-[#25D366]/10 via-[#25D366]/5 to-card p-5 flex items-center gap-4 hover:border-[#25D366]/60 transition-all hover:shadow-lg hover:shadow-[#25D366]/10 active:scale-[0.99]">
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#25D366]/10 blur-2xl pointer-events-none" />
+            {/* Icône WhatsApp */}
+            <div className="relative w-14 h-14 rounded-2xl bg-[#25D366]/15 border border-[#25D366]/25 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+              <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="16" fill="#25D366"/>
+                <path d="M23.5 8.5A9.9 9.9 0 0 0 16 5.5C10.75 5.5 6.5 9.75 6.5 15c0 1.65.43 3.26 1.25 4.68L6.5 26.5l6.98-1.23A9.87 9.87 0 0 0 16 26.5c5.25 0 9.5-4.25 9.5-9.5a9.43 9.43 0 0 0-2-6.5zm-7.5 14.6c-1.4 0-2.76-.37-3.95-1.07l-.28-.17-2.9.51.53-2.83-.18-.29A7.87 7.87 0 0 1 8.1 15c0-4.36 3.54-7.9 7.9-7.9 2.1 0 4.08.82 5.56 2.31A7.84 7.84 0 0 1 23.9 15c0 4.36-3.54 7.9-7.9 7.9zm4.33-5.91c-.24-.12-1.4-.69-1.62-.77-.21-.08-.37-.12-.52.12-.15.24-.6.77-.73.92-.14.15-.27.17-.5.06-.24-.12-1-.37-1.91-1.18-.7-.63-1.18-1.4-1.32-1.64-.14-.24-.01-.37.1-.49.1-.1.24-.27.35-.41.12-.14.15-.24.23-.4.08-.15.04-.29-.02-.41-.06-.12-.52-1.25-.71-1.71-.19-.45-.38-.39-.52-.4h-.45c-.15 0-.4.06-.61.29-.21.23-.82.8-.82 1.95s.84 2.26.96 2.42c.12.15 1.66 2.53 4.02 3.55.56.24 1 .39 1.34.5.56.18 1.08.15 1.48.09.45-.07 1.4-.57 1.6-1.13.2-.55.2-1.03.14-1.13-.06-.1-.21-.15-.45-.27z" fill="white"/>
+              </svg>
+            </div>
+            {/* Texte */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-sm font-bold text-foreground">Canal WhatsApp officiel</p>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#25D366]/15 text-[#25D366] border border-[#25D366]/25">COMMUNAUTÉ</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-snug">Actus, conseils & entraide entre membres TRIXHUB</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-1">Rejoins des milliers de membres africains</p>
+            </div>
+            {/* Flèche */}
+            <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#25D366] flex items-center justify-center group-hover:scale-110 transition-transform shadow-md shadow-[#25D366]/30">
+              <ExternalLink className="w-4 h-4 text-white" />
             </div>
           </div>
         </a>

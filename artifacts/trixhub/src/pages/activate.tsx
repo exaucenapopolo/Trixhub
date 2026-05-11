@@ -875,6 +875,14 @@ export default function ActivatePage() {
         </a>
       </div>
 
+      {/* REJOINDRE LE CANAL WHATSAPP */}
+      <div className="px-4 pb-4 max-w-lg mx-auto w-full">
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-center text-xs text-muted-foreground">Une question ? Rejoins la communauté :</p>
+          <JoinCommunityButton />
+        </div>
+      </div>
+
       {/* Pied de page partenaires */}
       <PartnersFooter />
 
