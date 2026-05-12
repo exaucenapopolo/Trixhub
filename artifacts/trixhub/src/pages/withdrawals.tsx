@@ -196,12 +196,16 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Pré-remplir si une seule méthode disponible
+  // Pré-remplir si une seule méthode disponible.
+  // On utilise une valeur primitive (string) comme dépendance pour éviter
+  // qu'un nouveau tableau de référence (useMemo recalculé) ne relance l'effet
+  // en boucle avec form.setValue → re-render → effet → form.setValue...
+  const singleMethodId = payoutMethods.length === 1 ? (payoutMethods[0]?.id ?? "") : "";
   useEffect(() => {
-    if (open && payoutMethods.length === 1 && !form.getValues("payoutMethodId")) {
-      form.setValue("payoutMethodId", payoutMethods[0].id);
+    if (open && singleMethodId && !form.getValues("payoutMethodId")) {
+      form.setValue("payoutMethodId", singleMethodId);
     }
-  }, [open, payoutMethods]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, singleMethodId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyFavorite = (fav: SavedNumber) => {
     form.setValue("accountNumber", fav.accountNumber);
