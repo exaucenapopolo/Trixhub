@@ -116,6 +116,18 @@ function getPayoutFeeLocal(amountFcfa: number): number {
   return 4_000;
 }
 
+// Frais minimum 750 FCFA pour les pays sans retrait automatique (vs 550 pour les automatiques)
+function getManualPayoutFeeLocal(amountFcfa: number): number {
+  if (!amountFcfa || !isFinite(amountFcfa) || amountFcfa <= 0) return 750;
+  if (amountFcfa < 20_000)    return 750;
+  if (amountFcfa < 50_000)    return 1_000;
+  if (amountFcfa < 100_000)   return 1_500;
+  if (amountFcfa < 200_000)   return 2_000;
+  if (amountFcfa < 500_000)   return 2_500;
+  if (amountFcfa < 1_000_000) return 3_000;
+  return 4_000;
+}
+
 // ─── Error Boundary ───────────────────────────────────────────────────────────
 class PageErrorBoundary extends Component<
   { children: ReactNode; fallback?: ReactNode | ((error: Error | null) => ReactNode) },
@@ -649,6 +661,7 @@ function ManualWithdrawalDialogContent({
 }: ManualWithdrawalDialogContentProps) {
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
+  const queryClient = useQueryClient();
 
   const payoutMethods = useMemo(() => {
     const raw = payoutMethodsData?.methods;
@@ -692,7 +705,6 @@ function ManualWithdrawalDialogContent({
           accountNumber: values.accountNumber,
           accountName: values.accountName,
           payoutMethod: selectedMethod?.name ?? values.payoutMethodId,
-          referralBalance,
           message: values.message || undefined,
         }),
       });
@@ -701,11 +713,17 @@ function ManualWithdrawalDialogContent({
         toast({ title: "Erreur", description: (data as { error?: string }).error || "Réessayez plus tard.", variant: "destructive" });
         return;
       }
+      const { fee, netAmount } = data as { fee?: number; netAmount?: number };
+      const feeStr    = fee      ? fee.toLocaleString("fr-FR")      : "—";
+      const netStr    = netAmount ? netAmount.toLocaleString("fr-FR") : "—";
       toast({
-        title: "Demande envoyée ✅",
-        description: "L'assistance vous contactera dans les 24 à 48h pour finaliser votre retrait.",
-        duration: 9000,
+        title: "Demande envoyée — solde débité ✅",
+        description: `Frais déduits : ${feeStr} FCFA. Vous recevrez ${netStr} FCFA dans les 24 à 48h.`,
+        duration: 10000,
       });
+      // Rafraîchir le solde et l'historique des retraits
+      await queryClient.invalidateQueries({ queryKey: getGetBalancesQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getListWithdrawalsQueryKey() });
       onClose();
     } catch {
       toast({ title: "Connexion impossible", description: "Vérifiez votre internet.", variant: "destructive" });
@@ -716,6 +734,8 @@ function ManualWithdrawalDialogContent({
 
   const watchedAmount = form.watch("amount");
   const safeAmount = isFinite(watchedAmount) && watchedAmount > 0 ? watchedAmount : 0;
+  const manualFee  = getManualPayoutFeeLocal(safeAmount);
+  const netPreview = safeAmount > 0 ? safeAmount - manualFee : 0;
 
   return (
     <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -771,8 +791,11 @@ function ManualWithdrawalDialogContent({
                     placeholder={String(minReferral)}
                   />
                 </FormControl>
-                {safeAmount > 0 && safeAmount !== minReferral && (
-                  <p className="text-[11px] text-muted-foreground">≈ {formatLocal(safeAmount, user)}</p>
+                {safeAmount > 0 && (
+                  <div className="flex items-center justify-between text-[11px] mt-1 px-0.5">
+                    <span className="text-muted-foreground">Frais déduits&nbsp;: <strong className="text-amber-600 dark:text-amber-400">{manualFee.toLocaleString("fr-FR")} FCFA</strong></span>
+                    <span className="text-muted-foreground">Vous recevrez&nbsp;: <strong className="text-green-600 dark:text-green-400">{netPreview > 0 ? netPreview.toLocaleString("fr-FR") : "—"} FCFA</strong></span>
+                  </div>
                 )}
                 <FormMessage />
               </FormItem>
@@ -1014,7 +1037,7 @@ export default function WithdrawalsPage() {
                   )}
                 </div>
               </div>
-              {isAutoWithdrawal ? (
+              {(isAutoWithdrawal || !canWithdraw) ? (
                 <Button
                   size="lg"
                   onClick={() => setDialogOpen(true)}
@@ -1029,8 +1052,7 @@ export default function WithdrawalsPage() {
                 <Button
                   size="lg"
                   onClick={() => setManualDialogOpen(true)}
-                  disabled={!canWithdraw}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 rounded-2xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 rounded-2xl shadow-lg transition-all hover:scale-[1.02] shrink-0"
                   data-testid="button-withdraw-manual"
                 >
                   <Headphones className="w-5 h-5 mr-2" />
@@ -1040,8 +1062,8 @@ export default function WithdrawalsPage() {
             </div>
           </div>
 
-          {/* BANNIÈRE RETRAIT MANUEL — pays non couverts par AccountPE */}
-          {!isAutoWithdrawal && (
+          {/* BANNIÈRE RETRAIT MANUEL — affichée uniquement quand le solde suffit */}
+          {!isAutoWithdrawal && canWithdraw && (
             <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25">
               <Headphones className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-sm leading-relaxed">

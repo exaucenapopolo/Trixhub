@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and, isNull } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { eq, and, isNull, gte, sql } from "drizzle-orm";
+import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } from "@workspace/db";
+import { getPayoutFee, PAYOUT_MIN } from "../lib/swychr";
 import { authenticate } from "../middlewares/authenticate";
 import { sendWhatsAppToAssistance } from "../lib/twilio";
 
@@ -144,7 +145,8 @@ router.post("/contact/assistance", authenticate, async (req, res): Promise<void>
 
 // ─────────────────────────────────────────────
 // POST /api/contact/withdrawal-request
-// Demande de retrait manuel — pays non couverts par AccountPE
+// Retrait manuel — pays non couverts par AccountPE
+// Frais min 750 FCFA (vs 550 pour retrait auto). Mode from_amount.
 // ─────────────────────────────────────────────
 router.post("/contact/withdrawal-request", authenticate, async (req, res): Promise<void> => {
   const userId = req.userId!;
@@ -158,13 +160,16 @@ router.post("/contact/withdrawal-request", authenticate, async (req, res): Promi
     accountNumber?: string;
     accountName?: string;
     payoutMethod?: string;
-    referralBalance?: number;
     message?: string;
   };
 
   const rawAmount = Number(body.amount ?? 0);
-  if (!rawAmount || rawAmount <= 0) {
+  if (!isFinite(rawAmount) || rawAmount <= 0) {
     res.status(400).json({ error: "Montant invalide" });
+    return;
+  }
+  if (rawAmount < PAYOUT_MIN) {
+    res.status(400).json({ error: `Le montant minimum de retrait est de ${PAYOUT_MIN.toLocaleString("fr-FR")} FCFA.` });
     return;
   }
 
@@ -173,16 +178,80 @@ router.post("/contact/withdrawal-request", authenticate, async (req, res): Promi
     res.status(401).json({ error: "Utilisateur introuvable" });
     return;
   }
+  if (!user.isActivated) {
+    res.status(403).json({ error: "Votre compte doit être activé pour effectuer un retrait." });
+    return;
+  }
 
-  const amount = Math.round(rawAmount);
+  const amount      = Math.round(rawAmount);
   const accountNumber = sanitize(body.accountNumber ?? "", 50);
   const accountName   = sanitize(body.accountName   ?? "", 80);
   const payoutMethod  = sanitize(body.payoutMethod  ?? "", 80);
-  const referralBalance = Math.max(0, Number(body.referralBalance ?? 0));
   const userMessage   = sanitize(body.message ?? "", 500);
 
-  const fullMessage =
-    `💳 *DEMANDE DE RETRAIT MANUEL*\n\n` +
+  // Frais min 750 FCFA pour les pays sans retrait automatique
+  const fee       = Math.max(750, getPayoutFee(amount));
+  const totalDebit = amount;          // on débite le montant demandé (from_amount)
+  const netAmount  = amount - fee;    // montant NET que l'utilisateur reçoit
+
+  // ── Déduction atomique du solde de parrainage ──────────────────────────────
+  type TxResult =
+    | { ok: true; balanceBefore: number; balanceAfter: number }
+    | { ok: false; reason: string };
+
+  const txResult = await db.transaction(async (tx): Promise<TxResult> => {
+    const [balRow] = await tx.select().from(balancesTable).where(eq(balancesTable.userId, userId));
+    const balanceBefore = parseFloat(balRow?.referralBalance ?? "0");
+
+    const updated = await tx
+      .update(balancesTable)
+      .set({
+        referralBalance: sql`(${balancesTable.referralBalance})::numeric - ${totalDebit.toFixed(2)}::numeric`,
+        withdrawnAmount: sql`(${balancesTable.withdrawnAmount})::numeric + ${totalDebit.toFixed(2)}::numeric`,
+      })
+      .where(and(
+        eq(balancesTable.userId, userId),
+        gte(sql`(${balancesTable.referralBalance})::numeric`, sql`${totalDebit.toFixed(2)}::numeric`),
+      ))
+      .returning();
+
+    if (updated.length === 0) {
+      return { ok: false, reason: `Solde parrainage insuffisant. Il vous faut au moins ${totalDebit.toLocaleString("fr-FR")} FCFA.` };
+    }
+
+    // Enregistrement du retrait (traitement manuel par l'assistance)
+    await tx.insert(withdrawalsTable).values({
+      userId,
+      amount: amount.toFixed(2),
+      method: payoutMethod || "manual_support",
+      accountNumber: accountNumber || "—",
+      accountName:   accountName   || "—",
+      source:   "referral",
+      feeMode:  "from_amount",
+      feeAmount: fee,
+      status:   "pending",
+    });
+
+    // Journal de transaction
+    await tx.insert(transactionsTable).values({
+      userId,
+      type:   "withdrawal",
+      amount: `-${totalDebit.toFixed(2)}`,
+      description: `Retrait manuel via assistance (${payoutMethod || "—"}) — frais déduits : ${fee.toLocaleString("fr-FR")} FCFA`,
+      status: "pending",
+    });
+
+    return { ok: true, balanceBefore, balanceAfter: Math.max(0, balanceBefore - totalDebit) };
+  });
+
+  if (!txResult.ok) {
+    res.status(400).json({ error: txResult.reason });
+    return;
+  }
+
+  // WhatsApp admin — signalé SOLDE DÉJÀ DÉBITÉ pour action immédiate
+  const msg =
+    `💳 *RETRAIT MANUEL À TRAITER*\n\n` +
     `👤 Membre : ${user.displayName}\n` +
     `📧 Email : ${user.email}\n` +
     `📱 Téléphone : ${user.phone}\n` +
@@ -190,22 +259,23 @@ router.post("/contact/withdrawal-request", authenticate, async (req, res): Promi
     `🔗 Code parrainage : ${user.referralCode}\n` +
     `🆔 User #${userId}\n\n` +
     `💰 *Détails du retrait*\n` +
-    `• Montant demandé : ${amount.toLocaleString("fr-FR")} FCFA\n` +
-    `• Solde parrainage disponible : ${referralBalance.toLocaleString("fr-FR")} FCFA\n` +
-    `• Méthode de paiement : ${payoutMethod || "Non précisée"}\n` +
+    `• Montant débité du solde : ${amount.toLocaleString("fr-FR")} FCFA\n` +
+    `• Frais déduits (min 750) : ${fee.toLocaleString("fr-FR")} FCFA\n` +
+    `• ✅ Montant NET à verser : *${netAmount.toLocaleString("fr-FR")} FCFA*\n` +
+    `• Solde avant : ${txResult.balanceBefore.toLocaleString("fr-FR")} FCFA\n` +
+    `• Solde après : ${txResult.balanceAfter.toLocaleString("fr-FR")} FCFA\n` +
+    `• Méthode : ${payoutMethod || "Non précisée"}\n` +
     `• Numéro Mobile Money : ${accountNumber || "Non précisé"}\n` +
     `• Nom du titulaire : ${accountName || "Non précisé"}\n` +
     (userMessage ? `\n📝 Message :\n${userMessage}\n` : "") +
-    `\n⏳ Délai annoncé : 24–48h`;
+    `\n⚠️ *SOLDE DÉJÀ DÉBITÉ* — veuillez procéder au virement.\n⏳ Délai annoncé : 24–48h`;
 
-  const result = await sendWhatsAppToAssistance(fullMessage);
-  if (!result.ok) {
-    res.status(503).json({ error: "Impossible d'envoyer la demande. Réessayez plus tard." });
-    return;
-  }
+  sendWhatsAppToAssistance(msg).catch((err) => {
+    req.log.warn({ err }, "WhatsApp retrait manuel échoué — solde déjà débité");
+  });
 
-  req.log.info({ userId, type: "withdrawal-request", amount }, "Demande retrait manuel envoyée");
-  res.json({ ok: true });
+  req.log.info({ userId, amount, fee, netAmount, payoutMethod }, "Retrait manuel créé");
+  res.json({ ok: true, fee, netAmount });
 });
 
 export default router;
