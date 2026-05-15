@@ -803,7 +803,7 @@ function UsersSection() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && load()} placeholder="Rechercher par email, nom, téléphone..." className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
+          <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && load()} placeholder="Rechercher par email, nom, téléphone, code parrainage..." className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
         </div>
         <div className="flex gap-2 flex-wrap">
           {[["all", "Tous"], ["active", "Actifs"], ["inactive", "Inactifs"], ["banned", "Bloqués"]].map(([val, label]) => (
@@ -839,6 +839,19 @@ function UsersSection() {
                           <div>
                             <p className="font-medium text-xs">{u.displayName}</p>
                             <p className="text-[10px] text-muted-foreground">{u.email}</p>
+                            {u.phone && (
+                              <a
+                                href={`https://wa.me/${u.phone.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={e => e.stopPropagation()}
+                                className="inline-flex items-center gap-0.5 text-[10px] text-green-600 dark:text-green-400 hover:underline mt-0.5"
+                                title={`Contacter sur WhatsApp : ${u.phone}`}
+                              >
+                                <Phone size={9} />
+                                {u.phone}
+                              </a>
+                            )}
                           </div>
                         </div>
                       </td>

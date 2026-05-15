@@ -224,7 +224,7 @@ router.get("/admin/users", authenticate, requireAdmin, async (req, res): Promise
   const conditions = [];
   if (q && q.trim()) {
     const pattern = `%${q.trim().toLowerCase()}%`;
-    conditions.push(or(ilike(usersTable.email, pattern), ilike(usersTable.displayName, pattern), ilike(usersTable.phone, pattern)));
+    conditions.push(or(ilike(usersTable.email, pattern), ilike(usersTable.displayName, pattern), ilike(usersTable.phone, pattern), ilike(usersTable.referralCode, pattern)));
   }
   if (filter === "active") conditions.push(eq(usersTable.isActivated, true));
   if (filter === "inactive") conditions.push(eq(usersTable.isActivated, false));
