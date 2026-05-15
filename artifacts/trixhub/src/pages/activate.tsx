@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import PartnersFooter from "@/components/PartnersFooter";
 import JoinCommunityButton from "@/components/JoinCommunityButton";
+import TutorialVideo from "@/components/TutorialVideo";
 import ImageLightbox from "@/components/ImageLightbox";
 import { formatLocalWithFcfa, formatLocal } from "@/lib/currency";
 
@@ -881,6 +882,18 @@ export default function ActivatePage() {
           <p className="text-center text-xs text-muted-foreground">Une question ? Rejoins la communauté :</p>
           <JoinCommunityButton />
         </div>
+      </div>
+
+      {/* Tutoriel activation — vidéo YouTube intégrée */}
+      <div className="px-4 pb-6 max-w-lg mx-auto w-full">
+        <p className="text-xs text-center text-muted-foreground mb-3 font-medium uppercase tracking-wide">
+          Voir comment activer son compte
+        </p>
+        <TutorialVideo
+          videoId="iVDSxGii2XA"
+          title="Comment s'inscrire et activer son compte ?"
+          description="Inscription + activation étape par étape"
+        />
       </div>
 
       {/* Pied de page partenaires */}

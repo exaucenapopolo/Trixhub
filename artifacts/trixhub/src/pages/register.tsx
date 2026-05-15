@@ -6,6 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Sun, Moon, Eye, EyeOff, CheckCircle2, Phone, Mail, Globe, Lock, Users, ChevronDown, Info, X, Users2, Briefcase, Star, TrendingUp } from "lucide-react";
 import PartnersFooter from "@/components/PartnersFooter";
 import JoinCommunityButton from "@/components/JoinCommunityButton";
+import TutorialVideo from "@/components/TutorialVideo";
 import { formatLocal } from "@/lib/currency";
 import { usePageTitle } from '@/hooks/usePageTitle';
 
@@ -457,6 +458,18 @@ export default function RegisterPage() {
 
             <div className="mt-6">
               <JoinCommunityButton />
+            </div>
+
+            {/* Tutoriel inscription — vidéo YouTube intégrée */}
+            <div className="mt-8">
+              <p className="text-xs text-center text-muted-foreground mb-3 font-medium uppercase tracking-wide">
+                Besoin d'aide pour s'inscrire ?
+              </p>
+              <TutorialVideo
+                videoId="iVDSxGii2XA"
+                title="Comment s'inscrire sur TRIXHUB ?"
+                description="Tutoriel complet étape par étape"
+              />
             </div>
 
             <div className="lg:hidden mt-8">

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import TutorialVideo from "@/components/TutorialVideo";
 import { useAuth } from "@/context/AuthContext";
 import { formatLocal } from "@/lib/currency";
 import { Card, CardContent } from "@/components/ui/card";
@@ -234,6 +235,15 @@ export default function ActivitiesPage() {
             <strong> 700 pts</strong> chaque dimanche → {formatLocal(700, user)}
           </p>
         </div>
+
+        {/* ── Tutoriel activités (1ère visite = grand, suite = replié) ── */}
+        <TutorialVideo
+          videoId="ZMEyZnRRLrg"
+          title="Comment effectuer une activité ?"
+          description="Tutoriel officiel TRIXHUB"
+          smartCollapse
+          storageKey="trixhub_activity_tutorial_seen"
+        />
 
         {/* ── Hero progression hebdo ── */}
         <Card className="overflow-hidden border-2 border-primary/20 shadow-lg">

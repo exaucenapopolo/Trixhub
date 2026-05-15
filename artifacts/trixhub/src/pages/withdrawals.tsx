@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { usePageTitle } from '@/hooks/usePageTitle';
+import TutorialVideo from "@/components/TutorialVideo";
 import {
   Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle,
   Users, ChevronRight, Upload, ImageIcon, Loader2, ShieldCheck, Zap,
@@ -1076,6 +1077,13 @@ export default function WithdrawalsPage() {
               </div>
             </div>
           )}
+
+          {/* TUTORIEL RETRAIT — vidéo YouTube intégrée */}
+          <TutorialVideo
+            videoId="jA0Jywl-VPM"
+            title="Comment effectuer un retrait ?"
+            description="Tutoriel officiel TRIXHUB"
+          />
 
           {/* LIEN PREUVES DE RETRAIT */}
           <a
