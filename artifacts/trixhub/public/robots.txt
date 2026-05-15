@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /preuves
+Allow: /terms
+Allow: /privacy
+
+Disallow: /dashboard
+Disallow: /team
+Disallow: /tasks
+Disallow: /activities
+Disallow: /withdrawals
+Disallow: /retraits
+Disallow: /depot
+Disallow: /profile
+Disallow: /bonus
+Disallow: /formations
+Disallow: /formations-pro
+Disallow: /admin
+Disallow: /contacts
+Disallow: /activate
+
+Sitemap: https://trixhub.replit.app/sitemap.xml
