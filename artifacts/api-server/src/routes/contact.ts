@@ -142,4 +142,70 @@ router.post("/contact/assistance", authenticate, async (req, res): Promise<void>
   res.json({ ok: true });
 });
 
+// ─────────────────────────────────────────────
+// POST /api/contact/withdrawal-request
+// Demande de retrait manuel — pays non couverts par AccountPE
+// ─────────────────────────────────────────────
+router.post("/contact/withdrawal-request", authenticate, async (req, res): Promise<void> => {
+  const userId = req.userId!;
+  if (rateLimited(userId, "withdrawal-request")) {
+    res.status(429).json({ error: "Patientez 30 secondes avant de réessayer." });
+    return;
+  }
+
+  const body = req.body as {
+    amount?: number;
+    accountNumber?: string;
+    accountName?: string;
+    payoutMethod?: string;
+    referralBalance?: number;
+    message?: string;
+  };
+
+  const rawAmount = Number(body.amount ?? 0);
+  if (!rawAmount || rawAmount <= 0) {
+    res.status(400).json({ error: "Montant invalide" });
+    return;
+  }
+
+  const user = await getUser(userId);
+  if (!user) {
+    res.status(401).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  const amount = Math.round(rawAmount);
+  const accountNumber = sanitize(body.accountNumber ?? "", 50);
+  const accountName   = sanitize(body.accountName   ?? "", 80);
+  const payoutMethod  = sanitize(body.payoutMethod  ?? "", 80);
+  const referralBalance = Math.max(0, Number(body.referralBalance ?? 0));
+  const userMessage   = sanitize(body.message ?? "", 500);
+
+  const fullMessage =
+    `💳 *DEMANDE DE RETRAIT MANUEL*\n\n` +
+    `👤 Membre : ${user.displayName}\n` +
+    `📧 Email : ${user.email}\n` +
+    `📱 Téléphone : ${user.phone}\n` +
+    `🌍 Pays : ${user.country}\n` +
+    `🔗 Code parrainage : ${user.referralCode}\n` +
+    `🆔 User #${userId}\n\n` +
+    `💰 *Détails du retrait*\n` +
+    `• Montant demandé : ${amount.toLocaleString("fr-FR")} FCFA\n` +
+    `• Solde parrainage disponible : ${referralBalance.toLocaleString("fr-FR")} FCFA\n` +
+    `• Méthode de paiement : ${payoutMethod || "Non précisée"}\n` +
+    `• Numéro Mobile Money : ${accountNumber || "Non précisé"}\n` +
+    `• Nom du titulaire : ${accountName || "Non précisé"}\n` +
+    (userMessage ? `\n📝 Message :\n${userMessage}\n` : "") +
+    `\n⏳ Délai annoncé : 24–48h`;
+
+  const result = await sendWhatsAppToAssistance(fullMessage);
+  if (!result.ok) {
+    res.status(503).json({ error: "Impossible d'envoyer la demande. Réessayez plus tard." });
+    return;
+  }
+
+  req.log.info({ userId, type: "withdrawal-request", amount }, "Demande retrait manuel envoyée");
+  res.json({ ok: true });
+});
+
 export default router;

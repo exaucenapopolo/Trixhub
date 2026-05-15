@@ -21,7 +21,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Wallet, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle,
   Users, ChevronRight, Upload, ImageIcon, Loader2, ShieldCheck, Zap,
-  Star, Phone, MessageCircle, CreditCard, Coins,
+  Star, Phone, MessageCircle, CreditCard, Coins, Headphones,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +37,11 @@ const MAX_PROOF_SIZE = 5 * 1024 * 1024;
 
 const SAVED_NUMBERS_KEY = "trixhub_saved_withdraw_numbers";
 const MAX_SAVED = 3;
+
+// Pays couverts par le retrait automatique AccountPE (miroir de ACCOUNTPE_SUPPORTED_COUNTRY_CODES backend)
+const ACCOUNTPE_SUPPORTED_COUNTRIES = new Set([
+  "Cameroun", "Côte d'Ivoire", "Sénégal", "Mali", "Burkina Faso", "Togo", "Bénin", "Guinée",
+]);
 
 interface SavedNumber {
   accountNumber: string;
@@ -87,6 +92,16 @@ const withdrawalSchema = z.object({
   feeMode: z.enum(["from_amount", "from_balance"]),
 });
 type WithdrawalFormValues = z.infer<typeof withdrawalSchema>;
+
+// Schéma pour le formulaire de retrait manuel (assistance)
+const manualWithdrawalSchema = z.object({
+  amount:        z.number({ coerce: true }).min(1, "Montant invalide"),
+  payoutMethodId: z.string().min(1, "Choisissez une méthode"),
+  accountNumber: z.string().min(8, "Numéro Mobile Money requis (min. 8 chiffres)"),
+  accountName:   z.string().min(3, "Nom du titulaire requis"),
+  message:       z.string().optional(),
+});
+type ManualWithdrawalFormValues = z.infer<typeof manualWithdrawalSchema>;
 
 // Barème progressif des frais (en FCFA, miroir du backend)
 function getPayoutFeeLocal(amountFcfa: number): number {
@@ -618,11 +633,239 @@ function WithdrawalDialogContent({ open, onClose, referralBalance, minReferral, 
   );
 }
 
+// ─── Dialog retrait manuel (pays sans retrait automatique) ────────────────────
+interface ManualWithdrawalDialogContentProps {
+  open: boolean;
+  onClose: () => void;
+  referralBalance: number;
+  minReferral: number;
+  user: ReturnType<typeof useAuth>["user"];
+  payoutMethodsData: GetPayoutMethodsQueryResult | undefined;
+  loadingMethods: boolean;
+}
+
+function ManualWithdrawalDialogContent({
+  open, onClose, referralBalance, minReferral, user, payoutMethodsData, loadingMethods,
+}: ManualWithdrawalDialogContentProps) {
+  const { toast } = useToast();
+  const [sending, setSending] = useState(false);
+
+  const payoutMethods = useMemo(() => {
+    const raw = payoutMethodsData?.methods;
+    return Array.isArray(raw) ? raw : [];
+  }, [payoutMethodsData]);
+
+  const form = useForm<ManualWithdrawalFormValues>({
+    resolver: zodResolver(manualWithdrawalSchema),
+    defaultValues: { amount: minReferral, payoutMethodId: "", accountNumber: "", accountName: "", message: "" },
+  });
+
+  const singleMethodId = payoutMethods.length === 1 ? (payoutMethods[0]?.id ?? "") : "";
+
+  useEffect(() => {
+    if (!open) return;
+    form.reset({
+      amount: minReferral,
+      payoutMethodId: singleMethodId,
+      accountNumber: user?.phone ?? "",
+      accountName: user?.displayName ?? "",
+      message: "",
+    });
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (open && singleMethodId && !form.getValues("payoutMethodId")) {
+      form.setValue("payoutMethodId", singleMethodId);
+    }
+  }, [open, singleMethodId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onSubmit = async (values: ManualWithdrawalFormValues) => {
+    setSending(true);
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const selectedMethod = payoutMethods.find(m => m.id === values.payoutMethodId);
+      const res = await fetch(`${BASE}/api/contact/withdrawal-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          amount: values.amount,
+          accountNumber: values.accountNumber,
+          accountName: values.accountName,
+          payoutMethod: selectedMethod?.name ?? values.payoutMethodId,
+          referralBalance,
+          message: values.message || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: "Erreur", description: (data as { error?: string }).error || "Réessayez plus tard.", variant: "destructive" });
+        return;
+      }
+      toast({
+        title: "Demande envoyée ✅",
+        description: "L'assistance vous contactera dans les 24 à 48h pour finaliser votre retrait.",
+        duration: 9000,
+      });
+      onClose();
+    } catch {
+      toast({ title: "Connexion impossible", description: "Vérifiez votre internet.", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const watchedAmount = form.watch("amount");
+  const safeAmount = isFinite(watchedAmount) && watchedAmount > 0 ? watchedAmount : 0;
+
+  return (
+    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/10">
+            <Headphones className="w-4 h-4 text-amber-500" />
+          </div>
+          Retrait via l'assistance
+        </DialogTitle>
+      </DialogHeader>
+      <div className="p-1 space-y-4">
+
+        {/* Avertissement délai */}
+        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+          <Clock size={16} className="text-amber-500 mt-0.5 shrink-0" />
+          <div className="text-xs">
+            <p className="font-semibold text-amber-600 dark:text-amber-400">Traitement manuel — 24 à 48 heures</p>
+            <p className="text-muted-foreground mt-1 leading-relaxed">
+              Le retrait automatique n'est pas encore disponible dans votre pays.
+              Votre demande sera traitée manuellement par l'assistance dans les <strong>24 à 48 heures</strong>.
+              Merci de votre patience.
+            </p>
+          </div>
+        </div>
+
+        {/* Soldes */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 bg-muted/50 rounded-xl text-center">
+            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Solde disponible</p>
+            <p className="text-base font-bold text-primary tabular-nums amount-display mt-1">{formatLocal(referralBalance, user)}</p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-xl text-center">
+            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Minimum</p>
+            <p className="text-base font-bold tabular-nums amount-display mt-1">{formatLocal(minReferral, user)}</p>
+          </div>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+            {/* Montant */}
+            <FormField control={form.control} name="amount" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Montant à retirer (FCFA)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    value={field.value || ""}
+                    onChange={e => { const v = parseFloat(e.target.value); field.onChange(isNaN(v) ? 0 : v); }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    placeholder={String(minReferral)}
+                  />
+                </FormControl>
+                {safeAmount > 0 && safeAmount !== minReferral && (
+                  <p className="text-[11px] text-muted-foreground">≈ {formatLocal(safeAmount, user)}</p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Méthode de paiement */}
+            <FormField control={form.control} name="payoutMethodId" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Méthode de paiement (Mobile Money)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      {loadingMethods
+                        ? <span className="flex items-center gap-2 text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Chargement...</span>
+                        : <SelectValue placeholder="Choisissez une méthode" />}
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {payoutMethods.length === 0 && !loadingMethods && (
+                      <SelectItem value="__none" disabled>Aucune méthode disponible</SelectItem>
+                    )}
+                    {payoutMethods.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Numéro Mobile Money */}
+            <FormField control={form.control} name="accountNumber" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-1.5"><Phone size={13} /> Numéro Mobile Money</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="6 81 23 45 67" inputMode="numeric" />
+                </FormControl>
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1">
+                  <AlertCircle size={11} /> Sans indicatif pays (sans +237, +225…)
+                </p>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Nom du titulaire */}
+            <FormField control={form.control} name="accountName" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nom du titulaire du compte</FormLabel>
+                <FormControl><Input {...field} placeholder="Prénom Nom" /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Message optionnel */}
+            <FormField control={form.control} name="message" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Message à l'assistance{" "}
+                  <span className="text-muted-foreground font-normal text-[11px]">(optionnel)</span>
+                </FormLabel>
+                <FormControl>
+                  <textarea
+                    {...field}
+                    placeholder="Précisez toute information utile…"
+                    maxLength={500}
+                    className="w-full min-h-[72px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <Button
+              type="submit"
+              className="w-full font-bold bg-amber-500 hover:bg-amber-600 text-white"
+              disabled={sending || loadingMethods}
+            >
+              {sending
+                ? <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" />Envoi en cours…</span>
+                : <span className="flex items-center gap-2"><MessageCircle size={16} />Envoyer ma demande à l'assistance</span>}
+            </Button>
+
+          </form>
+        </Form>
+      </div>
+    </DialogContent>
+  );
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function WithdrawalsPage() {
   usePageTitle('Retraits');
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [claimingId, setClaimingId] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -657,6 +900,8 @@ export default function WithdrawalsPage() {
   const MIN_REFERRAL = platformConfig?.minimumWithdrawal ?? MIN_REFERRAL_DEFAULT;
   const referralBalance = balances?.referralBalance ?? 0;
   const canWithdraw = referralBalance >= MIN_REFERRAL;
+  // Détection retrait automatique : vrai si pays non défini (sécurité) ou dans la liste supportée
+  const isAutoWithdrawal = !user?.country || ACCOUNTPE_SUPPORTED_COUNTRIES.has(user.country);
 
   const triggerProofUpload = (withdrawalId: number) => {
     proofTargetRef.current = withdrawalId;
@@ -769,18 +1014,46 @@ export default function WithdrawalsPage() {
                   )}
                 </div>
               </div>
-              <Button
-                size="lg"
-                onClick={() => setDialogOpen(true)}
-                disabled={!canWithdraw}
-                className="bg-white text-blue-700 hover:bg-white/90 font-bold px-8 rounded-2xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                data-testid="button-withdraw-referral"
-              >
-                <Wallet className="w-5 h-5 mr-2" />
-                Demander un retrait
-              </Button>
+              {isAutoWithdrawal ? (
+                <Button
+                  size="lg"
+                  onClick={() => setDialogOpen(true)}
+                  disabled={!canWithdraw}
+                  className="bg-white text-blue-700 hover:bg-white/90 font-bold px-8 rounded-2xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  data-testid="button-withdraw-referral"
+                >
+                  <Wallet className="w-5 h-5 mr-2" />
+                  Demander un retrait
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={() => setManualDialogOpen(true)}
+                  disabled={!canWithdraw}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 rounded-2xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  data-testid="button-withdraw-manual"
+                >
+                  <Headphones className="w-5 h-5 mr-2" />
+                  Contacter le support
+                </Button>
+              )}
             </div>
           </div>
+
+          {/* BANNIÈRE RETRAIT MANUEL — pays non couverts par AccountPE */}
+          {!isAutoWithdrawal && (
+            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25">
+              <Headphones className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <div className="text-sm leading-relaxed">
+                <span className="font-semibold text-amber-600 dark:text-amber-400">
+                  Retraits automatiques non disponibles dans votre pays.
+                </span>{" "}
+                <span className="text-muted-foreground">
+                  Votre demande sera traitée manuellement par l'assistance sous <strong>24 à 48 heures</strong>.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* LIEN PREUVES DE RETRAIT */}
           <a
@@ -949,6 +1222,19 @@ export default function WithdrawalsPage() {
           onChange={handleProofFileChange}
           data-testid="input-proof-file"
         />
+
+        {/* MODAL RETRAIT MANUEL (pays non couverts par AccountPE) */}
+        <Dialog open={manualDialogOpen} onOpenChange={setManualDialogOpen}>
+          <ManualWithdrawalDialogContent
+            open={manualDialogOpen}
+            onClose={() => setManualDialogOpen(false)}
+            referralBalance={referralBalance}
+            minReferral={MIN_REFERRAL}
+            user={user}
+            payoutMethodsData={payoutMethodsData}
+            loadingMethods={loadingMethods}
+          />
+        </Dialog>
 
         {/* MODAL RETRAIT PARRAINAGE — tout le form est dans WithdrawalDialogContent */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
