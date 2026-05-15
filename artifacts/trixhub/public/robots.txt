@@ -20,4 +20,4 @@ Disallow: /admin
 Disallow: /contacts
 Disallow: /activate
 
-Sitemap: https://trixhub.replit.app/sitemap.xml
+Sitemap: https://trixhub.site/sitemap.xml
