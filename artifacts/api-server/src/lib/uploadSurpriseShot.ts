@@ -17,13 +17,14 @@ function parsePath(path: string): { bucketName: string; objectName: string } {
 export interface SurpriseShotResult {
   objectPath: string;
   token: string;
-  signedUrl: string;
 }
 
 /**
  * Upload une capture d'écran de statut WhatsApp vers Object Storage.
- * Génère un token aléatoire pour la servir via notre API
- * et une URL signée temporaire (1h) pour l'envoyer à l'admin via Twilio.
+ * Génère un token aléatoire pour la servir via notre API (GET /storage/surprises/:token).
+ * Note : getSignedUrl() n'est pas utilisé car Replit Object Storage ne fournit pas
+ * les credentials de compte de service (client_email) nécessaires à la signature GCS.
+ * L'accès admin se fait via le token interne, jamais via une URL signée GCS.
  */
 export async function uploadSurpriseShot(params: {
   buffer: Buffer;
@@ -49,15 +50,8 @@ export async function uploadSurpriseShot(params: {
 
   const token = randomBytes(32).toString("hex");
 
-  const [signedUrl] = await file.getSignedUrl({
-    version: "v4",
-    action: "read",
-    expires: Date.now() + 3 * 3600 * 1000, // 3 heures
-  });
-
   return {
     objectPath: `/objects/${filename}`,
     token,
-    signedUrl,
   };
 }

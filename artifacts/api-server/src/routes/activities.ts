@@ -711,7 +711,7 @@ router.post(
         const buffer = Buffer.from(imageBase64, "base64");
 
         // Upload vers Object Storage
-        const { objectPath, token, signedUrl } = await uploadSurpriseShot({
+        const { objectPath, token } = await uploadSurpriseShot({
           buffer,
           contentType: mimeType,
           userId,
@@ -724,7 +724,7 @@ router.post(
           weekStart,
           dayOfWeek: 4,
           pointsAwarded: 0,
-          payloadProof: { objectPath, token, signedUrl },
+          payloadProof: { objectPath, token },
           status: "pending",
         });
 
