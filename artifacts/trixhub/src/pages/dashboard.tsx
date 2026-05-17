@@ -310,7 +310,7 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  if (user && !user.isActivated) return <Redirect to="/activate" />;
+  if (user && !user.isActivated && !user.isFreeAccount) return <Redirect to="/activate" />;
 
   const { data: dashboard, isLoading: dashLoading } = useGetDashboard();
   const { data: activity } = useGetReferralActivity();
