@@ -206,11 +206,12 @@ router.get("/contacts/download/:purchaseId", authenticate, async (req, res): Pro
   for (const c of contacts) {
     lines.push("BEGIN:VCARD");
     lines.push("VERSION:3.0");
-    lines.push(`FN:${c.displayName} (TRIXHUB)`);
-    lines.push(`N:${c.displayName};;;;`);
+    lines.push(`FN:${c.displayName} | TRIXHUB`);
+    lines.push(`N:TRIXHUB;${c.displayName};;;`);
+    lines.push("ORG:TRIXHUB");
     lines.push(`TEL;TYPE=CELL,VOICE:${c.phone}`);
     if (c.country) lines.push(`ADR;TYPE=HOME:;;;;;;${c.country}`);
-    lines.push("NOTE:Membre TRIXHUB");
+    lines.push("NOTE:Membre TRIXHUB - plateforme d'affiliation africaine");
     lines.push("END:VCARD");
     lines.push("");
   }
