@@ -24,7 +24,7 @@ function deriveDisplayName(email: string): string {
  * - Lève les restrictions (activities, formations, canva)
  * - Octroie le bonus de bienvenue (+800 FCFA)
  * - Transfère le surplus éventuel vers le solde parrainage
- * - Pose une dette de 200 FCFA sur la prochaine commission
+ * - Pose une dette de 1 700 FCFA sur la prochaine commission N1 (commission due au parrain)
  *
  * @returns true si activation effective, false si déjà activé.
  */
@@ -346,92 +346,6 @@ export async function creditDepositTx(
   log.info({ userId, amount, source }, "[deposit] ✅ solde dépôt crédité");
 }
 
-/**
- * ────────────────────────────────────────────────────────────────────────────
- * activateFreeAccountWithPaymentTx — Activation d'un compte gratuit par paiement
- * du solde restant (3 400 FCFA − crédit déjà accumulé).
- * ────────────────────────────────────────────────────────────────────────────
- * Le membre a accumulé des crédits via parrainage et paie uniquement le
- * montant manquant pour couvrir le seuil.
- *
- * — Le crédit d'activation déjà accumulé est reversé dans le solde parrainage.
- * — Une dette de 1 700 FCFA est posée (commission N1 due au parrain, prélevée
- *   automatiquement sur la prochaine commission reçue — même mécanique que l'auto-activation).
- * — Le bonus de bienvenue (+800 FCFA) est accordé.
- * — Les commissions N1/N2/N3 ne sont PAS distribuées depuis le paiement
- *   (la dette remplace ce mécanisme).
- */
-export async function activateFreeAccountWithPaymentTx(
-  tx: Tx,
-  userId: number,
-  paymentAmount: number,
-  source: string,
-  log: Logger,
-): Promise<boolean> {
-  const [user] = await tx.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!user) throw new Error(`USER_NOT_FOUND user=${userId}`);
-
-  const activated = await tx
-    .update(usersTable)
-    .set({
-      isActivated: true,
-      blockedActivities: false,
-      blockedFormations: false,
-      blockedCanva: false,
-      freeAccountDebt: FREE_ACCOUNT_DEBT.toFixed(2),
-      activationCredit: "0.00",
-    })
-    .where(and(eq(usersTable.id, userId), eq(usersTable.isActivated, false)))
-    .returning();
-
-  if (activated.length === 0) {
-    log.info({ userId, source }, "[free-self-activation] déjà activé, no-op");
-    return false;
-  }
-
-  const credit = parseFloat(user.activationCredit);
-
-  const balUpd = await tx
-    .update(balancesTable)
-    .set({
-      bonusBalance: sql`${balancesTable.bonusBalance} + ${ACTIVATION_BONUS}`,
-      referralBalance: sql`${balancesTable.referralBalance} + ${credit}`,
-      spentAmount: sql`${balancesTable.spentAmount} + ${paymentAmount}`,
-    })
-    .where(eq(balancesTable.userId, userId))
-    .returning();
-  if (balUpd.length === 0) throw new Error(`MISSING_BALANCE_ROW user=${userId}`);
-
-  const logs: (typeof transactionsTable.$inferInsert)[] = [
-    {
-      userId,
-      type: "activation_free_payment",
-      amount: `-${paymentAmount.toFixed(2)}`,
-      description: `Paiement du solde restant pour activation compte gratuit (${paymentAmount.toLocaleString("fr-FR")} FCFA) via ${source}`,
-      status: "completed",
-    },
-    {
-      userId,
-      type: "bonus_activation",
-      amount: ACTIVATION_BONUS.toFixed(2),
-      description: `Bonus de bienvenue à l'activation (+${ACTIVATION_BONUS} FCFA)`,
-      status: "completed",
-    },
-  ];
-  if (credit > 0) {
-    logs.push({
-      userId,
-      type: "referral_free_credit_to_balance",
-      amount: credit.toFixed(2),
-      description: `Crédit d'activation accumulé transféré vers le solde parrainage (+${credit.toLocaleString("fr-FR")} FCFA)`,
-      status: "completed",
-    });
-  }
-  await tx.insert(transactionsTable).values(logs);
-
-  log.info({ userId, paymentAmount, credit, source }, "[free-self-activation] ✅ compte gratuit activé par paiement du reste");
-  return true;
-}
 
 export const ACTIVATION_AMOUNT = 3600;
 export const ACTIVATION_BONUS_AMOUNT = ACTIVATION_BONUS;
