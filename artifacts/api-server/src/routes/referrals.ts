@@ -72,7 +72,7 @@ router.get("/referrals/level/:level", authenticate, requireActivation, async (re
     return;
   }
 
-  const commissions = { 1: 1700, 2: 700, 3: 300 };
+  const commissions = { 1: 1700, 2: 700, 3: 200 };
   const commission = commissions[level as 1 | 2 | 3];
 
   let members: (typeof usersTable.$inferSelect)[] = [];

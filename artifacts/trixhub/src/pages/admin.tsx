@@ -461,8 +461,8 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
             { label: "Pack client", value: "3 600 FCFA", color: "text-foreground" },
             { label: "Commission N1", value: "− 1 700 FCFA", color: "text-red-500" },
             { label: "Commission N2", value: "− 700 FCFA", color: "text-orange-500" },
-            { label: "Commission N3", value: "− 300 FCFA", color: "text-amber-500" },
-            { label: "Profit net garanti", value: "= 900 FCFA", color: "text-emerald-600 font-bold" },
+            { label: "Commission N3", value: "− 200 FCFA", color: "text-amber-500" },
+            { label: "Profit net garanti", value: "= 1 000 FCFA", color: "text-emerald-600 font-bold" },
           ].map(item => (
             <div key={item.label} className="bg-muted/50 rounded-xl p-3">
               <p className={cn("text-base font-bold", item.color)}>{item.value}</p>
@@ -476,7 +476,7 @@ function OverviewSection({ stats, onRefresh }: { stats: AdminStats | null; onRef
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
             <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold uppercase tracking-wide mb-1">1er revenu — Profit garanti</p>
             <p className="text-xl font-bold text-emerald-600">{finance.companyProfit.toLocaleString("fr-FR")} FCFA</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{users.active} activations × 900 FCFA</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{users.active} activations × 1 000 FCFA</p>
           </div>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
             <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wide mb-1">2ème revenu — Chaînes incomplètes</p>

@@ -146,7 +146,7 @@ export default function ActivatePage() {
   const priceDisplay = formatLocalWithFcfa(3600, user?.country);
   const commissionN1 = formatLocal(1700, user?.country);
   const commissionN2 = formatLocal(700, user?.country);
-  const commissionN3 = formatLocal(300, user?.country);
+  const commissionN3 = formatLocal(200, user?.country);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

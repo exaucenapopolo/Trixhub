@@ -495,7 +495,7 @@ export default function DashboardPage() {
             {[
               { label: "Niveau 1", count: dashboard?.level1Count ?? 0, commission: config?.level1Commission ?? 1700, accent: "bg-primary/10 text-primary" },
               { label: "Niveau 2", count: dashboard?.level2Count ?? 0, commission: config?.level2Commission ?? 700, accent: "bg-blue-500/10 text-blue-500" },
-              { label: "Niveau 3", count: dashboard?.level3Count ?? 0, commission: config?.level3Commission ?? 300, accent: "bg-purple-500/10 text-purple-500" },
+              { label: "Niveau 3", count: dashboard?.level3Count ?? 0, commission: config?.level3Commission ?? 200, accent: "bg-purple-500/10 text-purple-500" },
             ].map((lvl, i) => (
               <Link
                 key={i}

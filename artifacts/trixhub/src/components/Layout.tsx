@@ -41,7 +41,7 @@ function buildLevelItems(target: CurrencyTarget) {
     { label: "Toute l'équipe", href: "/team" },
     { label: `Niveau 1 — ${formatLocal(1700, target)}`, href: "/team/level/1" },
     { label: `Niveau 2 — ${formatLocal(700, target)}`, href: "/team/level/2" },
-    { label: `Niveau 3 — ${formatLocal(300, target)}`, href: "/team/level/3" },
+    { label: `Niveau 3 — ${formatLocal(200, target)}`, href: "/team/level/3" },
   ];
 }
 

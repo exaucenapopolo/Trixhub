@@ -139,7 +139,7 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
               if (!gg) {
                 req.log.warn({ code: gr.referredByCode, level: 3, newUserId: user.id }, "[auth/register] N3 referrer introuvable, commission ignorée (dérive de données)");
               } else {
-                await creditInactiveBalanceTx(tx, gg, withCode, displayName, 300, 3);
+                await creditInactiveBalanceTx(tx, gg, withCode, displayName, 200, 3);
               }
             }
           }

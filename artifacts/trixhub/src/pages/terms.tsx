@@ -104,7 +104,7 @@ export default function TermsPage() {
               <ul className="list-disc list-inside space-y-1.5 mt-2">
                 <li>Niveau 1 (filleuls directs) : <strong className="text-foreground">1 700 FCFA</strong> par activation</li>
                 <li>Niveau 2 : <strong className="text-foreground">700 FCFA</strong> par activation</li>
-                <li>Niveau 3 : <strong className="text-foreground">300 FCFA</strong> par activation</li>
+                <li>Niveau 3 : <strong className="text-foreground">200 FCFA</strong> par activation</li>
               </ul>
               <p className="mt-2">Les commissions sont créditées sur votre solde uniquement lorsque votre filleul active son compte en payant ses propres frais d'activation. Il n'y a aucune commission automatique sans action réelle.</p>
             </section>

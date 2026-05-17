@@ -92,7 +92,7 @@ export async function sendWelcomeEmail(user: { email: string; displayName: strin
         <li>🎁 <strong>800 FCFA offerts</strong> immédiatement sur ton solde bonus</li>
         <li>💰 <strong>1 700 FCFA</strong> chaque fois qu'un filleul direct active son compte</li>
         <li>🔗 <strong>700 FCFA</strong> sur chaque activation de tes filleuls de niveau 2</li>
-        <li>🌐 <strong>300 FCFA</strong> sur chaque activation au niveau 3 de ton réseau</li>
+        <li>🌐 <strong>200 FCFA</strong> sur chaque activation au niveau 3 de ton réseau</li>
         <li>📋 Accès au <strong>répertoire de contacts</strong> à revendre (2 FCFA/contact)</li>
         <li>🎓 Accès aux <strong>formations exclusives</strong> que tu peux revendre à ta communauté</li>
         <li>🏆 Accès aux <strong>activités hebdomadaires</strong> (vidéos, quiz, découverte) convertibles en FCFA</li>

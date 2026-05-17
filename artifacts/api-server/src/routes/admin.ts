@@ -60,7 +60,7 @@ const excludeAdmins = sql`${usersTable.email} NOT IN (${sql.join(STATS_EXCLUDED_
 // GET /admin/stats — tableau de bord global
 // ─────────────────────────────────────────────────────────────────
 // Commission max possible par activation si la chaîne est complète (L1+L2+L3)
-const MAX_COMMISSIONS_PER_ACTIVATION = 1700 + 700 + 300; // 2700 FCFA
+const MAX_COMMISSIONS_PER_ACTIVATION = 1700 + 700 + 200; // 2600 FCFA
 
 router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise<void> => {
   const [totalRow]        = await db.select({ total: count() }).from(usersTable).where(excludeAdmins);

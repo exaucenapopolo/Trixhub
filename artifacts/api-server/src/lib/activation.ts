@@ -3,7 +3,7 @@ import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db"
 import type { Logger } from "pino";
 
 const ACTIVATION_BONUS = 800; // FCFA crédités au solde bonus à l'activation
-const COMMISSIONS = { 1: 1700, 2: 700, 3: 300 } as const;
+const COMMISSIONS = { 1: 1700, 2: 700, 3: 200 } as const;
 
 // Type local pour les transactions Drizzle (db.transaction(async tx => ...))
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

@@ -24,7 +24,7 @@ router.get("/config/platform", async (_req, res): Promise<void> => {
     activationFee: 3600,
     level1Commission: 1700,
     level2Commission: 700,
-    level3Commission: 300,
+    level3Commission: 200,
     minimumWithdrawal: PAYOUT_MIN,
     payoutFeeBase: PAYOUT_FEE_BASE,
     payoutFeeTiers: PAYOUT_FEE_TIERS,

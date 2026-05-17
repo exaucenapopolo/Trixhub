@@ -379,7 +379,7 @@ async function handlePaymentSuccess(
               if (ref2.referredByCode) {
                 const [ref3] = await db.select().from(usersTable).where(eq(usersTable.referralCode, ref2.referredByCode));
                 if (ref3) {
-                  sendCommissionEmail(ref3, user, 300, 3).catch((err) => log.warn({ err }, "Email commission N3 échoué"));
+                  sendCommissionEmail(ref3, user, 200, 3).catch((err) => log.warn({ err }, "Email commission N3 échoué"));
                 }
               }
             }
