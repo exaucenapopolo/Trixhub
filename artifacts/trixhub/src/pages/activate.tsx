@@ -338,6 +338,17 @@ export default function ActivatePage() {
 
         {/* ÉTAPE 1 : Présentation */}
         {step === "info" && (
+          <>
+          {/* Tutoriel vidéo — en haut, bien visible dès la 1ère visite */}
+          <div className="max-w-lg mx-auto mb-8">
+            <TutorialVideo
+              videoId="iVDSxGii2XA"
+              title="Comment activer son compte ?"
+              description="Inscription + activation étape par étape"
+              smartCollapse
+              storageKey="trixhub_tuto_activate"
+            />
+          </div>
           <div className="grid lg:grid-cols-2 gap-8">
             {/* ── COLONNE GAUCHE : Présentation, carrousel, avantages détaillés ── */}
             <div className="space-y-6">
@@ -582,31 +593,49 @@ export default function ActivatePage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setStep("pay")}
-                className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:opacity-90 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 text-base shadow-lg shadow-primary/25"
-              >
-                Activer mon compte maintenant
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <p className="text-center text-xs text-muted-foreground">
-                Paiement sécurisé via notre partenaire · Mobile Money · Toute l'Afrique
-              </p>
-
-              {/* Option compte gratuit */}
-              <div className="pt-1">
-                <div className="flex items-center gap-3 mb-3">
+              {/* Deux options claires */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-3">
                   <div className="flex-1 h-px bg-border" />
-                  <span className="text-xs text-muted-foreground flex-shrink-0">ou</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0 font-medium">2 options disponibles</span>
                   <div className="flex-1 h-px bg-border" />
                 </div>
-                <a
-                  href="/free-account"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-amber-500/40 text-sm text-muted-foreground hover:text-foreground hover:border-amber-500/70 hover:bg-amber-500/5 transition-all"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  Je n'ai pas d'argent — rejoindre gratuitement via le parrainage
-                </a>
+
+                {/* Option 1 : Payer maintenant */}
+                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">OPTION 1</span>
+                    <span className="text-xs font-semibold text-foreground">Payer directement</span>
+                  </div>
+                  <button
+                    onClick={() => setStep("pay")}
+                    className="w-full py-3.5 bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 text-sm shadow-md shadow-primary/25"
+                  >
+                    Activer mon compte maintenant
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <p className="text-center text-[10px] text-muted-foreground mt-2">
+                    Paiement sécurisé · Mobile Money · Toute l'Afrique
+                  </p>
+                </div>
+
+                {/* Option 2 : Compte gratuit */}
+                <div className="rounded-2xl border-2 border-amber-500/40 bg-amber-500/5 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full">OPTION 2</span>
+                    <span className="text-xs font-semibold text-foreground">Je n'ai pas d'argent maintenant</span>
+                  </div>
+                  <a
+                    href="/free-account"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 transition-all duration-200 active:scale-[0.98] shadow-md shadow-amber-500/25"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Rejoindre gratuitement via le parrainage
+                  </a>
+                  <p className="text-center text-[10px] text-muted-foreground mt-2">
+                    Accumule 3 400 FCFA de commissions → activation automatique
+                  </p>
+                </div>
               </div>
 
               {/* Preuves de retrait — preuve sociale avant activation */}
@@ -618,15 +647,9 @@ export default function ActivatePage() {
                 Voir les preuves de retrait de nos membres
               </a>
 
-              {/* Bouton communauté WhatsApp — accessible avant et après activation */}
-              <div className="pt-2 space-y-2">
-                <p className="text-center text-xs text-muted-foreground">
-                  Une question ? Rejoins-nous :
-                </p>
-                <JoinCommunityButton />
-              </div>
             </div>
           </div>
+          </>
         )}
 
         {/* ÉTAPE 2 : Payer via le partenaire de paiement */}
@@ -744,13 +767,6 @@ export default function ActivatePage() {
               Paiement 100% sécurisé par notre partenaire · Orange Money, MTN, Wave et plus
             </p>
 
-            {/* Bouton communauté WhatsApp */}
-            <div className="mt-6 pt-6 border-t border-border space-y-2">
-              <p className="text-center text-xs text-muted-foreground">
-                Une question avant de payer ?
-              </p>
-              <JoinCommunityButton />
-            </div>
           </div>
         )}
 
@@ -914,24 +930,9 @@ export default function ActivatePage() {
         </a>
       </div>
 
-      {/* REJOINDRE LE CANAL WHATSAPP */}
-      <div className="px-4 pb-4 max-w-lg mx-auto w-full">
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-center text-xs text-muted-foreground">Une question ? Rejoins la communauté :</p>
-          <JoinCommunityButton />
-        </div>
-      </div>
-
-      {/* Tutoriel activation — vidéo YouTube intégrée */}
+      {/* REJOINDRE LE CANAL WHATSAPP — unique bouton, design carte */}
       <div className="px-4 pb-6 max-w-lg mx-auto w-full">
-        <p className="text-xs text-center text-muted-foreground mb-3 font-medium uppercase tracking-wide">
-          Voir comment activer son compte
-        </p>
-        <TutorialVideo
-          videoId="iVDSxGii2XA"
-          title="Comment s'inscrire et activer son compte ?"
-          description="Inscription + activation étape par étape"
-        />
+        <JoinCommunityButton />
       </div>
 
       {/* Pied de page partenaires */}
