@@ -129,6 +129,7 @@ export interface ReferralUser {
   displayName: string;
   country: string;
   isActivated: boolean;
+  isFreeAccount: boolean;
   joinedAt: string;
   level: number;
 }
@@ -137,6 +138,7 @@ export interface TeamResponse {
   total: number;
   active: number;
   inactive: number;
+  freeAccount: number;
   members: ReferralUser[];
 }
 
@@ -146,6 +148,7 @@ export interface ReferralLevelResponse {
   total: number;
   active: number;
   inactive: number;
+  freeAccount: number;
   members: ReferralUser[];
 }
 

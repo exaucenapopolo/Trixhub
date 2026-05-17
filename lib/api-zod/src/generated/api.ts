@@ -290,12 +290,14 @@ export const GetTeamResponse = zod.object({
   total: zod.number(),
   active: zod.number(),
   inactive: zod.number(),
+  freeAccount: zod.number(),
   members: zod.array(
     zod.object({
       id: zod.number(),
       displayName: zod.string(),
       country: zod.string(),
       isActivated: zod.boolean(),
+      isFreeAccount: zod.boolean(),
       joinedAt: zod.string(),
       level: zod.number(),
     }),
@@ -315,12 +317,14 @@ export const GetReferralsByLevelResponse = zod.object({
   total: zod.number(),
   active: zod.number(),
   inactive: zod.number(),
+  freeAccount: zod.number(),
   members: zod.array(
     zod.object({
       id: zod.number(),
       displayName: zod.string(),
       country: zod.string(),
       isActivated: zod.boolean(),
+      isFreeAccount: zod.boolean(),
       joinedAt: zod.string(),
       level: zod.number(),
     }),

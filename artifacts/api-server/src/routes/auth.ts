@@ -270,6 +270,11 @@ router.get("/auth/me", authenticate, async (req, res): Promise<void> => {
     res.status(401).json({ error: "Utilisateur introuvable" });
     return;
   }
+  // Mettre à jour lastLoginAt si pas encore défini ou si la dernière MAJ date de plus de 30 min
+  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+  if (!user.lastLoginAt || user.lastLoginAt < thirtyMinAgo) {
+    db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id)).execute().catch(() => {});
+  }
   res.json(formatUser(user));
 });
 

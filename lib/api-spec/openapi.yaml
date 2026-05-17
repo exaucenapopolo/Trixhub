@@ -1062,11 +1062,13 @@ components:
           type: string
         isActivated:
           type: boolean
+        isFreeAccount:
+          type: boolean
         joinedAt:
           type: string
         level:
           type: integer
-      required: [id, displayName, country, isActivated, joinedAt, level]
+      required: [id, displayName, country, isActivated, isFreeAccount, joinedAt, level]
 
     TeamResponse:
       type: object
@@ -1077,11 +1079,13 @@ components:
           type: integer
         inactive:
           type: integer
+        freeAccount:
+          type: integer
         members:
           type: array
           items:
             $ref: "#/components/schemas/ReferralUser"
-      required: [total, active, inactive, members]
+      required: [total, active, inactive, freeAccount, members]
 
     ReferralLevelResponse:
       type: object
@@ -1096,11 +1100,13 @@ components:
           type: integer
         inactive:
           type: integer
+        freeAccount:
+          type: integer
         members:
           type: array
           items:
             $ref: "#/components/schemas/ReferralUser"
-      required: [level, commission, total, active, inactive, members]
+      required: [level, commission, total, active, inactive, freeAccount, members]
 
     BalanceSummary:
       type: object

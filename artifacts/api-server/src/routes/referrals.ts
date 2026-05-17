@@ -13,12 +13,13 @@ function formatReferralUser(user: typeof usersTable.$inferSelect, level: number)
     displayName: user.displayName || user.email.split("@")[0],
     country: user.country,
     isActivated: user.isActivated,
+    isFreeAccount: user.isFreeAccount,
     joinedAt: user.createdAt.toISOString(),
     level,
   };
 }
 
-router.get("/referrals/team", authenticate, requireActivation, async (req, res): Promise<void> => {
+router.get("/referrals/team", authenticate, requireActivationOrFreeAccount, async (req, res): Promise<void> => {
   const userId = req.userId!;
   if (req.user?.blockedReferral) {
     res.status(403).json({ error: "Votre accès au parrainage a été restreint par l'administrateur.", code: "REFERRAL_BLOCKED" });
@@ -51,12 +52,13 @@ router.get("/referrals/team", authenticate, requireActivation, async (req, res):
   ];
 
   const active = allFormatted.filter(m => m.isActivated).length;
-  const inactive = allFormatted.filter(m => !m.isActivated).length;
+  const freeAccount = allFormatted.filter(m => !m.isActivated && m.isFreeAccount).length;
+  const inactive = allFormatted.filter(m => !m.isActivated && !m.isFreeAccount).length;
 
-  res.json({ total: allFormatted.length, active, inactive, members: allFormatted });
+  res.json({ total: allFormatted.length, active, inactive, freeAccount, members: allFormatted });
 });
 
-router.get("/referrals/level/:level", authenticate, requireActivation, async (req, res): Promise<void> => {
+router.get("/referrals/level/:level", authenticate, requireActivationOrFreeAccount, async (req, res): Promise<void> => {
   const userId = req.userId!;
   const rawLevel = Array.isArray(req.params.level) ? req.params.level[0] : req.params.level;
   const level = parseInt(rawLevel, 10);
@@ -97,7 +99,14 @@ router.get("/referrals/level/:level", authenticate, requireActivation, async (re
   }
 
   const formatted = members.map(m => formatReferralUser(m, level));
-  res.json({ level, commission, total: formatted.length, active: formatted.filter(m => m.isActivated).length, inactive: formatted.filter(m => !m.isActivated).length, members: formatted });
+  res.json({
+    level, commission,
+    total: formatted.length,
+    active: formatted.filter(m => m.isActivated).length,
+    freeAccount: formatted.filter(m => !m.isActivated && m.isFreeAccount).length,
+    inactive: formatted.filter(m => !m.isActivated && !m.isFreeAccount).length,
+    members: formatted,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────
@@ -224,7 +233,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   surprise: "Surprise",
 };
 
-router.get("/referrals/activity", authenticate, requireActivation, async (req, res): Promise<void> => {
+router.get("/referrals/activity", authenticate, requireActivationOrFreeAccount, async (req, res): Promise<void> => {
   const userId = req.userId!;
 
   const [transactions, completions] = await Promise.all([

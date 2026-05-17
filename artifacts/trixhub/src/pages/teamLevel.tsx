@@ -20,14 +20,18 @@ export default function TeamLevelPage() {
   const [, params] = useRoute("/team/level/:level");
   const level = parseInt(params?.level ?? "1", 10);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "inactive" | "free">("all");
   const [activatingChild, setActivatingChild] = useState<{ id: number; displayName: string; country: string } | null>(null);
 
   const { data, isLoading } = useGetReferralsByLevel(level);
 
   const filtered = data?.members?.filter(m => {
     const matchSearch = !search || `${m.displayName} ${m.country}`.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "all" || (filter === "active" && m.isActivated) || (filter === "inactive" && !m.isActivated);
+    const matchFilter =
+      filter === "all" ||
+      (filter === "active" && m.isActivated) ||
+      (filter === "free" && !m.isActivated && !!m.isFreeAccount) ||
+      (filter === "inactive" && !m.isActivated && !m.isFreeAccount);
     return matchSearch && matchFilter;
   }) ?? [];
 
@@ -76,11 +80,12 @@ export default function TeamLevelPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-3">
           {[
             { label: "Total", count: data?.total ?? 0, color: "text-foreground" },
             { label: "Actifs", count: data?.active ?? 0, color: "text-primary" },
-            { label: "Inactifs", count: data?.inactive ?? 0, color: "text-amber-500" },
+            { label: "Gratuits", count: data?.freeAccount ?? 0, color: "text-amber-500" },
+            { label: "Inactifs", count: data?.inactive ?? 0, color: "text-muted-foreground" },
           ].map(({ label, count, color: c }) => (
             <Card key={label} className="border-card-border">
               <CardContent className="p-4 text-center">
@@ -104,8 +109,13 @@ export default function TeamLevelPage() {
                   data-testid={`input-search-level-${level}`}
                 />
               </div>
-              <div className="flex gap-2">
-                {(["all", "active", "inactive"] as const).map(f => (
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  ["all", "Tous"],
+                  ["active", "Actifs"],
+                  ["free", "Gratuits"],
+                  ["inactive", "Inactifs"],
+                ] as const).map(([f, label]) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
@@ -114,7 +124,7 @@ export default function TeamLevelPage() {
                       filter === f ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
                     )}
                   >
-                    {f === "all" ? "Tous" : f === "active" ? "Actifs" : "Inactifs"}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -149,9 +159,13 @@ export default function TeamLevelPage() {
                         <Badge variant="outline" className="text-primary border-primary/30 gap-1 text-xs">
                           <CheckCircle size={10} />Actif
                         </Badge>
+                      ) : m.isFreeAccount ? (
+                        <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 text-xs">
+                          <Zap size={10} />Gratuit
+                        </Badge>
                       ) : (
                         <>
-                          <Badge variant="outline" className="text-amber-500 border-amber-500/30 gap-1 text-xs">
+                          <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30 gap-1 text-xs">
                             <Clock size={10} />Inactif
                           </Badge>
                           {level === 1 && (

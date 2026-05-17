@@ -3,7 +3,7 @@ import multer from "multer";
 import { eq } from "drizzle-orm";
 import { db, usersTable, balancesTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
+import { requireActivationOrFreeAccount } from "../middlewares/requireActivation";
 import { getRates } from "../lib/currency";
 import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus";
 import {
@@ -68,7 +68,7 @@ async function getLevel3Members(userId: number) {
   return l3;
 }
 
-router.get("/users/me/dashboard", authenticate, requireActivation, async (req, res): Promise<void> => {
+router.get("/users/me/dashboard", authenticate, requireActivationOrFreeAccount, async (req, res): Promise<void> => {
   const userId = req.userId!;
 
   // Bonus de connexion quotidien : crédite +5 FCFA si pas déjà attribué aujourd'hui (atomique)
@@ -115,7 +115,8 @@ router.get("/users/me/dashboard", authenticate, requireActivation, async (req, r
     withdrawnAmount, spentAmount, inactiveBalance,
     totalReferrals: all.length,
     activeReferrals: all.filter(m => m.isActivated).length,
-    inactiveReferrals: all.filter(m => !m.isActivated).length,
+    freeAccountReferrals: all.filter(m => !m.isActivated && m.isFreeAccount).length,
+    inactiveReferrals: all.filter(m => !m.isActivated && !m.isFreeAccount).length,
     level1Count: l1.length,
     level2Count: l2.length,
     level3Count: l3.length,
