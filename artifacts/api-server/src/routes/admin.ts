@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, ilike, or, sql, and, count, gte, lt } from "drizzle-orm";
+import { eq, desc, ilike, or, sql, and, count, gte, lt, aliasedTable } from "drizzle-orm";
 import multer from "multer";
 import { randomBytes, randomUUID } from "crypto";
 import {
@@ -227,8 +227,9 @@ router.get("/admin/users", authenticate, requireAdmin, async (req, res): Promise
     conditions.push(or(ilike(usersTable.email, pattern), ilike(usersTable.displayName, pattern), ilike(usersTable.phone, pattern), ilike(usersTable.referralCode, pattern)));
   }
   if (filter === "active") conditions.push(eq(usersTable.isActivated, true));
-  if (filter === "inactive") conditions.push(eq(usersTable.isActivated, false));
+  if (filter === "inactive") conditions.push(and(eq(usersTable.isActivated, false), eq(usersTable.isFreeAccount, false)));
   if (filter === "banned") conditions.push(eq(usersTable.isBanned, true));
+  if (filter === "free") conditions.push(eq(usersTable.isFreeAccount, true));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -241,10 +242,12 @@ router.get("/admin/users", authenticate, requireAdmin, async (req, res): Promise
       country: usersTable.country,
       isActivated: usersTable.isActivated,
       isBanned: usersTable.isBanned,
+      isFreeAccount: usersTable.isFreeAccount,
       isAdmin: usersTable.isAdmin,
       referralCode: usersTable.referralCode,
       referredByCode: usersTable.referredByCode,
       createdAt: usersTable.createdAt,
+      lastLoginAt: usersTable.lastLoginAt,
       avatarUrl: usersTable.avatarUrl,
       referralBalance: balancesTable.referralBalance,
       taskBalance: balancesTable.taskBalance,
@@ -1057,6 +1060,8 @@ router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res):
     .from(usersTable)
     .where(and(eq(usersTable.isFreeAccount, true), eq(usersTable.isActivated, true)));
 
+  const parrainTable = aliasedTable(usersTable, "parrain");
+
   const users = await db
     .select({
       id: usersTable.id,
@@ -1072,11 +1077,12 @@ router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res):
       referralCode: usersTable.referralCode,
       referredByCode: usersTable.referredByCode,
       createdAt: usersTable.createdAt,
-      parrainName: sql<string | null>`(SELECT display_name FROM users p WHERE p.referral_code = ${usersTable.referredByCode})`,
-      parrainPhone: sql<string | null>`(SELECT phone FROM users p WHERE p.referral_code = ${usersTable.referredByCode})`,
-      parrainEmail: sql<string | null>`(SELECT email FROM users p WHERE p.referral_code = ${usersTable.referredByCode})`,
+      parrainName: parrainTable.displayName,
+      parrainPhone: parrainTable.phone,
+      parrainEmail: parrainTable.email,
     })
     .from(usersTable)
+    .leftJoin(parrainTable, eq(parrainTable.referralCode, usersTable.referredByCode))
     .where(eq(usersTable.isFreeAccount, true))
     .orderBy(desc(usersTable.createdAt));
 

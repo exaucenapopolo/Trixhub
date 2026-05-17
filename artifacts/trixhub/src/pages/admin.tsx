@@ -54,8 +54,8 @@ interface GrowthData {
 
 interface AdminUser {
   id: number; displayName: string; email: string; phone: string; country: string;
-  isActivated: boolean; isBanned: boolean; isAdmin: boolean; referralCode: string;
-  referredByCode: string | null; createdAt: string; avatarUrl: string | null;
+  isActivated: boolean; isBanned: boolean; isFreeAccount: boolean; isAdmin: boolean; referralCode: string;
+  referredByCode: string | null; createdAt: string; lastLoginAt: string | null; avatarUrl: string | null;
   referralBalance: string; taskBalance: string; bonusBalance: string;
   depositBalance: string; activityBalance: string; inactiveBalance: string;
   withdrawnAmount: string; spentAmount: string;
@@ -680,7 +680,7 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
                 ["Email", data.user.email], ["Téléphone", data.user.phone], ["Pays", data.user.country],
                 ["Code parrainage", data.user.referralCode], ["Parrainé par", data.user.referredByCode ?? "—"],
                 ["Inscrit le", fmtDate(data.user.createdAt)], ["Dernière connexion", fmtDate(data.user.lastLoginAt)],
-                ["Statut", data.user.isActivated ? "✅ Activé" : "⏳ Inactif"],
+                ["Statut", data.user.isBanned ? "🚫 Bloqué" : data.user.isActivated ? "✅ Activé" : data.user.isFreeAccount ? "✦ Compte gratuit" : "⏳ Inactif"],
                 ["Banni", data.user.isBanned ? "🔴 Oui" : "🟢 Non"],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
@@ -856,7 +856,7 @@ function UsersSection() {
           <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && load()} placeholder="Rechercher par email, nom, téléphone, code parrainage..." className="w-full pl-9 pr-4 py-2.5 text-sm border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/50" />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {[["all", "Tous"], ["active", "Actifs"], ["inactive", "Inactifs"], ["banned", "Bloqués"]].map(([val, label]) => (
+          {[["all", "Tous"], ["active", "Actifs"], ["inactive", "Inactifs"], ["free", "Gratuits"], ["banned", "Bloqués"]].map(([val, label]) => (
             <button key={val} onClick={() => setFilter(val)} className={cn("px-3 py-2 rounded-xl text-xs font-medium transition-colors", filter === val ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}>
               {label}
             </button>
@@ -873,7 +873,7 @@ function UsersSection() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  {["Membre", "Statut", "Solde total", "Pays", "Inscrit le", "Actions"].map(h => (
+                  {["Membre", "Statut", "Solde total", "Pays", "Inscrit le", "Dernière connexion", "Actions"].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-muted-foreground px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -907,13 +907,21 @@ function UsersSection() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-0.5">
-                          <StatusBadge status={u.isActivated ? "paid" : "pending"} />
-                          {u.isBanned && <StatusBadge status="rejected" />}
+                          {u.isBanned ? (
+                            <StatusBadge status="rejected" />
+                          ) : u.isActivated ? (
+                            <StatusBadge status="paid" />
+                          ) : u.isFreeAccount ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">✦ Gratuit</span>
+                          ) : (
+                            <StatusBadge status="pending" />
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 font-semibold text-xs">{totalBalance.toLocaleString("fr-FR")} F</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{u.country}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{fmtDate(u.createdAt)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{u.lastLoginAt ? fmtDate(u.lastLoginAt) : <span className="text-muted-foreground/50 italic">jamais</span>}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <button onClick={() => setSelectedId(u.id)} className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors" title="Voir détails">
