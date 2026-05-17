@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, ilike, or, sql, and, count, gte, lt, aliasedTable } from "drizzle-orm";
+import { eq, desc, ilike, or, sql, and, count, gte, lt, aliasedTable, inArray } from "drizzle-orm";
 import multer from "multer";
 import { randomBytes, randomUUID } from "crypto";
 import {
@@ -99,6 +99,12 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
     .from(transactionsTable)
     .where(sql`${transactionsTable.type} IN ('referral_l1','referral_l2','referral_l3') AND ${transactionsTable.amount}::numeric > 0`);
 
+  // 4. Comptes gratuits
+  const [freeAccountsRow] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(and(eq(usersTable.isFreeAccount, true), excludeAdmins));
+
   // ── Calculs ────────────────────────────────────────────────────
   const total     = totalRow?.total      ?? 0;
   const active    = activeRow?.total     ?? 0;
@@ -106,6 +112,7 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
   const banned    = bannedRow?.total     ?? 0;
   const noSponsor   = noSponsorRow?.total    ?? 0;
   const noReferrals = noReferralsRow?.total  ?? 0;
+  const freeAccounts = freeAccountsRow?.total ?? 0;
 
   // Revenu primaire : 900 FCFA × nombre d'activés (hors comptes admin)
   const companyProfit = active * PROFIT_PER_ACTIVATION;
@@ -118,7 +125,7 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res): Promise
   const totalCompanyIncome = companyProfit + secondaryIncome;
 
   res.json({
-    users: { total, active, inactive, banned, noSponsor, noReferrals },
+    users: { total, active, inactive, banned, noSponsor, noReferrals, freeAccounts },
     withdrawals: {
       pendingCount: pendingWRow?.total ?? 0,
       pendingAmount: parseFloat(pendingWRow?.sum ?? "0"),
@@ -183,6 +190,16 @@ router.get("/admin/growth", authenticate, requireAdmin, async (req, res): Promis
       db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastMonthStart), lt(usersTable.createdAt, monthStart), eq(usersTable.isActivated, false))),
     ]);
 
+    // ── Comptes gratuits inscrits dans la période ──────────────────
+    const [[todayFree], [yestFree], [weekFree], [lastWeekFree], [monthFree], [lastMonthFree]] = await Promise.all([
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, todayStart), eq(usersTable.isFreeAccount, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, yesterdayStart), lt(usersTable.createdAt, todayStart), eq(usersTable.isFreeAccount, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, weekStart), eq(usersTable.isFreeAccount, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastWeekStart), lt(usersTable.createdAt, weekStart), eq(usersTable.isFreeAccount, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, monthStart), eq(usersTable.isFreeAccount, true))),
+      db.select({ n: count() }).from(usersTable).where(and(gte(usersTable.createdAt, lastMonthStart), lt(usersTable.createdAt, monthStart), eq(usersTable.isFreeAccount, true))),
+    ]);
+
     const P = 900; // profit par activation
 
     res.json({
@@ -205,6 +222,11 @@ router.get("/admin/growth", authenticate, requireAdmin, async (req, res): Promis
         today: (todayAct?.n ?? 0) * P,        yesterday: (yestAct?.n ?? 0) * P,
         thisWeek: (weekAct?.n ?? 0) * P,      lastWeek: (lastWeekAct?.n ?? 0) * P,
         thisMonth: (monthAct?.n ?? 0) * P,    lastMonth: (lastMonthAct?.n ?? 0) * P,
+      },
+      freeAccounts: {
+        today: todayFree?.n ?? 0,      yesterday: yestFree?.n ?? 0,
+        thisWeek: weekFree?.n ?? 0,    lastWeek: lastWeekFree?.n ?? 0,
+        thisMonth: monthFree?.n ?? 0,  lastMonth: lastMonthFree?.n ?? 0,
       },
     });
   } catch (err) {
@@ -1034,6 +1056,16 @@ router.get("/api/apk/download", async (req, res): Promise<void> => {
 // ─────────────────────────────────────────────────────────────────
 // GET /admin/free-accounts — statistiques et liste des comptes gratuits
 // ─────────────────────────────────────────────────────────────────
+const FREE_ACCOUNT_ACTIVATION_THRESHOLD = 3400;
+
+type FreeAccountRow = {
+  id: number; displayName: string; email: string; phone: string; country: string;
+  isActivated: boolean; isBanned: boolean; isFreeAccount: boolean;
+  activationCredit: string; freeAccountDebt: string;
+  referralCode: string; referredByCode: string | null; createdAt: Date;
+  parrainName: string | null; parrainPhone: string | null; parrainEmail: string | null;
+};
+
 router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res): Promise<void> => {
   const [totalRow] = await db
     .select({ total: count() })
@@ -1082,9 +1114,60 @@ router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res):
       parrainEmail: parrainTable.email,
     })
     .from(usersTable)
-    .leftJoin(parrainTable, eq(parrainTable.referralCode, usersTable.referredByCode))
+    .leftJoin(parrainTable, sql`${parrainTable.referralCode} = ${usersTable.referredByCode}`)
     .where(eq(usersTable.isFreeAccount, true))
-    .orderBy(desc(usersTable.createdAt));
+    .orderBy(desc(usersTable.createdAt)) as unknown as FreeAccountRow[];
+
+  // ── Historique des paiements (versements vers crédit d'activation) ──────────
+  const freeAccountIds = users.map(u => u.id);
+  const paymentHistoryMap: Record<number, Array<{
+    level: number;
+    amount: string;
+    relatedUserName: string | null;
+    createdAt: string;
+  }>> = {};
+
+  if (freeAccountIds.length > 0) {
+    const relatedPayer = aliasedTable(usersTable, "related_payer");
+    const payments = await db
+      .select({
+        userId: transactionsTable.userId,
+        level: transactionsTable.level,
+        amount: transactionsTable.amount,
+        relatedUserName: relatedPayer.displayName,
+        createdAt: transactionsTable.createdAt,
+      })
+      .from(transactionsTable)
+      .leftJoin(relatedPayer, eq(relatedPayer.id, transactionsTable.relatedUserId))
+      .where(
+        and(
+          inArray(transactionsTable.userId, freeAccountIds),
+          sql`${transactionsTable.type} IN ('referral_l1_free', 'referral_l2_free', 'referral_l3_free')`
+        )
+      )
+      .orderBy(desc(transactionsTable.createdAt));
+
+    for (const p of payments) {
+      if (!paymentHistoryMap[p.userId]) paymentHistoryMap[p.userId] = [];
+      paymentHistoryMap[p.userId].push({
+        level: p.level ?? 0,
+        amount: p.amount,
+        relatedUserName: p.relatedUserName,
+        createdAt: p.createdAt.toISOString(),
+      });
+    }
+  }
+
+  const usersWithHistory = users.map(u => {
+    const paid = parseFloat(u.activationCredit as unknown as string);
+    const remaining = Math.max(0, FREE_ACCOUNT_ACTIVATION_THRESHOLD - paid);
+    return {
+      ...u,
+      amountPaid: paid,
+      amountRemaining: remaining,
+      paymentHistory: paymentHistoryMap[u.id] ?? [],
+    };
+  });
 
   res.json({
     summary: {
@@ -1094,7 +1177,7 @@ router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res):
       totalCreditPending: parseFloat(creditSumRow?.sum ?? "0"),
       totalDebtRemaining: parseFloat(debtSumRow?.sum ?? "0"),
     },
-    users,
+    users: usersWithHistory,
   });
 });
 
