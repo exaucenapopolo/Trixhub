@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, type UserData } from "@/context/AuthContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -93,7 +93,7 @@ function FaqItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean
 export default function FreeAccountPage() {
   usePageTitle("Compte Gratuit — Rejoindre sans payer");
   const [, navigate] = useLocation();
-  const { user, refreshUser } = useAuth();
+  const { user, setUserData } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -113,13 +113,15 @@ export default function FreeAccountPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json() as { error?: string };
+      const data = await res.json() as { user?: UserData; error?: string };
       if (!res.ok) {
         toast({ title: "Erreur", description: data.error ?? "Une erreur est survenue.", variant: "destructive" });
         return;
       }
-      await refreshUser();
-      toast({ title: "Option activée !", description: "Tu as accès à ton tableau de bord. Commence à parrainer pour accumuler ton crédit." });
+      // Mettre à jour le state immédiatement avec les données renvoyées par l'API
+      // (isFreeAccount=true) — ceci déclenche la redirection dans FreeAccountRoute
+      if (data.user) setUserData(data.user);
+      toast({ title: "Compte activé !", description: "Bienvenue ! Tu as accès à ton tableau de bord." });
       navigate("/dashboard");
     } catch {
       toast({ title: "Erreur réseau", description: "Réessaie dans un instant.", variant: "destructive" });

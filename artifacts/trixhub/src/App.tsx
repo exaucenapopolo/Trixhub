@@ -77,11 +77,8 @@ function ActivateRoute() {
   const { token, user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!token) return <Redirect to="/" />;
-  // Déjà activé (et pas compte gratuit) → tableau de bord
-  if (user?.isActivated && !user?.isFreeAccount) return <Redirect to="/dashboard" />;
-  // Compte gratuit activé (isFreeAccount + isActivated) → tableau de bord
-  if (user?.isActivated) return <Redirect to="/dashboard" />;
-  // Compte gratuit non encore activé → peut accéder à /activate pour payer
+  // Activé (payant ou gratuit) → tableau de bord
+  if (user?.isActivated || user?.isFreeAccount) return <Redirect to="/dashboard" />;
   return <ActivatePage />;
 }
 
