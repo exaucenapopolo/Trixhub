@@ -289,6 +289,11 @@ router.get("/admin/users/:id", authenticate, requireAdmin, async (req, res): Pro
       createdAt: usersTable.createdAt,
       lastLoginAt: usersTable.lastLoginAt,
       avatarUrl: usersTable.avatarUrl,
+      blockedActivities: usersTable.blockedActivities,
+      blockedFormations: usersTable.blockedFormations,
+      blockedCanva: usersTable.blockedCanva,
+      blockedContacts: usersTable.blockedContacts,
+      blockedReferral: usersTable.blockedReferral,
     })
     .from(usersTable)
     .where(eq(usersTable.id, id));
