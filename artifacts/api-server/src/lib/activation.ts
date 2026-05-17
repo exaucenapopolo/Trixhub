@@ -7,7 +7,7 @@ const COMMISSIONS = { 1: 1700, 2: 700, 3: 200 } as const;
 
 // Compte gratuit : seuil d'activation automatique et dette post-activation
 const FREE_ACCOUNT_THRESHOLD = 3400; // FCFA requis pour l'auto-activation
-const FREE_ACCOUNT_DEBT = 200;       // FCFA déduits de la prochaine commission
+const FREE_ACCOUNT_DEBT = 1700;      // FCFA de commission N1 due au parrain, prélevés sur la 1re commission post-activation
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -248,7 +248,7 @@ async function creditCommissionTx(
   // ── CAS NORMAL (activé, ou non-free inactif) ──────────────────────────────
   let creditAmount = commission;
 
-  // Déduction unique de la dette post-activation gratuite (200 FCFA)
+  // Déduction unique de la dette parrain (1 700 FCFA) — redirigée vers le N1 parrain du compte gratuit
   if (ref.isActivated && parseFloat(ref.freeAccountDebt) > 0) {
     const debt = parseFloat(ref.freeAccountDebt);
     const deductible = Math.min(debt, commission);
@@ -259,6 +259,32 @@ async function creditCommissionTx(
       .update(usersTable)
       .set({ freeAccountDebt: newDebt.toFixed(2) })
       .where(eq(usersTable.id, ref.id));
+
+    // Rediriger la dette vers le parrain N1 du compte gratuit
+    if (deductible > 0 && ref.referredByCode) {
+      const [parrain] = await tx
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.referralCode, ref.referredByCode));
+      if (parrain) {
+        await tx.insert(balancesTable).values({ userId: parrain.id }).onConflictDoNothing();
+        await tx
+          .update(balancesTable)
+          .set({ referralBalance: sql`${balancesTable.referralBalance} + ${deductible}` })
+          .where(eq(balancesTable.userId, parrain.id));
+        const freeName = ref.displayName || deriveDisplayName(ref.email);
+        await tx.insert(transactionsTable).values({
+          userId: parrain.id,
+          type: "referral_l1_debt",
+          amount: deductible.toFixed(2),
+          description: `Commission N1 sur ${freeName} (compte gratuit) — remboursement dette parrainage (+${deductible.toLocaleString("fr-FR")} FCFA)`,
+          relatedUserId: ref.id,
+          level: 1,
+          status: "completed",
+        });
+        log.info({ parrainId: parrain.id, deductible, freeName }, "[activation] dette compte gratuit → parrain N1 crédité");
+      }
+    }
 
     log.info({ refId: ref.id, deductible, newDebt, creditAmount }, "[activation] dette compte gratuit déduite");
   }

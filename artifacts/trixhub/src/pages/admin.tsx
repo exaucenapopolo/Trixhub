@@ -2501,10 +2501,11 @@ function ProofsAdminSection() {
 // ─── Section : Comptes Gratuits ──────────────────────────────────
 interface FreeAccountUser {
   id: number; displayName: string; email: string; phone: string; country: string;
-  isActivated: boolean; isFreeAccount: boolean;
+  isActivated: boolean; isBanned: boolean; isFreeAccount: boolean;
   activationCredit: string; freeAccountDebt: string;
   referralCode: string; referredByCode: string | null;
   createdAt: string;
+  parrainName: string | null; parrainPhone: string | null; parrainEmail: string | null;
 }
 interface FreeAccountsData {
   summary: { total: number; activated: number; pending: number; totalCreditPending: number; totalDebtRemaining: number };
@@ -2515,6 +2516,7 @@ const FREE_THRESHOLD = 3400;
 function FreeAccountsSection() {
   const [data, setData] = useState<FreeAccountsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const { toast } = useToast();
 
   const load = useCallback(async () => {
@@ -2526,6 +2528,17 @@ function FreeAccountsSection() {
 
   useEffect(() => { load(); }, [load]);
 
+  const doAction = useCallback(async (userId: number, endpoint: string, body: object, successMsg: string) => {
+    setActionLoading(userId);
+    try {
+      await apiFetch(endpoint, { method: "PATCH", body: JSON.stringify(body) });
+      toast({ title: "✓ " + successMsg });
+      await load();
+    } catch (e) {
+      toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" });
+    } finally { setActionLoading(null); }
+  }, [load, toast]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -2535,7 +2548,7 @@ function FreeAccountsSection() {
           </div>
           <div>
             <h2 className="text-lg font-bold">Comptes Gratuits</h2>
-            <p className="text-xs text-muted-foreground">Membres ayant choisi l'activation par parrainage</p>
+            <p className="text-xs text-muted-foreground">Membres ayant choisi l'activation gratuite par parrainage — dette N1 : 1 700 FCFA</p>
           </div>
         </div>
         <button onClick={load} className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors" title="Actualiser">
@@ -2546,13 +2559,21 @@ function FreeAccountsSection() {
       {/* Cartes de statistiques */}
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard icon={Users} label="Total" value={data.summary.total} color="bg-primary" />
+          <StatCard icon={Users} label="Total inscrits" value={data.summary.total} color="bg-primary" />
           <StatCard icon={CheckCircle} label="Activés" value={data.summary.activated} color="bg-green-500" />
           <StatCard icon={Clock} label="En attente" value={data.summary.pending} color="bg-amber-500" />
-          <StatCard icon={TrendingUp} label="Crédit accumulé" value={`${data.summary.totalCreditPending.toLocaleString("fr-FR")} FCFA`} color="bg-blue-500" />
-          <StatCard icon={AlertCircle} label="Dettes restantes" value={`${data.summary.totalDebtRemaining.toLocaleString("fr-FR")} FCFA`} color="bg-red-500" />
+          <StatCard icon={TrendingUp} label="Crédit en cours" value={`${data.summary.totalCreditPending.toLocaleString("fr-FR")} FCFA`} color="bg-blue-500" />
+          <StatCard icon={AlertCircle} label="Dettes parrains" value={`${data.summary.totalDebtRemaining.toLocaleString("fr-FR")} FCFA`} color="bg-red-500" />
         </div>
       )}
+
+      {/* Explication */}
+      <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 text-xs text-muted-foreground space-y-1">
+        <p className="font-semibold text-amber-700 dark:text-amber-400">Logique compte gratuit</p>
+        <p>• Le compte s'active automatiquement après <strong className="text-foreground">3 400 FCFA</strong> de crédit accumulés via ses filleuls.</p>
+        <p>• Après activation, sa <strong className="text-foreground">1ère commission</strong> est redirigée vers son parrain (N1 = 1 700 FCFA) pour solder la dette.</p>
+        <p>• La dette diminue progressivement à chaque commission perçue jusqu'à remboursement complet.</p>
+      </div>
 
       {/* Tableau des utilisateurs */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -2572,11 +2593,13 @@ function FreeAccountsSection() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Utilisateur</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Compte gratuit</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Parrain (N1)</th>
                   <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Statut</th>
                   <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Crédit / Progression</th>
-                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Dette</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Dette restante</th>
                   <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Inscription</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -2584,17 +2607,47 @@ function FreeAccountsSection() {
                   const credit = parseFloat(u.activationCredit);
                   const progress = Math.min(100, (credit / FREE_THRESHOLD) * 100);
                   const debt = parseFloat(u.freeAccountDebt);
+                  const isLoading = actionLoading === u.id;
                   return (
-                    <tr key={u.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                      <td className="p-3">
-                        <p className="font-medium text-foreground">{u.displayName}</p>
+                    <tr key={u.id} className={cn("border-b border-border/50 hover:bg-muted/20 transition-colors", u.isBanned && "opacity-60 bg-red-500/5")}>
+                      {/* Compte gratuit */}
+                      <td className="p-3 min-w-[170px]">
+                        <p className="font-semibold text-foreground">{u.displayName || "—"}</p>
                         <p className="text-xs text-muted-foreground">{u.email}</p>
-                        <p className="text-xs text-muted-foreground">{u.phone} · {u.country}</p>
+                        {u.phone && (
+                          <a href={`https://wa.me/${u.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline mt-0.5">
+                            <Phone size={10} /> {u.phone}
+                          </a>
+                        )}
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{u.country}</p>
                       </td>
+                      {/* Parrain */}
+                      <td className="p-3 min-w-[150px]">
+                        {u.parrainName ? (
+                          <>
+                            <p className="text-sm font-medium text-foreground">{u.parrainName}</p>
+                            {u.parrainPhone && (
+                              <a href={`https://wa.me/${u.parrainPhone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                                <Phone size={10} /> {u.parrainPhone}
+                              </a>
+                            )}
+                            <p className="text-[10px] text-muted-foreground">{u.parrainEmail}</p>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Sans parrain</span>
+                        )}
+                      </td>
+                      {/* Statut */}
                       <td className="p-3">
-                        {u.isActivated ? (
+                        {u.isBanned ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
+                            <Ban size={10} /> Banni
+                          </span>
+                        ) : u.isActivated ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
-                            <CheckCircle size={10} /> Activé auto.
+                            <CheckCircle size={10} /> Activé
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
@@ -2602,6 +2655,7 @@ function FreeAccountsSection() {
                           </span>
                         )}
                       </td>
+                      {/* Crédit */}
                       <td className="p-3">
                         <div className="space-y-1.5 min-w-[140px]">
                           <div className="flex items-center justify-between text-xs">
@@ -2609,25 +2663,68 @@ function FreeAccountsSection() {
                             <span className="text-muted-foreground">{Math.round(progress)}%</span>
                           </div>
                           <div className="w-full bg-muted rounded-full h-1.5">
-                            <div
-                              className={cn("h-full rounded-full transition-all", u.isActivated ? "bg-green-500" : "bg-amber-500")}
-                              style={{ width: `${progress}%` }}
-                            />
+                            <div className={cn("h-full rounded-full transition-all", u.isActivated ? "bg-green-500" : "bg-amber-500")} style={{ width: `${progress}%` }} />
                           </div>
-                          <p className="text-[10px] text-muted-foreground">{FREE_THRESHOLD.toLocaleString("fr-FR")} FCFA seuil</p>
+                          <p className="text-[10px] text-muted-foreground">Seuil : {FREE_THRESHOLD.toLocaleString("fr-FR")} FCFA</p>
                         </div>
                       </td>
+                      {/* Dette */}
                       <td className="p-3">
                         {debt > 0 ? (
-                          <span className="text-sm font-semibold text-destructive tabular-nums">{debt.toLocaleString("fr-FR")} FCFA</span>
+                          <div>
+                            <span className="text-sm font-bold text-destructive tabular-nums">{debt.toLocaleString("fr-FR")} FCFA</span>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">→ dû au parrain N1</p>
+                          </div>
+                        ) : u.isActivated ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold">
+                            <CheckCircle size={10} /> Soldée
+                          </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </td>
+                      {/* Date */}
                       <td className="p-3">
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(u.createdAt).toLocaleDateString("fr-FR")}
+                        <p className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(u.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
+                      </td>
+                      {/* Actions */}
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1.5 min-w-[130px]">
+                          {/* Activer manuellement */}
+                          {!u.isActivated && !u.isBanned && (
+                            <button
+                              disabled={isLoading}
+                              onClick={() => doAction(u.id, `/api/admin/users/${u.id}/activate`, { activate: true }, "Compte activé manuellement")}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-500/15 text-green-700 dark:text-green-400 text-xs font-semibold hover:bg-green-500/25 disabled:opacity-50 transition-colors"
+                            >
+                              <UserCheck size={11} /> Activer
+                            </button>
+                          )}
+                          {/* Bloquer / Débloquer */}
+                          {u.isBanned ? (
+                            <button
+                              disabled={isLoading}
+                              onClick={() => doAction(u.id, `/api/admin/users/${u.id}/block`, { ban: false }, "Compte débloqué")}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 disabled:opacity-50 transition-colors"
+                            >
+                              <CheckCircle size={11} /> Débloquer
+                            </button>
+                          ) : (
+                            <button
+                              disabled={isLoading}
+                              onClick={() => {
+                                if (!confirm(`Bloquer le compte de ${u.displayName} ?`)) return;
+                                doAction(u.id, `/api/admin/users/${u.id}/block`, { ban: true }, "Compte bloqué");
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/15 text-red-700 dark:text-red-400 text-xs font-semibold hover:bg-red-500/25 disabled:opacity-50 transition-colors"
+                            >
+                              <Ban size={11} /> Bloquer
+                            </button>
+                          )}
+                          {isLoading && <RefreshCw size={12} className="animate-spin text-muted-foreground mx-auto" />}
+                        </div>
                       </td>
                     </tr>
                   );

@@ -57,9 +57,27 @@ export default function PrivacyPage() {
               <h2 className="text-lg font-semibold text-foreground mb-2">4. Partage des données</h2>
               <p>Nous ne vendons ni ne louons vos données personnelles à des tiers commerciaux extérieurs à la plateforme. Nous pouvons partager certaines informations dans les cas suivants :</p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
-                <li>Nos partenaires de paiement (Orange Money, Wave, MTN, etc.) pour traiter vos transactions</li>
+                <li>Nos partenaires de paiement (AccountPE, Orange Money, Wave, MTN, etc.) pour traiter vos transactions</li>
                 <li>Les autorités compétentes si requis par la loi</li>
               </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-semibold text-foreground mb-2">4c. Données liées à l'option d'activation gratuite</h2>
+              <p>
+                Si vous choisissez l'option d'<strong className="text-foreground">activation gratuite</strong>, TRIXHUB collecte et traite des données supplémentaires nécessaires au bon fonctionnement de cette option :
+              </p>
+              <ul className="list-disc list-inside space-y-1.5 mt-2">
+                <li>Le <strong className="text-foreground">crédit d'activation accumulé</strong> : montant des commissions redirigées vers votre activation au lieu d'être créditées directement sur votre solde</li>
+                <li>La <strong className="text-foreground">dette de parrainage</strong> (1 700 FCFA) : montant que vous devez à votre parrain N1, remboursé automatiquement via vos premières commissions après activation</li>
+                <li>Le <strong className="text-foreground">lien de parrainage</strong> entre votre compte et celui qui vous a parrainé, nécessaire pour le calcul et le reversement automatique de la dette</li>
+              </ul>
+              <p className="mt-2">
+                Ces données sont traitées exclusivement à des fins de gestion financière interne à la plateforme. Elles ne sont jamais vendues ni partagées avec des tiers extérieurs. L'administrateur de la plateforme y a accès à des fins de contrôle et de support.
+              </p>
+              <p className="mt-2 text-sm bg-muted/60 rounded-xl p-3 border border-border">
+                <strong className="text-foreground">Base légale :</strong> Ce traitement est fondé sur l'exécution du contrat accepté lors de votre inscription avec l'option gratuite, et sur l'intérêt légitime de TRIXHUB à assurer la bonne exécution des obligations financières entre membres.
+              </p>
             </section>
 
             <section>

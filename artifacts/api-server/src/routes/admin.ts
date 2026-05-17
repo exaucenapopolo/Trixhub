@@ -1065,12 +1065,16 @@ router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res):
       phone: usersTable.phone,
       country: usersTable.country,
       isActivated: usersTable.isActivated,
+      isBanned: usersTable.isBanned,
       isFreeAccount: usersTable.isFreeAccount,
       activationCredit: usersTable.activationCredit,
       freeAccountDebt: usersTable.freeAccountDebt,
       referralCode: usersTable.referralCode,
       referredByCode: usersTable.referredByCode,
       createdAt: usersTable.createdAt,
+      parrainName: sql<string | null>`(SELECT display_name FROM users p WHERE p.referral_code = ${usersTable.referredByCode})`,
+      parrainPhone: sql<string | null>`(SELECT phone FROM users p WHERE p.referral_code = ${usersTable.referredByCode})`,
+      parrainEmail: sql<string | null>`(SELECT email FROM users p WHERE p.referral_code = ${usersTable.referredByCode})`,
     })
     .from(usersTable)
     .where(eq(usersTable.isFreeAccount, true))
