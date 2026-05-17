@@ -113,7 +113,7 @@ export default function LoginPage() {
         return;
       }
       login(data.token, data.user);
-      if (data.user?.isActivated) {
+      if (data.user?.isActivated || data.user?.isFreeAccount) {
         toast({ title: "Connexion réussie", description: "Bon retour !" });
         navigate("/dashboard");
       } else {

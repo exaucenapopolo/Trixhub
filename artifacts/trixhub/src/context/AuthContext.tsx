@@ -98,8 +98,8 @@ export function AuthProvider({ children, onUserLoaded }: { children: ReactNode; 
     setUser(null);
   };
 
-  const refreshUser = () => {
-    if (token) fetchUser(token);
+  const refreshUser = async () => {
+    if (token) await fetchUser(token);
   };
 
   const setUserData = (u: UserData) => {

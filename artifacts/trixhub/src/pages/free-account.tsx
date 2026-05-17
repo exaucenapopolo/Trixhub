@@ -45,8 +45,8 @@ const FAQS = [
     a: "Ton compte s'active automatiquement, sans aucune action de ta part. Toutes tes fonctionnalités sont immédiatement débloquées : activités quotidiennes, formations gratuites, Canal+, Canva Pro, VPN. Si tu avais accumulé un peu plus de 3 400 FCFA, le surplus est directement crédité dans ton solde parrainage retirable.",
   },
   {
-    q: "Les 200 FCFA manquants par rapport aux 3 600 FCFA — comment sont-ils récupérés ?",
-    a: "Tu dois 200 FCFA à TRIXHUB puisque tu as eu accès à 200 FCFA de moins. Lors de ta toute prochaine commission de parrainage après activation, ces 200 FCFA sont automatiquement déduits. Par exemple, si tu parraines quelqu'un qui paie, tu reçois 1 500 FCFA au lieu de 1 700 FCFA pour ce parrainage-là. Ensuite, tout revient à la normale — les commissions suivantes sont complètes.",
+    q: "Ma première commission après activation — pourquoi elle va à mon parrain ?",
+    a: "En choisissant l'option gratuite, tu n'as pas payé les 3 600 FCFA normaux. Ton parrain (la personne qui t'a parrainé) aurait dû recevoir 1 700 FCFA de commission quand tu t'es activé. Puisque tu n'as rien payé directement, cette commission lui est due. TRIXHUB la récupère automatiquement sur ta toute première commission après activation et la reverse à ton parrain. Si ta première commission est de 1 700 FCFA (un filleul direct), elle va intégralement à ton parrain. Si elle est plus petite (700 FCFA ou 200 FCFA), la déduction s'étale jusqu'à rembourser les 1 700 FCFA complets. Ensuite, toutes les commissions suivantes te reviennent normalement.",
   },
   {
     q: "Puis-je encore décider de payer les 3 600 FCFA directement après avoir choisi l'option gratuite ?",
@@ -97,6 +97,7 @@ export default function FreeAccountPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const activationCredit = parseFloat(user?.activationCredit ?? "0");
   const progress = Math.min(100, (activationCredit / FREE_ACCOUNT_THRESHOLD) * 100);
@@ -246,7 +247,7 @@ export default function FreeAccountPage() {
               { n: "2", title: "Tu partages ton lien", desc: "Tes contacts s'inscrivent et activent leur compte payant (3 600 FCFA chacun)." },
               { n: "3", title: "Tes commissions s'accumulent", desc: "1 700 FCFA par parrainage direct, 700 FCFA (N2) et 200 FCFA (N3) pour les filleuls de tes filleuls — tout va dans ton crédit." },
               { n: "4", title: "À 3 400 FCFA → activation automatique", desc: "Ton compte s'active tout seul. Tous les avantages sont débloqués immédiatement." },
-              { n: "5", title: "200 FCFA récupérés sur la prochaine commission", desc: "Une seule déduction de 200 FCFA sur ta prochaine commission. Ensuite, tout est normal." },
+              { n: "5", title: "Ta 1ère commission rembourse ton parrain (1 700 FCFA)", desc: "Après ton activation, ta toute première commission est automatiquement reversée à ton parrain N1. C'est la commission qu'il aurait reçue si tu avais payé directement. Ensuite, tout est normal — les commissions suivantes te reviennent intégralement." },
             ].map((step) => (
               <div key={step.n} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -292,21 +293,47 @@ export default function FreeAccountPage() {
 
         {/* ── CTA ── */}
         {!isFreeAccount ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Checkbox d'acceptation obligatoire */}
+            <label className="flex items-start gap-3 cursor-pointer bg-card border border-border rounded-2xl p-4 hover:bg-muted/20 transition-colors">
+              <div className="relative flex-shrink-0 mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className={`w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${termsAccepted ? "bg-primary border-primary" : "border-border bg-background"}`}>
+                  {termsAccepted && (
+                    <svg className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="text-sm leading-relaxed text-muted-foreground">
+                J'ai lu et j'accepte les{" "}
+                <Link href="/terms" className="text-primary underline-offset-2 hover:underline font-medium" onClick={(e) => e.stopPropagation()}>
+                  conditions d'utilisation
+                </Link>{" "}
+                de TRIXHUB, notamment les règles du compte gratuit : mes commissions alimentent mon crédit d'activation (3 400 FCFA), et ma première commission après activation sera reversée à mon parrain (1 700 FCFA). Je comprends et j'accepte ces règles.
+              </div>
+            </label>
+
             <button
               type="button"
               onClick={handleChooseFreeAccount}
-              disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold shadow-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60"
+              disabled={isSubmitting || !termsAccepted}
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold shadow-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trophy className="w-5 h-5" />}
               {isSubmitting ? "Activation en cours..." : "Choisir l'option gratuite"}
             </button>
-            <p className="text-center text-xs text-muted-foreground">
-              Tu acceptes les{" "}
-              <Link href="/terms" className="text-primary underline-offset-2 hover:underline">conditions d'utilisation</Link>
-              {" "}incluant les règles du compte gratuit.
-            </p>
+            {!termsAccepted && (
+              <p className="text-center text-xs text-amber-600 dark:text-amber-400">
+                Coche la case ci-dessus pour continuer.
+              </p>
+            )}
             <Link
               href="/activate"
               className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
