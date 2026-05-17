@@ -110,7 +110,7 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
       return;
     }
     const credit = parseFloat(user.activationCredit ?? "0");
-    const remainder = Math.max(0, FREE_ACTIVATION_THRESHOLD - credit);
+    const remainder = Math.max(0, ACTIVATION_AMOUNT - credit);
     if (remainder <= 0) {
       res.status(400).json({ success: false, error: "Crédit suffisant — votre compte va s'activer automatiquement" });
       return;

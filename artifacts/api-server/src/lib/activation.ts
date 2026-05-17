@@ -115,6 +115,7 @@ export async function activateUserTx(
       blockedFormations: false,
       blockedCanva: false,
       freeAccountDebt: "0.00",
+      activationCredit: "0.00",
     })
     .where(and(eq(usersTable.id, userId), eq(usersTable.isActivated, false)))
     .returning();

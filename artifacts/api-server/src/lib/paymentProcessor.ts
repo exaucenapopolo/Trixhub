@@ -1,7 +1,7 @@
 import { db, usersTable, swychrTransactionsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import type { Logger } from "pino";
-import { activateUserTx, creditDepositTx, activateFreeAccountWithPaymentTx } from "./activation";
+import { activateUserTx, creditDepositTx } from "./activation";
 import { checkPaymentStatus } from "./swychr";
 import {
   sendActivationConfirmEmail,
@@ -56,7 +56,10 @@ export async function handlePaymentSuccess(
           emailData = { purpose: "activation", userId: targetUserId, amount };
         }
       } else if (purpose === "free_self_activation") {
-        const ok = await activateFreeAccountWithPaymentTx(tx, targetUserId, amount, `swychr_${source}`, log);
+        // L'utilisateur paie le solde restant (3600 - crédit accumulé).
+        // Le crédit s'annule (remis à 0 dans activateUserTx), et le parrain
+        // reçoit sa commission normalement comme pour toute activation standard.
+        const ok = await activateUserTx(tx, targetUserId, amount, `swychr_${source}_free_remainder`, undefined, log);
         if (!ok) {
           log.warn({ targetUserId, transactionId }, "[AccountPE] race free_self_activation déjà activé, refund vers solde dépôt");
           await creditDepositTx(tx, targetUserId, amount, `${source}_refund_already_active`, log);

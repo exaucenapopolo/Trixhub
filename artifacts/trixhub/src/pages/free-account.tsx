@@ -112,10 +112,11 @@ export default function FreeAccountPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const ACTIVATION_FULL_AMOUNT = 3600;
   const activationCredit = parseFloat(user?.activationCredit ?? "0");
   const progress = Math.min(100, (activationCredit / FREE_ACCOUNT_THRESHOLD) * 100);
   const remaining = Math.max(0, FREE_ACCOUNT_THRESHOLD - activationCredit);
-  const remainingAmount = Math.ceil(remaining);
+  const remainingAmount = Math.ceil(Math.max(0, ACTIVATION_FULL_AMOUNT - activationCredit));
   const isFreeAccount = user?.isFreeAccount ?? false;
   const isActivated = user?.isActivated ?? false;
 
