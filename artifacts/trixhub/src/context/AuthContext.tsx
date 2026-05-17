@@ -24,6 +24,9 @@ export interface UserData {
   blockedCanva?: boolean;
   blockedContacts?: boolean;
   blockedReferral?: boolean;
+  isFreeAccount?: boolean;
+  activationCredit?: string;
+  freeAccountDebt?: string;
   createdAt: string;
 }
 

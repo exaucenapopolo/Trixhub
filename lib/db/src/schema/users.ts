@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, index, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -34,6 +34,10 @@ export const usersTable = pgTable("users", {
   blockedCanva: boolean("blocked_canva").notNull().default(false),
   blockedContacts: boolean("blocked_contacts").notNull().default(false),
   blockedReferral: boolean("blocked_referral").notNull().default(false),
+  // Compte gratuit : activation via parrainage (sans paiement direct)
+  isFreeAccount: boolean("is_free_account").notNull().default(false),
+  activationCredit: decimal("activation_credit", { precision: 15, scale: 2 }).notNull().default("0"),
+  freeAccountDebt: decimal("free_account_debt", { precision: 15, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

@@ -571,6 +571,22 @@ export default function ActivatePage() {
                 Paiement sécurisé via notre partenaire · Mobile Money · Toute l'Afrique
               </p>
 
+              {/* Option compte gratuit */}
+              <div className="pt-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground flex-shrink-0">ou</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <a
+                  href="/free-account"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-amber-500/40 text-sm text-muted-foreground hover:text-foreground hover:border-amber-500/70 hover:bg-amber-500/5 transition-all"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  Je n'ai pas d'argent — rejoindre gratuitement via le parrainage
+                </a>
+              </div>
+
               {/* Preuves de retrait — preuve sociale avant activation */}
               <a
                 href="/preuves"

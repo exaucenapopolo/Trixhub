@@ -434,6 +434,43 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* CRÉDIT D'ACTIVATION — Compte Gratuit */}
+        {user?.isFreeAccount && !user?.isActivated && (() => {
+          const credit = parseFloat(user.activationCredit ?? "0");
+          const progress = Math.min(100, (credit / 3400) * 100);
+          const remaining = Math.max(0, 3400 - credit);
+          return (
+            <Link href="/free-account">
+              <div className="bg-gradient-to-br from-amber-500/10 to-primary/5 border border-amber-500/25 rounded-2xl p-5 hover:border-amber-500/50 transition-all cursor-pointer">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Compte Gratuit</p>
+                      <p className="text-sm font-bold text-foreground">Crédit d'activation</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-extrabold text-foreground tabular-nums">{credit.toLocaleString("fr-FR")} FCFA</p>
+                    <p className="text-[11px] text-muted-foreground">sur 3 400 FCFA</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{Math.round(progress)}% accompli</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">Encore {remaining.toLocaleString("fr-FR")} FCFA → <ChevronRight className="w-3 h-3 inline" /></span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })()}
+
         {/* PETITES STATS */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-card border border-card-border rounded-xl p-3.5">

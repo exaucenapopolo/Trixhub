@@ -9,7 +9,7 @@ import {
   XCircle, Clock, AlertCircle, ShieldCheck, User, ArrowUpRight,
   Filter, Eye, DollarSign, Building2, BarChart3, ArrowLeft, Minus,
   Globe, AlertTriangle, Info, BookUser, GraduationCap, Star, Download,
-  Trophy, Medal, Phone, UserCheck, Sparkles, ImagePlus, Send, X as XIcon,
+  Trophy, Medal, Phone, UserCheck, Sparkles, ImagePlus, Send, X as XIcon, Gift,
 } from "lucide-react";
 import { cn, resolveAvatarUrl } from "@/lib/utils";
 
@@ -2498,13 +2498,156 @@ function ProofsAdminSection() {
   );
 }
 
+// ─── Section : Comptes Gratuits ──────────────────────────────────
+interface FreeAccountUser {
+  id: number; displayName: string; email: string; phone: string; country: string;
+  isActivated: boolean; isFreeAccount: boolean;
+  activationCredit: string; freeAccountDebt: string;
+  referralCode: string; referredByCode: string | null;
+  createdAt: string;
+}
+interface FreeAccountsData {
+  summary: { total: number; activated: number; pending: number; totalCreditPending: number; totalDebtRemaining: number };
+  users: FreeAccountUser[];
+}
+const FREE_THRESHOLD = 3400;
+
+function FreeAccountsSection() {
+  const [data, setData] = useState<FreeAccountsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { setData(await apiFetch("/api/admin/free-accounts")); }
+    catch (e) { toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }); }
+    finally { setLoading(false); }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+            <Gift size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Comptes Gratuits</h2>
+            <p className="text-xs text-muted-foreground">Membres ayant choisi l'activation par parrainage</p>
+          </div>
+        </div>
+        <button onClick={load} className="p-2 rounded-xl bg-muted hover:bg-muted/80 transition-colors" title="Actualiser">
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+        </button>
+      </div>
+
+      {/* Cartes de statistiques */}
+      {data && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatCard icon={Users} label="Total" value={data.summary.total} color="bg-primary" />
+          <StatCard icon={CheckCircle} label="Activés" value={data.summary.activated} color="bg-green-500" />
+          <StatCard icon={Clock} label="En attente" value={data.summary.pending} color="bg-amber-500" />
+          <StatCard icon={TrendingUp} label="Crédit accumulé" value={`${data.summary.totalCreditPending.toLocaleString("fr-FR")} FCFA`} color="bg-blue-500" />
+          <StatCard icon={AlertCircle} label="Dettes restantes" value={`${data.summary.totalDebtRemaining.toLocaleString("fr-FR")} FCFA`} color="bg-red-500" />
+        </div>
+      )}
+
+      {/* Tableau des utilisateurs */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        {loading ? (
+          <div className="py-16 text-center text-muted-foreground">
+            <RefreshCw size={24} className="mx-auto mb-3 animate-spin" />
+            <p className="text-sm">Chargement...</p>
+          </div>
+        ) : !data || data.users.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground">
+            <Gift size={32} className="mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-medium">Aucun compte gratuit pour le moment</p>
+            <p className="text-xs mt-1">Les comptes gratuits apparaîtront ici dès qu'un utilisateur choisit l'option.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Utilisateur</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Statut</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Crédit / Progression</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Dette</th>
+                  <th className="text-left p-3 text-xs font-semibold text-muted-foreground">Inscription</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.users.map((u) => {
+                  const credit = parseFloat(u.activationCredit);
+                  const progress = Math.min(100, (credit / FREE_THRESHOLD) * 100);
+                  const debt = parseFloat(u.freeAccountDebt);
+                  return (
+                    <tr key={u.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                      <td className="p-3">
+                        <p className="font-medium text-foreground">{u.displayName}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.phone} · {u.country}</p>
+                      </td>
+                      <td className="p-3">
+                        {u.isActivated ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                            <CheckCircle size={10} /> Activé auto.
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            <Clock size={10} /> En attente
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <div className="space-y-1.5 min-w-[140px]">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold tabular-nums">{credit.toLocaleString("fr-FR")} FCFA</span>
+                            <span className="text-muted-foreground">{Math.round(progress)}%</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-1.5">
+                            <div
+                              className={cn("h-full rounded-full transition-all", u.isActivated ? "bg-green-500" : "bg-amber-500")}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{FREE_THRESHOLD.toLocaleString("fr-FR")} FCFA seuil</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        {debt > 0 ? (
+                          <span className="text-sm font-semibold text-destructive tabular-nums">{debt.toLocaleString("fr-FR")} FCFA</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(u.createdAt).toLocaleDateString("fr-FR")}
+                        </p>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page principale Admin ────────────────────────────────────────
 const ADMIN_EMAILS = ["exaucenapopolo2@gmail.com", "mcexauofficiel@gmail.com"];
 
 export default function AdminPage() {
   usePageTitle('Administration');
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "surprises" | "wallets" | "contacts" | "formations" | "top" | "preuves">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "withdrawals" | "activities" | "surprises" | "wallets" | "contacts" | "formations" | "top" | "preuves" | "free">("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
 
   const isAdmin = user && (user.isAdmin || ADMIN_EMAILS.includes(user.email));
@@ -2540,6 +2683,7 @@ export default function AdminPage() {
     { id: "formations",  label: "Formations",      icon: GraduationCap  },
     { id: "top",         label: "Top Membres",     icon: Trophy         },
     { id: "preuves",     label: "Preuves",          icon: ImagePlus      },
+    { id: "free",        label: "Comptes Gratuits", icon: Gift           },
   ] as const;
 
   return (
@@ -2574,6 +2718,7 @@ export default function AdminPage() {
         {activeTab === "formations"  && <FormationsSection />}
         {activeTab === "top"         && <TopSection />}
         {activeTab === "preuves"     && <ProofsAdminSection />}
+        {activeTab === "free"        && <FreeAccountsSection />}
       </div>
     </Layout>
   );

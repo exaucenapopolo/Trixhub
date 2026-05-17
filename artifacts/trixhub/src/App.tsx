@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import RegisterPage from "@/pages/register";
 import LoginPage from "@/pages/login";
 import ActivatePage from "@/pages/activate";
+import FreeAccountPage from "@/pages/free-account";
 import DashboardPage from "@/pages/dashboard";
 import TeamPage from "@/pages/team";
 import TeamLevelPage from "@/pages/teamLevel";
@@ -63,11 +64,12 @@ function LoadingScreen() {
   );
 }
 
+// Accessible aux utilisateurs activés ET aux comptes gratuits (FeatureGate gère les restrictions)
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading, token } = useAuth();
   if (isLoading || (token && !user)) return <LoadingScreen />;
   if (!token || !user) return <Redirect to="/login" />;
-  if (!user.isActivated) return <Redirect to="/activate" />;
+  if (!user.isActivated && !user.isFreeAccount) return <Redirect to="/activate" />;
   return <Component />;
 }
 
@@ -75,16 +77,26 @@ function ActivateRoute() {
   const { token, user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!token) return <Redirect to="/" />;
-  if (user?.isActivated) return <Redirect to="/dashboard" />;
+  // Déjà activé ou compte gratuit → tableau de bord
+  if (user?.isActivated || user?.isFreeAccount) return <Redirect to="/dashboard" />;
   return <ActivatePage />;
+}
+
+// Page compte gratuit : accessible aux non-activés (pour choisir) et aux comptes gratuits (pour voir la progression)
+function FreeAccountRoute() {
+  const { token, user, isLoading } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!token) return <Redirect to="/" />;
+  if (user?.isActivated && !user?.isFreeAccount) return <Redirect to="/dashboard" />;
+  return <FreeAccountPage />;
 }
 
 function PublicRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, token, isLoading } = useAuth();
   if (isLoading || (token && !user)) return <LoadingScreen />;
   if (token && user) {
-    if (!user.isActivated) return <Redirect to="/activate" />;
-    return <Redirect to="/dashboard" />;
+    if (user.isActivated || user.isFreeAccount) return <Redirect to="/dashboard" />;
+    return <Redirect to="/activate" />;
   }
   return <Component />;
 }
@@ -98,6 +110,7 @@ function InnerApp() {
         <Route path="/" component={() => <PublicRoute component={RegisterPage} />} />
         <Route path="/login" component={() => <PublicRoute component={LoginPage} />} />
         <Route path="/activate" component={ActivateRoute} />
+        <Route path="/free-account" component={FreeAccountRoute} />
         <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
         <Route path="/team" component={() => <ProtectedRoute component={TeamPage} />} />
         <Route path="/team/level/:level" component={() => <ProtectedRoute component={TeamLevelPage} />} />

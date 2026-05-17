@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Globe2, Users, ExternalLink, MessageCircle, CheckCircle2, Send, Loader2 } from "lucide-react";
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 
 const VPN_GROUP_URL = "https://chat.whatsapp.com/I9uoCsp8Wgz3ZRPclsP9Av";
 const TOKEN_KEY = "trixhub_token";
@@ -13,8 +15,15 @@ const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 export default function BonusVpnPage() {
   usePageTitle("Bonus VPN");
   const { toast } = useToast();
+  const { user } = useAuth();
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+
+  if (user?.blockedCanva) return (
+    <Layout>
+      <FeatureGate blocked feature="VPN">{null}</FeatureGate>
+    </Layout>
+  );
 
   const askAssistance = async () => {
     setSending(true);

@@ -35,6 +35,9 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     blockedCanva: user.blockedCanva,
     blockedContacts: user.blockedContacts,
     blockedReferral: user.blockedReferral,
+    isFreeAccount: user.isFreeAccount,
+    activationCredit: user.activationCredit,
+    freeAccountDebt: user.freeAccountDebt,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -229,6 +232,32 @@ router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   const token = generateToken(user.id);
   req.log.info({ userId: user.id }, "User logged in");
   res.json({ user: formatUser(user), token });
+});
+
+// ─────────────────────────────────────────────────────────────────
+// POST /api/auth/choose-free-account
+// L'utilisateur choisit l'option compte gratuit : accès parrainage uniquement,
+// les commissions s'accumulent dans activationCredit jusqu'à 3 400 FCFA.
+// ─────────────────────────────────────────────────────────────────
+router.post("/auth/choose-free-account", authenticate, async (req, res): Promise<void> => {
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
+  if (!user) { res.status(401).json({ error: "Utilisateur introuvable" }); return; }
+  if (user.isActivated) { res.status(400).json({ error: "Ton compte est déjà activé" }); return; }
+  if (user.isFreeAccount) { res.status(400).json({ error: "Tu as déjà choisi l'option compte gratuit" }); return; }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({
+      isFreeAccount: true,
+      blockedActivities: true,
+      blockedFormations: true,
+      blockedCanva: true,
+    })
+    .where(eq(usersTable.id, req.userId!))
+    .returning();
+
+  req.log.info({ userId: req.userId }, "[auth] compte gratuit activé");
+  res.json({ user: formatUser(updated) });
 });
 
 router.post("/auth/logout", authenticate, async (req, res): Promise<void> => {

@@ -294,6 +294,9 @@ router.get("/admin/users/:id", authenticate, requireAdmin, async (req, res): Pro
       blockedCanva: usersTable.blockedCanva,
       blockedContacts: usersTable.blockedContacts,
       blockedReferral: usersTable.blockedReferral,
+      isFreeAccount: usersTable.isFreeAccount,
+      activationCredit: usersTable.activationCredit,
+      freeAccountDebt: usersTable.freeAccountDebt,
     })
     .from(usersTable)
     .where(eq(usersTable.id, id));
@@ -1025,6 +1028,66 @@ router.get("/api/apk/download", async (req, res): Promise<void> => {
 
 // ─── GET /admin/apk-stats — statistiques de téléchargements APK (admin)
 // ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// GET /admin/free-accounts — statistiques et liste des comptes gratuits
+// ─────────────────────────────────────────────────────────────────
+router.get("/admin/free-accounts", authenticate, requireAdmin, async (req, res): Promise<void> => {
+  const [totalRow] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(eq(usersTable.isFreeAccount, true));
+
+  const [activatedRow] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(and(eq(usersTable.isFreeAccount, true), eq(usersTable.isActivated, true)));
+
+  const [pendingRow] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(and(eq(usersTable.isFreeAccount, true), eq(usersTable.isActivated, false)));
+
+  const [creditSumRow] = await db
+    .select({ sum: sql<string>`COALESCE(SUM(activation_credit::numeric), 0)` })
+    .from(usersTable)
+    .where(and(eq(usersTable.isFreeAccount, true), eq(usersTable.isActivated, false)));
+
+  const [debtSumRow] = await db
+    .select({ sum: sql<string>`COALESCE(SUM(free_account_debt::numeric), 0)` })
+    .from(usersTable)
+    .where(and(eq(usersTable.isFreeAccount, true), eq(usersTable.isActivated, true)));
+
+  const users = await db
+    .select({
+      id: usersTable.id,
+      displayName: usersTable.displayName,
+      email: usersTable.email,
+      phone: usersTable.phone,
+      country: usersTable.country,
+      isActivated: usersTable.isActivated,
+      isFreeAccount: usersTable.isFreeAccount,
+      activationCredit: usersTable.activationCredit,
+      freeAccountDebt: usersTable.freeAccountDebt,
+      referralCode: usersTable.referralCode,
+      referredByCode: usersTable.referredByCode,
+      createdAt: usersTable.createdAt,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.isFreeAccount, true))
+    .orderBy(desc(usersTable.createdAt));
+
+  res.json({
+    summary: {
+      total: totalRow?.total ?? 0,
+      activated: activatedRow?.total ?? 0,
+      pending: pendingRow?.total ?? 0,
+      totalCreditPending: parseFloat(creditSumRow?.sum ?? "0"),
+      totalDebtRemaining: parseFloat(debtSumRow?.sum ?? "0"),
+    },
+    users,
+  });
+});
+
 router.get("/admin/apk-stats", authenticate, requireAdmin, async (_req, res): Promise<void> => {
   const now = new Date();
   const startOfToday    = new Date(now); startOfToday.setHours(0, 0, 0, 0);
