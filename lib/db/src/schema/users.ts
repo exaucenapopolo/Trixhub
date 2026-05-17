@@ -28,6 +28,12 @@ export const usersTable = pgTable("users", {
   avatarUrl: text("avatar_url"),
   // Visibilité du contact : l'utilisateur choisit si son numéro peut être acheté par d'autres membres.
   phoneVisible: boolean("phone_visible").notNull().default(false),
+  // Restrictions d'accès granulaires gérées par l'administrateur
+  blockedActivities: boolean("blocked_activities").notNull().default(false),
+  blockedFormations: boolean("blocked_formations").notNull().default(false),
+  blockedCanva: boolean("blocked_canva").notNull().default(false),
+  blockedContacts: boolean("blocked_contacts").notNull().default(false),
+  blockedReferral: boolean("blocked_referral").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

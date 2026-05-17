@@ -19,6 +19,11 @@ export interface UserData {
   formationRequestedTitle?: string | null;
   avatarUrl?: string | null;
   phoneVisible: boolean;
+  blockedActivities?: boolean;
+  blockedFormations?: boolean;
+  blockedCanva?: boolean;
+  blockedContacts?: boolean;
+  blockedReferral?: boolean;
   createdAt: string;
 }
 

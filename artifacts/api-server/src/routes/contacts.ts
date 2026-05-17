@@ -40,6 +40,10 @@ router.post("/contacts/purchase", authenticate, async (req, res): Promise<void> 
     res.status(403).json({ error: "Compte non activé." });
     return;
   }
+  if (req.user?.blockedContacts) {
+    res.status(403).json({ error: "Votre accès à l'achat de contacts a été restreint par l'administrateur.", code: "CONTACTS_BLOCKED" });
+    return;
+  }
 
   const quantity = parseInt(req.body.quantity);
   const orderType: "newest" | "oldest" = req.body.orderType === "oldest" ? "oldest" : "newest";

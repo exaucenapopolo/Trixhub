@@ -20,6 +20,10 @@ function formatReferralUser(user: typeof usersTable.$inferSelect, level: number)
 
 router.get("/referrals/team", authenticate, requireActivation, async (req, res): Promise<void> => {
   const userId = req.userId!;
+  if (req.user?.blockedReferral) {
+    res.status(403).json({ error: "Votre accès au parrainage a été restreint par l'administrateur.", code: "REFERRAL_BLOCKED" });
+    return;
+  }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
     res.status(401).json({ error: "Utilisateur introuvable" });

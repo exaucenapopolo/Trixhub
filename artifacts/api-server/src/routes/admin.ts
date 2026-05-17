@@ -382,6 +382,44 @@ router.patch("/admin/users/:id/password", authenticate, requireAdmin, async (req
 });
 
 // ─────────────────────────────────────────────────────────────────
+// PATCH /admin/users/:id/restrictions — gérer les accès granulaires
+// ─────────────────────────────────────────────────────────────────
+router.patch("/admin/users/:id/restrictions", authenticate, requireAdmin, async (req, res): Promise<void> => {
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "ID invalide" }); return; }
+
+  const body = req.body as Partial<{
+    blockedActivities: boolean;
+    blockedFormations: boolean;
+    blockedCanva: boolean;
+    blockedContacts: boolean;
+    blockedReferral: boolean;
+  }>;
+
+  const updates: {
+    blockedActivities?: boolean;
+    blockedFormations?: boolean;
+    blockedCanva?: boolean;
+    blockedContacts?: boolean;
+    blockedReferral?: boolean;
+  } = {};
+  if (typeof body.blockedActivities === "boolean") updates.blockedActivities = body.blockedActivities;
+  if (typeof body.blockedFormations === "boolean") updates.blockedFormations = body.blockedFormations;
+  if (typeof body.blockedCanva === "boolean")      updates.blockedCanva      = body.blockedCanva;
+  if (typeof body.blockedContacts === "boolean")   updates.blockedContacts   = body.blockedContacts;
+  if (typeof body.blockedReferral === "boolean")   updates.blockedReferral   = body.blockedReferral;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "Aucun champ de restriction fourni." });
+    return;
+  }
+
+  await db.update(usersTable).set(updates).where(eq(usersTable.id, id));
+  req.log.info({ adminId: req.userId, targetUserId: id, updates }, "[admin] restrictions mises à jour");
+  res.json({ ok: true });
+});
+
+// ─────────────────────────────────────────────────────────────────
 // PATCH /admin/users/:id/activate — activer / désactiver manuellement
 // ─────────────────────────────────────────────────────────────────
 router.patch("/admin/users/:id/activate", authenticate, requireAdmin, async (req, res): Promise<void> => {

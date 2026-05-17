@@ -48,6 +48,11 @@ router.get(
       try {
         const userId = req.userId!;
 
+        if (req.user?.blockedActivities) {
+          res.status(403).json({ error: "Votre accès aux activités a été restreint par l'administrateur.", code: "ACTIVITIES_BLOCKED" });
+          return;
+        }
+
         // Lazy : marquer les semaines passées non converties comme expired
         await expirePastUnconvertedWeeks(userId);
 
@@ -136,6 +141,12 @@ router.post(
         }
 
         const userId = req.userId!;
+
+        if (req.user?.blockedActivities) {
+          res.status(403).json({ error: "Votre accès aux activités a été restreint par l'administrateur.", code: "ACTIVITIES_BLOCKED" });
+          return;
+        }
+
         const weekStart = getCurrentWeekStart();
         const dayOfWeek = getDayOfWeek();
 
@@ -424,6 +435,12 @@ router.post(
     void (async () => {
       try {
         const userId = req.userId!;
+
+        if (req.user?.blockedActivities) {
+          res.status(403).json({ error: "Votre accès aux activités a été restreint par l'administrateur.", code: "ACTIVITIES_BLOCKED" });
+          return;
+        }
+
         const videoId = String((req.body as { videoId?: unknown }).videoId ?? "");
         if (!videoId) {
           res.status(400).json({ error: "videoId requis" });
@@ -471,6 +488,12 @@ router.post(
     void (async () => {
       try {
         const userId = req.userId!;
+
+        if (req.user?.blockedActivities) {
+          res.status(403).json({ error: "Votre accès aux activités a été restreint par l'administrateur.", code: "ACTIVITIES_BLOCKED" });
+          return;
+        }
+
         const { sessionId } = req.body as { sessionId?: string };
 
         const session = videoSessions.get(userId);
@@ -543,6 +566,12 @@ router.post(
     void (async () => {
       try {
         const userId = req.userId!;
+
+        if (req.user?.blockedActivities) {
+          res.status(403).json({ error: "Votre accès aux activités a été restreint par l'administrateur.", code: "ACTIVITIES_BLOCKED" });
+          return;
+        }
+
         const { offerId } = req.body as { offerId?: string };
 
         if (!offerId || typeof offerId !== "string") {

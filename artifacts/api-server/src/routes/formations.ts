@@ -41,6 +41,10 @@ router.get("/formations/lokke/download", authenticate, async (req, res): Promise
     res.status(403).json({ error: "Compte non activé." });
     return;
   }
+  if (req.user?.blockedFormations) {
+    res.status(403).json({ error: "Votre accès aux formations a été restreint par l'administrateur.", code: "FORMATIONS_BLOCKED" });
+    return;
+  }
   try {
     const signedUrl = await objectStorageService.signPublicObjectUrl("lokke-setup.exe", 3600 * 4);
     if (!signedUrl) {
@@ -58,6 +62,10 @@ router.get("/formations/lokke/download", authenticate, async (req, res): Promise
 router.get("/formations/lokke/url", authenticate, async (req, res): Promise<void> => {
   if (!req.user?.isActivated) {
     res.status(403).json({ error: "Compte non activé." });
+    return;
+  }
+  if (req.user?.blockedFormations) {
+    res.status(403).json({ error: "Votre accès aux formations a été restreint par l'administrateur.", code: "FORMATIONS_BLOCKED" });
     return;
   }
   try {

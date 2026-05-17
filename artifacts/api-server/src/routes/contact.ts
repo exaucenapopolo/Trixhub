@@ -40,6 +40,11 @@ router.post("/contact/canva", authenticate, async (req, res): Promise<void> => {
     return;
   }
 
+  if (user.blockedCanva) {
+    res.status(403).json({ error: "Votre accès à Canva Pro a été restreint par l'administrateur.", code: "CANVA_BLOCKED" });
+    return;
+  }
+
   // Pré-check rapide pour message d'erreur clair (race-safe via UPDATE conditionnel ci-dessous).
   if (user.canvaRequestedAt) {
     res.status(409).json({

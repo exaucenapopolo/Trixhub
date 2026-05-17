@@ -30,6 +30,11 @@ function formatUser(user: typeof usersTable.$inferSelect) {
     formationRequestedTitle: user.formationRequestedTitle ?? null,
     avatarUrl: user.avatarUrl ?? null,
     phoneVisible: user.phoneVisible,
+    blockedActivities: user.blockedActivities,
+    blockedFormations: user.blockedFormations,
+    blockedCanva: user.blockedCanva,
+    blockedContacts: user.blockedContacts,
+    blockedReferral: user.blockedReferral,
     createdAt: user.createdAt.toISOString(),
   };
 }

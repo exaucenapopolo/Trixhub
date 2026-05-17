@@ -59,6 +59,8 @@ interface AdminUser {
   referralBalance: string; taskBalance: string; bonusBalance: string;
   depositBalance: string; activityBalance: string; inactiveBalance: string;
   withdrawnAmount: string; spentAmount: string;
+  blockedActivities: boolean; blockedFormations: boolean; blockedCanva: boolean;
+  blockedContacts: boolean; blockedReferral: boolean;
 }
 
 interface TopUser {
@@ -686,6 +688,54 @@ function UserDetailModal({ userId, onClose }: { userId: number; onClose: () => v
                   <span className="text-sm font-medium">{value}</span>
                 </div>
               ))}
+              {/* ── Restrictions d'accès ── */}
+              <div className="mt-4 pt-4 border-t border-border space-y-2">
+                <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-orange-500" />
+                  Restrictions d'accès
+                </p>
+                {([
+                  ["blockedActivities", "Activités (quiz, vidéo, découverte, surprise)"],
+                  ["blockedFormations", "Formations gratuites"],
+                  ["blockedCanva", "Canva Pro"],
+                  ["blockedContacts", "Achat de contacts"],
+                  ["blockedReferral", "Parrainage (équipe)"],
+                ] as const).map(([field, label]) => {
+                  const isBlocked = data.user[field];
+                  return (
+                    <div key={field} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors">
+                      <span className="text-xs text-foreground flex-1">{label}</span>
+                      <button
+                        onClick={async () => {
+                          setSaving(true);
+                          try {
+                            await apiFetch(`/api/admin/users/${userId}/restrictions`, {
+                              method: "PATCH",
+                              body: JSON.stringify({ [field]: !isBlocked }),
+                            });
+                            toast({ title: !isBlocked ? `🔒 ${label} — accès bloqué` : `✅ ${label} — accès restauré` });
+                            const fresh = await apiFetch(`/api/admin/users/${userId}`);
+                            setData(fresh);
+                          } catch (e: unknown) {
+                            toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" });
+                          }
+                          setSaving(false);
+                        }}
+                        disabled={saving}
+                        className={cn(
+                          "text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50 shrink-0",
+                          isBlocked
+                            ? "bg-red-500/15 text-red-600 hover:bg-red-500/25"
+                            : "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25"
+                        )}
+                      >
+                        {isBlocked ? "🔒 Bloqué" : "✅ Autorisé"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs font-semibold mb-2">Changer le mot de passe</p>
                 <div className="flex gap-2">
