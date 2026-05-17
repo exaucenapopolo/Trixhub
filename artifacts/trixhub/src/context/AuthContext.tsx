@@ -78,8 +78,6 @@ export function AuthProvider({ children, onUserLoaded }: { children: ReactNode; 
       return;
     }
     fetchUser(token);
-    const interval = setInterval(() => fetchUser(token), 30_000);
-    return () => clearInterval(interval);
   }, [token, fetchUser]);
 
   const login = (newToken: string, userData?: UserData) => {
