@@ -118,30 +118,41 @@ export default function TermsPage() {
               <p className="mt-3 font-medium text-foreground">Comment fonctionne l'activation gratuite :</p>
               <ul className="list-disc list-inside space-y-1.5 mt-2">
                 <li>Le membre inscrit avec l'option gratuite reçoit un <strong className="text-foreground">crédit d'activation</strong> en lieu et place de commissions directement retirables. Lorsque ses propres filleuls activent leur compte, les commissions N1, N2 ou N3 qu'il aurait perçues s'accumulent dans ce crédit.</li>
-                <li>Dès que ce crédit atteint <strong className="text-foreground">3 400 FCFA</strong>, son compte est <strong className="text-foreground">activé automatiquement</strong> par la plateforme, sans aucune action supplémentaire de sa part.</li>
-                <li>Le membre peut également choisir à tout moment de <strong className="text-foreground">payer directement les frais d'activation</strong> (3 600 FCFA) via mobile money ou depuis son solde dépôt, ce qui active son compte immédiatement.</li>
+                <li>Dès que ce crédit atteint <strong className="text-foreground">3 400 FCFA</strong>, son compte est <strong className="text-foreground">activé automatiquement</strong> par la plateforme, sans aucune action supplémentaire de sa part. L'éventuel surplus au-delà de 3 400 FCFA est crédité dans le solde parrainage retirable du membre.</li>
+                <li>Le membre peut également choisir à tout moment, depuis son tableau de bord, de <strong className="text-foreground">payer le solde restant</strong> (3 600 FCFA moins le crédit déjà accumulé) ou de <strong className="text-foreground">payer les 3 600 FCFA en totalité</strong>, ce qui active son compte immédiatement.</li>
               </ul>
 
-              <p className="mt-3 font-medium text-foreground">Obligation de remboursement envers le parrain :</p>
+              <div className="mt-3 bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+                <p className="font-semibold text-foreground text-sm mb-1">⚠️ Le crédit d'activation n'est jamais remboursé ni transféré</p>
+                <p className="text-xs leading-relaxed">
+                  Le crédit d'activation (commissions accumulées en attente d'activation) <strong className="text-foreground">n'est pas de l'argent appartenant au membre</strong>. Il représente la contribution progressive de TRIXHUB au coût d'activation du compte. Ce crédit est intégralement consommé lors de l'activation — que celle-ci soit automatique (à 3 400 FCFA), par paiement du solde restant, ou par paiement de la totalité des 3 600 FCFA. Il n'est en aucun cas remboursé, transféré dans un solde parrainage ou retirable.
+                </p>
+              </div>
+
+              <p className="mt-3 font-medium text-foreground">Option "Payer le solde restant" :</p>
               <p className="mt-1">
-                L'option gratuite crée une <strong className="text-foreground">dette de 1 700 FCFA</strong> envers le parrain direct (niveau 1) du membre ayant choisi cette option. Cette dette correspond à la commission N1 que le parrain aurait normalement perçue si son filleul avait activé son compte en payant directement.
+                Si un membre a accumulé un crédit d'activation (par exemple 2 400 FCFA), il peut choisir de payer uniquement le montant manquant pour atteindre 3 600 FCFA (soit 1 200 FCFA dans cet exemple). Ce paiement est traité comme une activation normale : le parrain reçoit sa commission de 1 700 FCFA, les niveaux N2 et N3 reçoivent leurs commissions respectives, et <strong className="text-foreground">aucune dette n'est créée</strong>. Le crédit accumulé contribue au coût total de 3 600 FCFA et est effacé lors de l'activation.
+              </p>
+
+              <p className="mt-3 font-medium text-foreground">Obligation de remboursement envers le parrain (activation automatique uniquement) :</p>
+              <p className="mt-1">
+                Lorsque le compte s'active <strong className="text-foreground">automatiquement</strong> par accumulation de 3 400 FCFA de crédit, une <strong className="text-foreground">dette de 1 700 FCFA</strong> est créée envers le parrain direct (niveau 1). Cette dette est remboursée automatiquement sur la première commission perçue après activation, en tout ou en partie, jusqu'à remboursement intégral.
               </p>
               <p className="mt-2">
-                Cette dette est remboursée automatiquement par la plateforme de la manière suivante : après l'activation du compte gratuit, la <strong className="text-foreground">première commission perçue</strong> par le membre (en tant que parrain de ses propres filleuls) est redirigée en tout ou en partie vers son parrain N1, jusqu'à ce que les 1 700 FCFA soient intégralement soldés. Le membre verra sa commission réduite en conséquence jusqu'à remboursement complet.
+                Cette dette <strong className="text-foreground">n'existe pas</strong> lorsque le membre choisit de payer directement (solde restant ou 3 600 FCFA complets) : dans ces cas, les commissions sont distribuées normalement dès le paiement.
               </p>
 
               <div className="mt-3 bg-amber-500/8 border border-amber-500/25 rounded-xl p-3 space-y-1.5">
-                <p className="font-semibold text-foreground text-sm">Points importants à retenir :</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>Le parrain d'un compte gratuit perçoit normalement ses commissions N2 (700 FCFA) et N3 (200 FCFA) à chaque activation sous le compte gratuit, pendant toute la phase de crédit.</li>
-                  <li>La commission N1 (1 700 FCFA) est versée au parrain uniquement lors du remboursement de la dette, après activation du compte gratuit.</li>
-                  <li>Si le membre choisissant l'option gratuite paie directement (3 600 FCFA), aucune dette n'est créée — les commissions sont distribuées normalement à l'ensemble de la chaîne.</li>
-                  <li>Le parrain ne subit aucune perte définitive : sa commission N1 est garantie, elle est simplement versée plus tard.</li>
+                <p className="font-semibold text-foreground text-sm">Récapitulatif des trois chemins d'activation :</p>
+                <ul className="list-disc list-inside space-y-1.5 text-xs">
+                  <li><strong className="text-foreground">Activation automatique</strong> (crédit atteint 3 400 FCFA) — aucun paiement, dette de 1 700 FCFA envers le parrain prélevée sur la 1ère commission.</li>
+                  <li><strong className="text-foreground">Payer le solde restant</strong> (3 600 FCFA − crédit accumulé) — paiement partiel, crédit effacé, parrain reçoit sa commission normalement, aucune dette.</li>
+                  <li><strong className="text-foreground">Payer 3 600 FCFA en totalité</strong> — paiement complet, crédit effacé, parrain reçoit sa commission normalement, aucune dette.</li>
                 </ul>
               </div>
 
               <p className="mt-3">
-                <strong className="text-foreground">Aucune tromperie n'est admise sur cette option.</strong> Tout membre qui présente l'option gratuite à de futurs filleuls doit expliquer honnêtement que cette option implique de trouver des filleuls pour accumuler le crédit nécessaire, et que la première commission perçue sera utilisée pour rembourser le parrain. Présenter cette option comme un moyen de rejoindre TRIXHUB sans jamais rien payer ni fournir d'effort constitue une violation des conditions d'utilisation.
+                <strong className="text-foreground">Aucune tromperie n'est admise sur cette option.</strong> Tout membre qui présente l'option gratuite à de futurs filleuls doit expliquer honnêtement que cette option implique de trouver des filleuls pour accumuler le crédit nécessaire, et que la première commission perçue (en cas d'activation automatique) sera utilisée pour rembourser le parrain. Présenter cette option comme un moyen de rejoindre TRIXHUB sans jamais rien payer ni fournir d'effort constitue une violation des conditions d'utilisation.
               </p>
             </section>
 

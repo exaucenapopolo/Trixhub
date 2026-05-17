@@ -47,12 +47,12 @@ const FAQS = [
     a: "Ton compte s'active automatiquement, sans aucune action de ta part. Toutes tes fonctionnalités sont immédiatement débloquées : activités quotidiennes, formations gratuites, Canal+, Canva Pro, VPN. Si tu avais accumulé un peu plus de 3 400 FCFA, le surplus est directement crédité dans ton solde parrainage retirable.",
   },
   {
-    q: "Ma première commission après activation — pourquoi elle va à mon parrain ?",
-    a: "En choisissant l'option gratuite, tu n'as pas payé les 3 600 FCFA normaux. Ton parrain (la personne qui t'a parrainé) aurait dû recevoir 1 700 FCFA de commission quand tu t'es activé. Puisque tu n'as rien payé directement, cette commission lui est due. TRIXHUB la récupère automatiquement sur ta toute première commission après activation et la reverse à ton parrain. Si ta première commission est de 1 700 FCFA (un filleul direct), elle va intégralement à ton parrain. Si elle est plus petite (700 FCFA ou 200 FCFA), la déduction s'étale jusqu'à rembourser les 1 700 FCFA complets. Ensuite, toutes les commissions suivantes te reviennent normalement.",
+    q: "Ma première commission après activation — est-ce qu'elle va à mon parrain ?",
+    a: "Cela dépend de comment ton compte a été activé :\n\n• Activation automatique (crédit atteint 3 400 FCFA) : oui. Ton parrain n'a pas encore reçu sa commission de 1 700 FCFA puisque tu n'as rien payé directement. Ta toute première commission après activation lui est reversée automatiquement, en tout ou en partie, jusqu'à ce que les 1 700 FCFA soient soldés. Les commissions suivantes te reviennent normalement.\n\n• Payer le solde restant ou les 3 600 FCFA directement : non. Ton parrain a déjà reçu sa commission au moment du paiement, comme pour n'importe quelle activation standard. Il n'y a aucune dette, toutes tes commissions te reviennent immédiatement.",
   },
   {
-    q: "Puis-je encore décider de payer les 3 600 FCFA directement après avoir choisi l'option gratuite ?",
-    a: "Oui. Depuis la page d'activation, le paiement direct reste disponible. Si tu paies, ton compte s'active immédiatement et ton crédit déjà accumulé est crédité dans ton solde parrainage.",
+    q: "Puis-je encore payer directement après avoir choisi l'option gratuite ?",
+    a: "Oui, tu as deux options depuis ton tableau de bord :\n\n• Payer uniquement le solde restant (3 600 FCFA moins ton crédit accumulé). Par exemple si tu as 2 400 FCFA de crédit, tu paies seulement 1 200 FCFA. Ton crédit est utilisé pour compléter le coût total — il ne t'est pas remboursé, mais ton parrain reçoit sa commission normalement comme pour n'importe quelle activation standard.\n\n• Payer les 3 600 FCFA en totalité, sans utiliser ton crédit. Dans ce cas également, ton crédit accumulé n'est pas remboursé — il est simplement effacé, et l'activation suit le parcours normal.\n\nDans les deux cas, tu n'as plus de dette envers ton parrain.",
   },
   {
     q: "Combien de temps ai-je pour accumuler les 3 400 FCFA ?",
@@ -382,8 +382,8 @@ export default function FreeAccountPage() {
               { n: "1", title: "Tu rejoins gratuitement", desc: "Ton tableau de bord est actif. Tu reçois ton lien de parrainage unique." },
               { n: "2", title: "Tu partages ton lien", desc: "Tes contacts s'inscrivent et activent leur compte payant (3 600 FCFA chacun)." },
               { n: "3", title: "Tes commissions s'accumulent", desc: "1 700 FCFA par parrainage direct, 700 FCFA (N2) et 200 FCFA (N3) pour les filleuls de tes filleuls — tout va dans ton crédit." },
-              { n: "4", title: "À 3 400 FCFA → activation automatique", desc: "Ton compte s'active tout seul. Tous les avantages sont débloqués immédiatement." },
-              { n: "5", title: "Ta 1ère commission rembourse ton parrain (1 700 FCFA)", desc: "Après ton activation, ta toute première commission est automatiquement reversée à ton parrain N1. C'est la commission qu'il aurait reçue si tu avais payé directement. Ensuite, tout est normal — les commissions suivantes te reviennent intégralement." },
+              { n: "4", title: "À 3 400 FCFA → activation automatique", desc: "Ton compte s'active tout seul. Tous les avantages sont débloqués immédiatement. Si tu avais un peu plus que 3 400 FCFA, le surplus est crédité dans ton solde parrainage." },
+              { n: "5", title: "Ta 1ère commission rembourse ton parrain (uniquement si activation automatique)", desc: "En cas d'activation automatique, ton parrain n'a pas encore reçu sa commission de 1 700 FCFA. Ta toute première commission après activation lui est reversée automatiquement pour solder cette dette. Si tu avais choisi de payer le solde restant ou les 3 600 FCFA directement, cette étape ne s'applique pas : ton parrain a déjà reçu sa commission au moment du paiement." },
             ].map((step) => (
               <div key={step.n} className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -521,7 +521,7 @@ export default function FreeAccountPage() {
                       Il ne te reste que <strong className="text-green-600 dark:text-green-400 text-sm">{remainingAmount.toLocaleString("fr-FR")} FCFA</strong> à payer et ton compte est activé immédiatement.
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Ton crédit accumulé sera transféré dans ton solde parrainage.
+                      Ton crédit accumulé est utilisé pour compléter le coût d'activation — il ne sera pas remboursé ni versé ailleurs. En échange, ton parrain reçoit sa commission normalement.
                     </p>
                   </div>
                 </div>
