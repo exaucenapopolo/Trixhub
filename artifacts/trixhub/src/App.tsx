@@ -77,18 +77,19 @@ function ActivateRoute() {
   const { token, user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!token) return <Redirect to="/" />;
-  // Activé (payant ou gratuit) → tableau de bord
-  if (user?.isActivated || user?.isFreeAccount) return <Redirect to="/dashboard" />;
+  // Déjà pleinement activé → tableau de bord
+  // Les comptes gratuits peuvent accéder à /activate pour payer les 3 600 FCFA complets
+  if (user?.isActivated) return <Redirect to="/dashboard" />;
   return <ActivatePage />;
 }
 
-// Page compte gratuit : uniquement pour les utilisateurs non encore inscrits en gratuit
+// Page compte gratuit : accessible aux non-inscrits (choix gratuit) ET aux comptes gratuits existants (payer le reste)
 function FreeAccountRoute() {
   const { token, user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!token) return <Redirect to="/" />;
-  // Déjà compte gratuit ou activé → tableau de bord
-  if (user?.isFreeAccount || user?.isActivated) return <Redirect to="/dashboard" />;
+  // Déjà pleinement activé → tableau de bord
+  if (user?.isActivated) return <Redirect to="/dashboard" />;
   return <FreeAccountPage />;
 }
 
