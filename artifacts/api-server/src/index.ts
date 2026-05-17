@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { warmupServices } from "./lib/swychr";
+import { checkAllPendingTransactions } from "./lib/paymentProcessor";
 
 const rawPort = process.env["PORT"];
 
@@ -25,8 +26,22 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
 
   // Pré-chauffe les tokens et les méthodes AccountPE en arrière-plan
-  // pour que le premier utilisateur n'attende pas.
   setTimeout(() => {
     warmupServices().catch((e) => logger.warn({ err: e }, "[AccountPE] warmup échoué"));
-  }, 2_000); // 2 secondes après démarrage
+  }, 2_000);
+
+  // Cron : vérification automatique des transactions en attente toutes les 5 minutes.
+  // Garantit que les paiements réussis sont traités même si le webhook ou le polling
+  // frontend a échoué (utilisateur qui ferme le navigateur, réseau instable, etc.)
+  const PENDING_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+  setTimeout(() => {
+    checkAllPendingTransactions(logger).catch((e) =>
+      logger.warn({ err: e }, "[cron] checkAllPendingTransactions échoué"),
+    );
+    setInterval(() => {
+      checkAllPendingTransactions(logger).catch((e) =>
+        logger.warn({ err: e }, "[cron] checkAllPendingTransactions échoué"),
+      );
+    }, PENDING_CHECK_INTERVAL_MS);
+  }, 30_000); // Première vérification 30s après démarrage
 });

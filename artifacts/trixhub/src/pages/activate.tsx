@@ -346,6 +346,28 @@ export default function ActivatePage() {
                 <p className="text-muted-foreground mt-2">Une seule activation pour débloquer tout le potentiel de la plateforme</p>
               </div>
 
+              {/* Banner compte gratuit */}
+              {user?.isFreeAccount && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Tu as un compte gratuit</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    En payant directement les <strong className="text-foreground">{priceDisplay.primary}</strong>, ton compte sera activé immédiatement.
+                    {parseFloat(user.freeAccountDebt ?? "0") > 0 && (
+                      <> Ta dette de <strong className="text-foreground">{parseFloat(user.freeAccountDebt ?? "0").toLocaleString("fr-FR")} FCFA</strong> sera automatiquement annulée.</>
+                    )}{" "}
+                    Toutes les prochaines commissions iront directement dans ton solde parrainage.
+                  </p>
+                  {(parseFloat(user.activationCredit ?? "0") > 0) && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold">
+                      Crédit d'activation déjà accumulé : {parseFloat(user.activationCredit ?? "0").toLocaleString("fr-FR")} FCFA (non remboursable, mais ton compte sera activé)
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Carrousel d'images réelles (cliquables pour voir l'image en grand) */}
               <div className="relative">
                 <button

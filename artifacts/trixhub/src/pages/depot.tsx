@@ -6,7 +6,7 @@ import Layout from "@/components/Layout";
 import { queryClient } from "@/App";
 import {
   PiggyBank, Phone, Loader2, ExternalLink, RefreshCw, CheckCircle2,
-  ArrowLeft, Wallet, Sparkles, Shield
+  ArrowLeft, Wallet, Sparkles, Shield, Clock
 } from "lucide-react";
 import { formatLocal } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,14 @@ const MIN_DEPOSIT = 500;
 const MAX_DEPOSIT = 5_000_000;
 
 type Step = "form" | "waiting" | "success";
+
+type PendingTx = {
+  transactionId: string;
+  paymentUrl: string | null;
+  amount: number;
+  purpose: string;
+  createdAt: string;
+};
 
 export default function DepotPage() {
   usePageTitle('Dépôt');
@@ -37,7 +45,22 @@ export default function DepotPage() {
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const pollRef = useRef<number | null>(null);
 
-  // Reprise d'une transaction interrompue
+  const [pendingTxs, setPendingTxs] = useState<PendingTx[]>([]);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+
+  // Charge les transactions en attente depuis le serveur (même si browser fermé entre-temps)
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    fetch("/api/swychr/pending", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data: { transactions: PendingTx[] }) => {
+        if (data.transactions?.length) setPendingTxs(data.transactions);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Reprise d'une transaction interrompue (sessionStorage en fallback)
   useEffect(() => {
     const saved = sessionStorage.getItem(DEPOSIT_TX_KEY);
     if (saved) {
@@ -170,6 +193,78 @@ export default function DepotPage() {
             </div>
           </div>
         </div>
+
+        {/* PAIEMENTS EN ATTENTE — affichés même si le navigateur a été fermé */}
+        {step === "form" && pendingTxs.length > 0 && (
+          <div className="bg-amber-500/5 border border-amber-500/30 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-600" />
+              <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                Paiement(s) en attente de confirmation
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Tu as des paiements non finalisés. Clique sur "Vérifier" pour les valider et mettre à jour ton solde automatiquement.
+            </p>
+            {pendingTxs.map((pt) => (
+              <div key={pt.transactionId} className="flex items-center justify-between gap-3 p-3 bg-card border border-border rounded-xl">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">
+                    {pt.purpose === "deposit" ? "Dépôt" : pt.purpose === "activation" ? "Activation" : "Activation filleul"} — {pt.amount.toLocaleString("fr-FR")} FCFA
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {new Date(pt.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {pt.paymentUrl && (
+                    <a
+                      href={pt.paymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-semibold hover:bg-amber-500/25 transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Payer
+                    </a>
+                  )}
+                  <button
+                    onClick={async () => {
+                      setVerifyingId(pt.transactionId);
+                      try {
+                        const token = localStorage.getItem(TOKEN_KEY);
+                        const r = await fetch(`/api/swychr/status/${pt.transactionId}`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        const data = await r.json();
+                        if (data.status === "success") {
+                          setPendingTxs((prev) => prev.filter((x) => x.transactionId !== pt.transactionId));
+                          queryClient.invalidateQueries();
+                          toast({ title: "Paiement confirmé !", description: "Ton solde a été mis à jour." });
+                        } else if (data.status === "failed") {
+                          setPendingTxs((prev) => prev.filter((x) => x.transactionId !== pt.transactionId));
+                          toast({ title: "Paiement échoué", description: "Cette transaction n'a pas abouti.", variant: "destructive" });
+                        } else {
+                          toast({ title: "Toujours en attente", description: "Le paiement n'est pas encore confirmé. Réessaie dans quelques instants." });
+                        }
+                      } catch {
+                        toast({ title: "Erreur réseau", description: "Réessaie dans un instant.", variant: "destructive" });
+                      } finally {
+                        setVerifyingId(null);
+                      }
+                    }}
+                    disabled={verifyingId === pt.transactionId}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 disabled:opacity-50 transition-colors"
+                  >
+                    {verifyingId === pt.transactionId
+                      ? <><Loader2 className="w-3 h-3 animate-spin" /> Vérif...</>
+                      : <><RefreshCw className="w-3 h-3" /> Vérifier</>
+                    }
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {step === "form" && (
           <div className="bg-card border border-card-border rounded-2xl p-6 shadow-sm space-y-5">

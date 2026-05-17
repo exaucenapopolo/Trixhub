@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db, usersTable, swychrTransactionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
 import { paymentLimiter } from "../middlewares/rateLimiters";
@@ -13,18 +13,14 @@ import {
   COUNTRY_CURRENCIES,
   convertFcfaToPayin,
 } from "../lib/swychr";
-import { activateUserTx, creditDepositTx, ACTIVATION_AMOUNT } from "../lib/activation";
-import {
-  sendActivationConfirmEmail,
-  sendCommissionEmail,
-  sendDepositConfirmEmail,
-} from "../lib/email";
+import { ACTIVATION_AMOUNT } from "../lib/activation";
+import { handlePaymentSuccess } from "../lib/paymentProcessor";
 
 const router: IRouter = Router();
 
-const MIN_DEPOSIT = 500;        // Montant minimum d'un dépôt libre
-const MAX_DEPOSIT = 5_000_000;  // Anti-abus
-const CHILD_ACTIVATION_AMOUNT = ACTIVATION_AMOUNT; // 3600
+const MIN_DEPOSIT = 500;
+const MAX_DEPOSIT = 5_000_000;
+const CHILD_ACTIVATION_AMOUNT = ACTIVATION_AMOUNT;
 
 function deriveDisplayName(email: string): string {
   const username = email.split("@")[0];
@@ -33,10 +29,11 @@ function deriveDisplayName(email: string): string {
 
 // ─────────────────────────────────────────────────────────────────
 // POST /api/swychr/initiate
-// Crée un lien de paiement AccountPE pour 3 cas d'usage :
+// Crée un lien de paiement AccountPE pour 4 cas d'usage :
 //   purpose = "activation"        : activer son propre compte (3600)
 //           = "deposit"           : recharger son solde dépôt (montant libre)
 //           = "child_activation"  : activer un filleul N1 inactif (3600)
+// Comptes gratuits : peuvent utiliser deposit et child_activation.
 // ─────────────────────────────────────────────────────────────────
 router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
@@ -50,7 +47,6 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
   };
   const purpose = body.purpose ?? "activation";
 
-  // ─── Validation par cas ───
   let amount: number;
   let targetUserId: number;
   let description: string;
@@ -64,7 +60,8 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
     targetUserId = user.id;
     description = "Activation compte TRIXHUB";
   } else if (purpose === "deposit") {
-    if (!user.isActivated) {
+    // Comptes gratuits autorisés à déposer de l'argent
+    if (!user.isActivated && !user.isFreeAccount) {
       res.status(403).json({ success: false, error: "Activez votre compte pour faire un dépôt" });
       return;
     }
@@ -77,7 +74,8 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
     targetUserId = user.id;
     description = `Dépôt TRIXHUB de ${amount.toLocaleString("fr-FR")} FCFA`;
   } else if (purpose === "child_activation") {
-    if (!user.isActivated) {
+    // Comptes gratuits autorisés à activer leurs filleuls
+    if (!user.isActivated && !user.isFreeAccount) {
       res.status(403).json({ success: false, error: "Activez votre compte d'abord" });
       return;
     }
@@ -86,7 +84,6 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
       res.status(400).json({ success: false, error: "ID filleul invalide" });
       return;
     }
-    // Vérifier que le filleul existe, est bien N1 du parent, et est inactif
     const [child] = await db.select().from(usersTable).where(eq(usersTable.id, childId));
     if (!child) {
       res.status(404).json({ success: false, error: "Filleul introuvable" });
@@ -108,16 +105,12 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
     return;
   }
 
-  // ─── Création du lien de paiement ───
   const transactionId = `TRIX-${Date.now()}-${user.id}`;
   const countryCode = COUNTRY_CODES[user.country] || "CM";
   const callbackUrl = getWebhookUrl();
   const mobile = (body.phoneNumber || user.phone).replace(/\D/g, "");
   const name = user.displayName || deriveDisplayName(user.email);
 
-  // Convertir le montant FCFA en devise locale de l'utilisateur.
-  // AccountPE doit recevoir le montant DANS la devise du pays — pas en XAF brut.
-  // Ex: RDC → 3 600 FCFA = 14 900 CDF | Guinée → 3 600 FCFA = 55 000 GNF
   const payCurrency = COUNTRY_CURRENCIES[user.country] || "XAF";
   const payAmount   = convertFcfaToPayin(amount, payCurrency);
 
@@ -129,22 +122,20 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
       name,
       email: user.email,
       mobile,
-      amount:   payAmount,    // montant dans la devise locale (ex: 14 900 CDF)
-      currency: payCurrency,  // devise locale AccountPE (ex: "CDF", "XOFS", "XAF"…)
+      amount:   payAmount,
+      currency: payCurrency,
       transactionId,
       description,
       callbackUrl,
     });
 
-    // On stocke le montant en FCFA dans la DB (comptabilité interne toujours en FCFA).
-    // Le montant réellement débité chez AccountPE = payAmount payCurrency (loggé ci-dessus).
     await db.insert(swychrTransactionsTable).values({
       userId: user.id,
       targetUserId,
       paymentRef: transactionId,
       swychrRef: id,
-      amount: amount.toFixed(2),  // montant FCFA — base comptable interne
-      currency: "XAF",            // devise interne (FCFA)
+      amount: amount.toFixed(2),
+      currency: "XAF",
       phoneNumber: user.phone,
       paymentMethod: "accountpe_checkout",
       status: "pending",
@@ -160,6 +151,33 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
       error: err instanceof Error ? err.message : "Erreur AccountPE",
     });
   }
+});
+
+// ─────────────────────────────────────────────────────────────────
+// GET /api/swychr/pending — Transactions en attente de l'utilisateur
+// Permet au frontend de retrouver les paiements non finalisés même
+// après fermeture du navigateur ou changement d'appareil.
+// ─────────────────────────────────────────────────────────────────
+router.get("/swychr/pending", authenticate, async (req, res): Promise<void> => {
+  const pendingTxs = await db
+    .select()
+    .from(swychrTransactionsTable)
+    .where(and(
+      eq(swychrTransactionsTable.userId, req.userId!),
+      eq(swychrTransactionsTable.status, "pending"),
+    ))
+    .orderBy(desc(swychrTransactionsTable.createdAt))
+    .limit(5);
+
+  res.json({
+    transactions: pendingTxs.map((t) => ({
+      transactionId: t.paymentRef,
+      paymentUrl: t.paymentUrl,
+      amount: parseFloat(t.amount),
+      purpose: t.purpose,
+      createdAt: t.createdAt,
+    })),
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────
@@ -187,10 +205,6 @@ router.get("/swychr/status/:txId", authenticate, async (req, res): Promise<void>
     return;
   }
 
-  // Vérifier en temps réel chez AccountPE, puis renvoyer la VÉRITÉ INTERNE (DB locale).
-  // Si le provider dit "success" mais handlePaymentSuccess rollback (ex: balance manquante),
-  // la tx locale reste "pending" → on doit refléter ce pending au front pour que le polling
-  // continue, plutôt que de prétendre "success" sans crédit réel.
   try {
     const { status } = await checkPaymentStatus(txId);
 
@@ -203,7 +217,6 @@ router.get("/swychr/status/:txId", authenticate, async (req, res): Promise<void>
         .where(eq(swychrTransactionsTable.paymentRef, txId));
     }
 
-    // Recharger l'état local POST-traitement (source de vérité métier).
     const [refreshed] = await db
       .select()
       .from(swychrTransactionsTable)
@@ -251,7 +264,6 @@ async function handleWebhook(req: import("express").Request, res: import("expres
     const transactionId = (payload.transaction_id || payload.reference || payload.ref) as string | undefined;
     if (!transactionId) { req.log.warn("[AccountPE] Webhook sans transaction_id"); return; }
 
-    // Toujours vérifier via l'API de statut
     const { status } = await checkPaymentStatus(transactionId);
     req.log.info({ transactionId, status }, "[AccountPE] Statut vérifié après webhook");
 
@@ -270,128 +282,5 @@ async function handleWebhook(req: import("express").Request, res: import("expres
 
 router.post("/accountpe/webhook", handleWebhook);
 router.post("/webhook/swychr", handleWebhook);
-
-// ─────────────────────────────────────────────────────────────────
-// Traitement post-paiement (atomique + idempotent) — switch sur le purpose
-//
-// Toute la séquence (marquage SUCCESS + effets métier) est encapsulée dans une
-// SEULE transaction DB. Si un effet métier échoue, le SUCCESS est rollbacké et
-// la tx reste en "pending" → retry possible (polling, webhook ré-émis).
-//
-// L'UPDATE conditionnel `WHERE status = 'pending'` garantit l'idempotence :
-// si deux workers (polling + webhook) traitent le même paiement, un seul gagne.
-// ─────────────────────────────────────────────────────────────────
-async function handlePaymentSuccess(
-  transactionId: string,
-  source: string,
-  log: import("pino").Logger,
-) {
-  // Capturé hors transaction pour l'envoi d'emails post-commit
-  let emailData: { purpose: string; userId: number; amount: number } | null = null;
-
-  try {
-    await db.transaction(async (tx) => {
-      // 1. Verrou logique : SUCCESS atomique uniquement si encore "pending"
-      const updated = await tx
-        .update(swychrTransactionsTable)
-        .set({ status: "SUCCESS", completedAt: new Date(), updatedAt: new Date() })
-        .where(and(
-          eq(swychrTransactionsTable.paymentRef, transactionId),
-          eq(swychrTransactionsTable.status, "pending"),
-        ))
-        .returning();
-
-      if (updated.length === 0) {
-        log.info({ transactionId }, "[AccountPE] tx déjà traitée, no-op");
-        return;
-      }
-
-      const swyTx = updated[0];
-      const amount = parseFloat(swyTx.amount);
-      const purpose = swyTx.purpose;
-      const targetUserId = swyTx.targetUserId ?? swyTx.userId;
-
-      // 2. Effets métier dans la même transaction
-      if (purpose === "activation") {
-        // Self-payée : si une race a activé l'utilisateur entre-temps (paiement précédent
-        // déjà traité, activation par parent...), activateUserTx renvoie false. Pour
-        // éviter un SUCCESS sans contrepartie, on rembourse vers le solde dépôt.
-        const ok = await activateUserTx(tx, targetUserId, amount, `swychr_${source}`, undefined, log);
-        if (!ok) {
-          log.warn({ targetUserId, transactionId }, "[AccountPE] race activation self-payée, refund vers solde dépôt");
-          await creditDepositTx(tx, targetUserId, amount, `${source}_refund_already_active`, log);
-        } else {
-          emailData = { purpose: "activation", userId: targetUserId, amount };
-        }
-      } else if (purpose === "deposit") {
-        await creditDepositTx(tx, swyTx.userId, amount, source, log);
-        emailData = { purpose: "deposit", userId: swyTx.userId, amount };
-      } else if (purpose === "child_activation") {
-        // Vérification rapide pour éviter la tentative inutile.
-        const [child] = await tx.select().from(usersTable).where(eq(usersTable.id, targetUserId));
-        if (!child || child.isActivated) {
-          log.warn({ targetUserId, transactionId }, "[AccountPE] child déjà activé (pré-check), refund vers solde dépôt parent");
-          await creditDepositTx(tx, swyTx.userId, amount, `${source}_refund`, log);
-        } else {
-          // activateUserTx fait un UPDATE conditionnel atomique. Si une race a
-          // activé le child entre le SELECT ci-dessus et l'UPDATE → false ⇒ refund
-          // dans la MÊME transaction (sinon SUCCESS sans effet ni remboursement).
-          const ok = await activateUserTx(tx, targetUserId, amount, `swychr_${source}_by_parent`, swyTx.userId, log);
-          if (!ok) {
-            log.warn({ targetUserId, transactionId }, "[AccountPE] race child_activation, refund vers solde dépôt parent");
-            await creditDepositTx(tx, swyTx.userId, amount, `${source}_refund_race`, log);
-          } else {
-            emailData = { purpose: "activation", userId: targetUserId, amount };
-          }
-        }
-      } else {
-        log.warn({ purpose, transactionId }, "[AccountPE] purpose inconnu");
-        // On rollback en throw pour ne pas marquer la tx SUCCESS sans effet
-        throw new Error(`Unknown purpose: ${purpose}`);
-      }
-    });
-  } catch (err) {
-    log.error({ err, transactionId }, "[AccountPE] handlePaymentSuccess rollbacké, tx restera en pending pour retry");
-    return; // Ne pas envoyer d'emails si la transaction a échoué
-  }
-
-  // ── Emails post-commit (best-effort, hors transaction) ──────────────────
-  // Cast nécessaire : TypeScript ne suit pas les mutations de `let` dans les callbacks async.
-  const ed = emailData as { purpose: string; userId: number; amount: number } | null;
-  if (!ed) return;
-  try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, ed.userId));
-    if (!user) return;
-
-    if (ed.purpose === "activation") {
-      // Confirmation à l'utilisateur activé
-      sendActivationConfirmEmail(user).catch((err) => log.warn({ err }, "Email activation échoué"));
-
-      // Commissions aux parrains N1/N2/N3
-      if (user.referredByCode) {
-        const [ref1] = await db.select().from(usersTable).where(eq(usersTable.referralCode, user.referredByCode));
-        if (ref1) {
-          sendCommissionEmail(ref1, user, 1700, 1).catch((err) => log.warn({ err }, "Email commission N1 échoué"));
-          if (ref1.referredByCode) {
-            const [ref2] = await db.select().from(usersTable).where(eq(usersTable.referralCode, ref1.referredByCode));
-            if (ref2) {
-              sendCommissionEmail(ref2, user, 700, 2).catch((err) => log.warn({ err }, "Email commission N2 échoué"));
-              if (ref2.referredByCode) {
-                const [ref3] = await db.select().from(usersTable).where(eq(usersTable.referralCode, ref2.referredByCode));
-                if (ref3) {
-                  sendCommissionEmail(ref3, user, 200, 3).catch((err) => log.warn({ err }, "Email commission N3 échoué"));
-                }
-              }
-            }
-          }
-        }
-      }
-    } else if (ed.purpose === "deposit") {
-      sendDepositConfirmEmail(user, ed.amount).catch((err) => log.warn({ err }, "Email dépôt échoué"));
-    }
-  } catch (emailErr) {
-    log.warn({ emailErr }, "Emails post-paiement échoués (non bloquant)");
-  }
-}
 
 export default router;

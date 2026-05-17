@@ -109,7 +109,13 @@ export async function activateUserTx(
 ): Promise<boolean> {
   const activated = await tx
     .update(usersTable)
-    .set({ isActivated: true })
+    .set({
+      isActivated: true,
+      blockedActivities: false,
+      blockedFormations: false,
+      blockedCanva: false,
+      freeAccountDebt: "0.00",
+    })
     .where(and(eq(usersTable.id, userId), eq(usersTable.isActivated, false)))
     .returning();
 

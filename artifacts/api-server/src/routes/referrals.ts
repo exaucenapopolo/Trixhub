@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { db, usersTable, transactionsTable, balancesTable, activityCompletionsTable } from "@workspace/db";
 import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
+import { requireActivation, requireActivationOrFreeAccount } from "../middlewares/requireActivation";
 import { activateUserTx, ACTIVATION_AMOUNT, REFERRAL_PAYMENT_FEE } from "../lib/activation";
 
 const router: IRouter = Router();
@@ -108,7 +108,7 @@ router.get("/referrals/level/:level", authenticate, requireActivation, async (re
 //   - "referral" : débite 4100 (3600 + 500 frais) du solde parrainage du parent
 // Le paiement Swychr direct passe par /api/swychr/initiate avec purpose=child_activation.
 // ─────────────────────────────────────────────────────────────────
-router.post("/referrals/activate-child/:childId", authenticate, requireActivation, async (req, res): Promise<void> => {
+router.post("/referrals/activate-child/:childId", authenticate, requireActivationOrFreeAccount, async (req, res): Promise<void> => {
   const parentId = req.userId!;
   const childId = parseInt(req.params.childId as string, 10);
   const { source } = req.body as { source?: "deposit" | "referral" };
