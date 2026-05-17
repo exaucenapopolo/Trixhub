@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -109,6 +111,7 @@ function setStoredSharedDate(date: string) {
 
 export default function ActivitiesSurprisePage() {
   usePageTitle('Activité Surprise');
+  const { user } = useAuth();
   const { data: schedule, refetch: refetchSchedule } = useGetActivitiesSchedule();
 
   const todayStr = todayDateStr();
@@ -192,6 +195,12 @@ export default function ActivitiesSurprisePage() {
       setPhase("upload");
     }
   };
+
+  if (user?.blockedActivities) return (
+    <Layout>
+      <FeatureGate blocked feature="Activités">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

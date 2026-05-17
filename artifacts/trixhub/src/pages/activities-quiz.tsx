@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +36,7 @@ type Phase = "idle" | "loading" | "playing" | "submitting" | "results";
 
 export default function ActivitiesQuizPage() {
   usePageTitle('Activité Quiz');
+  const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("idle");
   const [session, setSession] = useState<QuizSession | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -192,6 +195,12 @@ export default function ActivitiesQuizPage() {
   const timerPct = (timeLeft / QUESTION_TIME) * 100;
   const timerColor =
     timeLeft > 6 ? "bg-emerald-500" : timeLeft > 3 ? "bg-amber-500" : "bg-red-500";
+
+  if (user?.blockedActivities) return (
+    <Layout>
+      <FeatureGate blocked feature="Activités">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

@@ -70,11 +70,13 @@ export function AuthProvider({ children, onUserLoaded }: { children: ReactNode; 
   }, [onUserLoaded]);
 
   useEffect(() => {
-    if (token) {
-      fetchUser(token);
-    } else {
+    if (!token) {
       setIsLoading(false);
+      return;
     }
+    fetchUser(token);
+    const interval = setInterval(() => fetchUser(token), 30_000);
+    return () => clearInterval(interval);
   }, [token, fetchUser]);
 
   const login = (newToken: string, userData?: UserData) => {

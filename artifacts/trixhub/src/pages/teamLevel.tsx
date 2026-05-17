@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRoute } from "wouter";
 import { useGetReferralsByLevel } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,12 @@ export default function TeamLevelPage() {
   // Gain potentiel = commission * filleuls inactifs (ceux qui pourraient encore activer)
   const potentialGain = (data?.inactive ?? 0) * (data?.commission ?? 0);
   const earnedGain = (data?.active ?? 0) * (data?.commission ?? 0);
+
+  if (user?.blockedReferral) return (
+    <Layout>
+      <FeatureGate blocked feature="Parrainage (équipe)">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

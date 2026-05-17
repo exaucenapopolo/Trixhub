@@ -6,6 +6,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { formatLocalWithFcfa, formatLocal, type CurrencyTarget } from "@/lib/currency";
@@ -239,6 +240,12 @@ export default function FormationsProPage() {
 
   const totalFormations = FORMATIONS_WITH_IMAGES.length + FORMATIONS_LIST.length + 1;
   const totalPurchased = purchasedIds.size;
+
+  if (user?.blockedFormations) return (
+    <Layout>
+      <FeatureGate blocked feature="Formations">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

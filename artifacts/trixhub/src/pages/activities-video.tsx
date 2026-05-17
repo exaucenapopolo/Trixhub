@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -112,6 +114,7 @@ function TimerRing({ timeLeft }: { timeLeft: number }) {
 // ─── Page principale ─────────────────────────────────────────────
 export default function ActivitiesVideoPage() {
   usePageTitle('Activité Vidéo');
+  const { user } = useAuth();
   const { data: schedule, refetch: refetchSchedule } = useGetActivitiesSchedule();
   const [phase, setPhase] = useState<Phase>("select");
   const [selected, setSelected] = useState<Video | null>(null);
@@ -197,6 +200,12 @@ export default function ActivitiesVideoPage() {
     setSessionId(null);
     setTimeLeft(WATCH_DURATION);
   };
+
+  if (user?.blockedActivities) return (
+    <Layout>
+      <FeatureGate blocked feature="Activités">{null}</FeatureGate>
+    </Layout>
+  );
 
   // ── Render ─────────────────────────────────────────────────────
   return (

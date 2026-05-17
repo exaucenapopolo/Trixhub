@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
@@ -339,6 +340,12 @@ export default function FormationsPage() {
   });
 
   const categoryOrder = ["argent", "business", "ventes", "mindset", "tech"];
+
+  if (user?.blockedFormations) return (
+    <Layout>
+      <FeatureGate blocked feature="Formations gratuites">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

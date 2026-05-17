@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useGetTeam } from "@workspace/api-client-react";
 import Layout from "@/components/Layout";
+import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,6 +14,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 
 export default function TeamPage() {
   usePageTitle('Mon équipe');
+  const { user } = useAuth();
   const { data: team, isLoading } = useGetTeam();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
@@ -21,6 +24,12 @@ export default function TeamPage() {
     const matchFilter = filter === "all" || (filter === "active" && m.isActivated) || (filter === "inactive" && !m.isActivated);
     return matchSearch && matchFilter;
   }) ?? [];
+
+  if (user?.blockedReferral) return (
+    <Layout>
+      <FeatureGate blocked feature="Parrainage (équipe)">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

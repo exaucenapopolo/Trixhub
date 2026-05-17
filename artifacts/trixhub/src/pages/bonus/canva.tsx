@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { useToast } from "@/hooks/use-toast";
 import { Palette, Send, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -82,6 +83,12 @@ export default function BonusCanvaPage() {
   const requestedDate = user?.canvaRequestedAt
     ? new Date(user.canvaRequestedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
     : null;
+
+  if (user?.blockedCanva) return (
+    <Layout>
+      <FeatureGate blocked feature="Canva Pro">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

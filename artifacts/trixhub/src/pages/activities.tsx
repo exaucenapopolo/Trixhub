@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import Layout from "@/components/Layout";
 import TutorialVideo from "@/components/TutorialVideo";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { formatLocal } from "@/lib/currency";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -220,6 +221,12 @@ export default function ActivitiesPage() {
       });
     }
   };
+
+  if (user?.blockedActivities) return (
+    <Layout>
+      <FeatureGate blocked feature="Activités">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

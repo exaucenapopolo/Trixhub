@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/Layout";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import {
   Loader2, BookUser, Users, Download, ShoppingCart,
   AlertCircle, ChevronDown, History, Lock, ArrowRight
@@ -183,6 +184,12 @@ export default function ContactsPage() {
       day: "2-digit", month: "short", year: "numeric",
       hour: "2-digit", minute: "2-digit",
     });
+
+  if (user?.blockedContacts) return (
+    <Layout>
+      <FeatureGate blocked feature="Achat de contacts">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>

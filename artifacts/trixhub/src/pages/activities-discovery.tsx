@@ -31,6 +31,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import FeatureGate from "@/components/FeatureGate";
 import { formatLocal } from "@/lib/currency";
 
 // ─── Fiches publicitaires Social Boost Horizon ──────────────────
@@ -337,6 +338,12 @@ export default function ActivitiesDiscoveryPage() {
     setSessionId(null);
     setTimeLeft(VISIT_DURATION);
   };
+
+  if (user?.blockedActivities) return (
+    <Layout>
+      <FeatureGate blocked feature="Activités">{null}</FeatureGate>
+    </Layout>
+  );
 
   return (
     <Layout>
