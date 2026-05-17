@@ -85,12 +85,13 @@ function ActivateRoute() {
   return <ActivatePage />;
 }
 
-// Page compte gratuit : accessible aux non-activés (pour choisir) et aux comptes gratuits (pour voir la progression)
+// Page compte gratuit : uniquement pour les utilisateurs non encore inscrits en gratuit
 function FreeAccountRoute() {
   const { token, user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!token) return <Redirect to="/" />;
-  if (user?.isActivated && !user?.isFreeAccount) return <Redirect to="/dashboard" />;
+  // Déjà compte gratuit ou activé → tableau de bord
+  if (user?.isFreeAccount || user?.isActivated) return <Redirect to="/dashboard" />;
   return <FreeAccountPage />;
 }
 
