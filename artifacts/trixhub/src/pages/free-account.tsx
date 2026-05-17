@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth, type UserData } from "@/context/AuthContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -7,8 +7,10 @@ import {
   Share2, CheckCircle2, XCircle, ChevronDown, ChevronUp,
   Loader2, ArrowRight, Users, Zap, GraduationCap, Wifi,
   Palette, Tv, Star, Gift, TrendingUp, AlertCircle, Clock,
-  ArrowLeft, ShieldCheck, Sparkles, Trophy,
+  ArrowLeft, ShieldCheck, Sparkles, Trophy, CreditCard, Phone, Pencil,
 } from "lucide-react";
+
+const FREE_PAYMENT_TX_KEY = "trixhub_free_payment_tx";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const TOKEN_KEY = "trixhub_token";
@@ -93,17 +95,148 @@ function FaqItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean
 export default function FreeAccountPage() {
   usePageTitle("Compte Gratuit — Rejoindre sans payer");
   const [, navigate] = useLocation();
-  const { user, setUserData } = useAuth();
+  const { user, setUserData, refreshUser } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // ── Payer le reste ─────────────────────────────────────────────
+  const [payStep, setPayStep] = useState<"idle" | "waiting" | "success">("idle");
+  const [payTxId, setPayTxId] = useState<string | null>(null);
+  const [payPhone, setPayPhone] = useState(user?.phone ?? "");
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [isInitiating, setIsInitiating] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const activationCredit = parseFloat(user?.activationCredit ?? "0");
   const progress = Math.min(100, (activationCredit / FREE_ACCOUNT_THRESHOLD) * 100);
   const remaining = Math.max(0, FREE_ACCOUNT_THRESHOLD - activationCredit);
+  const remainingAmount = Math.ceil(remaining);
   const isFreeAccount = user?.isFreeAccount ?? false;
   const isActivated = user?.isActivated ?? false;
+
+  // Pré-rempli depuis le profil
+  useEffect(() => {
+    if (user?.phone && !payPhone) setPayPhone(user.phone);
+  }, [user?.phone]);
+
+  // Reprendre un paiement en attente (retour du checkout)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const savedTx =
+      params.get("tx_id") ||
+      params.get("transaction_id") ||
+      localStorage.getItem(FREE_PAYMENT_TX_KEY);
+    if (savedTx && isFreeAccount && !isActivated) {
+      setPayTxId(savedTx);
+      setPayStep("waiting");
+    }
+  }, [isFreeAccount, isActivated]);
+
+  function startPolling() {
+    stopPolling();
+    setElapsedSeconds(0);
+    timerRef.current = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    pollRef.current = setInterval(doPoll, 5000);
+    setTimeout(doPoll, 1500);
+  }
+
+  function stopPolling() {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  }
+
+  const doPoll = useCallback(async () => {
+    const currentTxId = payTxId || localStorage.getItem(FREE_PAYMENT_TX_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!currentTxId || !token) return;
+    try {
+      const res = await fetch(`${BASE}/api/swychr/status/${encodeURIComponent(currentTxId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json() as { success: boolean; status: string; isPaid: boolean };
+      if (data.isPaid || data.status === "success") {
+        stopPolling();
+        localStorage.removeItem(FREE_PAYMENT_TX_KEY);
+        await refreshUser();
+        setPayStep("success");
+        navigate("/dashboard");
+        return;
+      }
+      if (data.status === "failed") {
+        stopPolling();
+        localStorage.removeItem(FREE_PAYMENT_TX_KEY);
+        toast({ title: "Paiement échoué", description: "Votre paiement n'a pas abouti. Réessayez.", variant: "destructive" });
+        setPayStep("idle");
+      }
+    } catch { /* retry next tick */ }
+  }, [payTxId, refreshUser, toast, navigate]);
+
+  useEffect(() => {
+    if (payStep === "waiting" && payTxId) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+    return () => stopPolling();
+  }, [payStep, payTxId]);
+
+  useEffect(() => {
+    if (payStep !== "waiting") return;
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = setInterval(doPoll, 5000);
+    }
+  }, [doPoll]);
+
+  const formatElapsed = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  const handlePayRemainder = async () => {
+    const phone = payPhone.trim();
+    if (!phone) {
+      toast({ title: "Numéro requis", description: "Renseignez votre numéro de téléphone mobile money.", variant: "destructive" });
+      return;
+    }
+    setIsInitiating(true);
+    const token = localStorage.getItem(TOKEN_KEY);
+    try {
+      const res = await fetch(`${BASE}/api/swychr/initiate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ purpose: "free_self_activation", phoneNumber: phone }),
+      });
+      const data = await res.json() as {
+        success: boolean;
+        transactionId?: string;
+        checkoutUrl?: string;
+        amount?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.success) {
+        toast({ title: "Erreur", description: data.error ?? "Impossible d'initier le paiement.", variant: "destructive" });
+        return;
+      }
+      if (!data.checkoutUrl || !data.transactionId) {
+        toast({ title: "Erreur", description: "Réponse invalide du partenaire. Contactez le support.", variant: "destructive" });
+        return;
+      }
+      localStorage.setItem(FREE_PAYMENT_TX_KEY, data.transactionId);
+      setPayTxId(data.transactionId);
+      window.location.href = data.checkoutUrl;
+    } catch {
+      toast({ title: "Erreur réseau", description: "Réessayez dans un instant.", variant: "destructive" });
+    } finally {
+      setIsInitiating(false);
+    }
+  };
 
   const handleChooseFreeAccount = async () => {
     setIsSubmitting(true);
@@ -343,13 +476,116 @@ export default function FreeAccountPage() {
               <ArrowLeft className="w-4 h-4" /> Retour — je préfère payer directement
             </Link>
           </div>
+        ) : payStep === "waiting" ? (
+          /* ── ÉTAT D'ATTENTE : paiement en cours de vérification ── */
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Loader2 className="w-7 h-7 text-primary animate-spin" />
+            </div>
+            <div>
+              <h3 className="font-bold text-foreground text-base">Vérification de votre paiement</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Paiement de <strong className="text-foreground">{remainingAmount.toLocaleString("fr-FR")} FCFA</strong> en cours de vérification…
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Temps écoulé : {formatElapsed(elapsedSeconds)} — vérification automatique toutes les 5 secondes
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground bg-card border border-border rounded-xl p-3 leading-relaxed">
+              Dès que le paiement est confirmé, votre compte est activé automatiquement et vous êtes redirigé vers votre tableau de bord. Vous pouvez garder cette page ouverte ou fermer et revenir plus tard.
+            </p>
+            <button
+              type="button"
+              onClick={() => { stopPolling(); localStorage.removeItem(FREE_PAYMENT_TX_KEY); setPayStep("idle"); setPayTxId(null); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
+            >
+              Annuler et retourner à l'accueil
+            </button>
+          </div>
         ) : (
-          <div className="space-y-3">
+          /* ── COMPTE GRATUIT EXISTANT : accès dashboard + payer le reste ── */
+          <div className="space-y-4">
+
+            {/* Bloc "Payer le reste" — affiché uniquement si remaining > 0 */}
+            {remainingAmount > 0 && (
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/30 rounded-2xl p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-foreground text-sm">Activer maintenant — payer seulement le solde restant</h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      Tu as déjà <strong className="text-foreground">{activationCredit.toLocaleString("fr-FR")} FCFA</strong> de crédit accumulé.
+                      Il ne te reste que <strong className="text-green-600 dark:text-green-400 text-sm">{remainingAmount.toLocaleString("fr-FR")} FCFA</strong> à payer et ton compte est activé immédiatement.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ton crédit accumulé sera transféré dans ton solde parrainage.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Numéro de téléphone mobile money */}
+                <div className="bg-card border border-border rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5" /> Numéro mobile money
+                    </span>
+                    {!editingPhone && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingPhone(true)}
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Pencil className="w-3 h-3" /> Modifier
+                      </button>
+                    )}
+                  </div>
+                  {editingPhone ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        value={payPhone}
+                        onChange={(e) => setPayPhone(e.target.value)}
+                        placeholder="Ex : +237 6XX XX XX XX"
+                        className="flex-1 text-sm bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditingPhone(false)}
+                        className="text-xs bg-primary text-primary-foreground px-3 py-2 rounded-lg font-medium"
+                      >
+                        OK
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-mono text-foreground">{payPhone || <span className="text-muted-foreground italic">Non renseigné</span>}</p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handlePayRemainder}
+                  disabled={isInitiating || !payPhone.trim()}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-base font-bold shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isInitiating ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                  {isInitiating
+                    ? "Préparation du paiement…"
+                    : `Payer ${remainingAmount.toLocaleString("fr-FR")} FCFA et activer mon compte`}
+                </button>
+                <p className="text-center text-[11px] text-muted-foreground">
+                  Paiement sécurisé via notre partenaire AccountPE • Mobile Money uniquement
+                </p>
+              </div>
+            )}
+
             <Link
               href="/dashboard"
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-primary-foreground text-base font-bold shadow-lg hover:opacity-90 transition-all"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground text-sm font-semibold shadow hover:opacity-90 transition-all"
             >
-              <ArrowRight className="w-5 h-5" /> Aller à mon tableau de bord
+              <ArrowRight className="w-4 h-4" /> Aller à mon tableau de bord
             </Link>
             <Link
               href="/activate"

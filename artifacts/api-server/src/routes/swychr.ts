@@ -13,7 +13,7 @@ import {
   COUNTRY_CURRENCIES,
   convertFcfaToPayin,
 } from "../lib/swychr";
-import { ACTIVATION_AMOUNT } from "../lib/activation";
+import { ACTIVATION_AMOUNT, FREE_ACTIVATION_THRESHOLD } from "../lib/activation";
 import { handlePaymentSuccess } from "../lib/paymentProcessor";
 
 const router: IRouter = Router();
@@ -40,7 +40,7 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
   if (!user) { res.status(401).json({ success: false, error: "Utilisateur introuvable" }); return; }
 
   const body = req.body as {
-    purpose?: "activation" | "deposit" | "child_activation";
+    purpose?: "activation" | "deposit" | "child_activation" | "free_self_activation";
     amount?: number;
     childId?: number;
     phoneNumber?: string;
@@ -100,6 +100,24 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
     amount = CHILD_ACTIVATION_AMOUNT;
     targetUserId = child.id;
     description = `Activation filleul ${child.displayName || deriveDisplayName(child.email)}`;
+  } else if (purpose === "free_self_activation") {
+    if (!user.isFreeAccount) {
+      res.status(403).json({ success: false, error: "Réservé aux comptes gratuits" });
+      return;
+    }
+    if (user.isActivated) {
+      res.status(400).json({ success: false, error: "Compte déjà activé" });
+      return;
+    }
+    const credit = parseFloat(user.activationCredit ?? "0");
+    const remainder = Math.max(0, FREE_ACTIVATION_THRESHOLD - credit);
+    if (remainder <= 0) {
+      res.status(400).json({ success: false, error: "Crédit suffisant — votre compte va s'activer automatiquement" });
+      return;
+    }
+    amount = Math.ceil(remainder);
+    targetUserId = user.id;
+    description = `Solde restant activation compte gratuit TRIXHUB (${amount.toLocaleString("fr-FR")} FCFA)`;
   } else {
     res.status(400).json({ success: false, error: "purpose invalide" });
     return;

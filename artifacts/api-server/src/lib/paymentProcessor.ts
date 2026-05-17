@@ -1,7 +1,7 @@
 import { db, usersTable, swychrTransactionsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import type { Logger } from "pino";
-import { activateUserTx, creditDepositTx } from "./activation";
+import { activateUserTx, creditDepositTx, activateFreeAccountWithPaymentTx } from "./activation";
 import { checkPaymentStatus } from "./swychr";
 import {
   sendActivationConfirmEmail,
@@ -47,10 +47,18 @@ export async function handlePaymentSuccess(
       const purpose = swyTx.purpose;
       const targetUserId = swyTx.targetUserId ?? swyTx.userId;
 
-      if (purpose === "activation" || purpose === "free_self_activation") {
+      if (purpose === "activation") {
         const ok = await activateUserTx(tx, targetUserId, amount, `swychr_${source}`, undefined, log);
         if (!ok) {
           log.warn({ targetUserId, transactionId }, "[AccountPE] race activation self-payée, refund vers solde dépôt");
+          await creditDepositTx(tx, targetUserId, amount, `${source}_refund_already_active`, log);
+        } else {
+          emailData = { purpose: "activation", userId: targetUserId, amount };
+        }
+      } else if (purpose === "free_self_activation") {
+        const ok = await activateFreeAccountWithPaymentTx(tx, targetUserId, amount, `swychr_${source}`, log);
+        if (!ok) {
+          log.warn({ targetUserId, transactionId }, "[AccountPE] race free_self_activation déjà activé, refund vers solde dépôt");
           await creditDepositTx(tx, targetUserId, amount, `${source}_refund_already_active`, log);
         } else {
           emailData = { purpose: "activation", userId: targetUserId, amount };
