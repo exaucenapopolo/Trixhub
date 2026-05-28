@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = "TRIXHUB <support@trixhub.site>";
+const FROM = "TRIXHUB <support@socialboosthorizon.com>";
 const SITE = "https://trixhub.site";
 
 // ─── Helpers HTML ──────────────────────────────────────────────────────────
