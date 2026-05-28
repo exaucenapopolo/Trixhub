@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = "TRIXHUB <support@socialboosthorizon.com>";
+const FROM = "TRIXHUB <support@trixhub.site>";
 const SITE = "https://trixhub.site";
 
 // ─── Helpers HTML ──────────────────────────────────────────────────────────
@@ -19,18 +19,34 @@ function base(content: string): string {
     ${content}
   </td></tr>
   <tr><td align="center" style="padding-top:20px;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff7ed;border-radius:16px;padding:16px 24px;border:1px solid #fed7aa;">
-      <tr><td align="center">
-        <p style="margin:0 0 4px;color:#9a3412;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Partenaire officiel n°1</p>
-        <a href="https://socialboosthorizon.com" style="color:#ea580c;font-size:15px;font-weight:800;text-decoration:none;">🤝 Social Boost Horizon</a>
-        <p style="margin:4px 0 0;color:#c2410c;font-size:12px;">socialboosthorizon.com — Le soutien principal de la plateforme TRIXHUB</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+      <tr><td style="padding-bottom:10px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;border-radius:14px;padding:14px 20px;border:1px solid #fed7aa;">
+          <tr><td align="center">
+            <p style="margin:0 0 2px;color:#9a3412;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Partenaire officiel n°1</p>
+            <a href="https://socialboosthorizon.com" style="color:#ea580c;font-size:14px;font-weight:800;text-decoration:none;">🚀 Vous cherchez à devenir viral sur tous les réseaux sociaux ?</a>
+            <p style="margin:4px 0 0;color:#c2410c;font-size:12px;">Avec <strong>Social Boost Horizon</strong> ce n'est plus qu'un jeu.</p>
+            <a href="https://socialboosthorizon.com" style="display:inline-block;margin-top:6px;color:#fff;background:#ea580c;font-size:12px;font-weight:700;text-decoration:none;padding:6px 16px;border-radius:8px;">👉 socialboosthorizon.com</a>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:14px;padding:14px 20px;border:1px solid #bbf7d0;">
+          <tr><td align="center">
+            <p style="margin:0 0 2px;color:#166534;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Partenaire officiel n°2</p>
+            <p style="margin:0;color:#15803d;font-size:14px;font-weight:800;">🌐 Vous cherchez un numéro étranger ?</p>
+            <p style="margin:4px 0;color:#166534;font-size:12px;">Notre partenaire a ce qu'il vous faut — rapide et fiable.</p>
+            <a href="https://texerra.site" style="display:inline-block;margin-top:6px;color:#fff;background:#16a34a;font-size:12px;font-weight:700;text-decoration:none;padding:6px 16px;border-radius:8px;">👉 Consulter texerra.site</a>
+          </td></tr>
+        </table>
       </td></tr>
     </table>
   </td></tr>
   <tr><td align="center" style="padding-top:16px;">
     <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.8;">
-      © 2025 TRIXHUB · La plateforme d'affiliation africaine<br>
-      <a href="${SITE}" style="color:#f97316;text-decoration:none;">trixhub.site</a>
+      © 2026 TRIXHUB · La plateforme d'affiliation africaine<br>
+      <a href="${SITE}" style="color:#f97316;text-decoration:none;">trixhub.site</a> ·
+      <a href="mailto:support@trixhub.site" style="color:#f97316;text-decoration:none;">support@trixhub.site</a>
     </p>
   </td></tr>
 </table>
@@ -112,7 +128,7 @@ export async function sendWelcomeEmail(user: { email: string; displayName: strin
     </div>
     ${btn(SITE + "/activate", "Activer mon compte — 3 600 FCFA")}
     <div style="text-align:center;margin-top:16px;">
-      <p style="margin:0;color:#64748b;font-size:13px;">Des questions ? Contacte notre équipe depuis ton tableau de bord ou via <a href="${SITE}/dashboard" style="color:#f97316;text-decoration:none;">trixhub.site</a></p>
+      <p style="margin:0;color:#64748b;font-size:13px;">Des questions ? Écris-nous à <a href="mailto:support@trixhub.site" style="color:#f97316;text-decoration:none;">support@trixhub.site</a> ou contacte-nous depuis ton tableau de bord.</p>
     </div>
   `);
   await resend.emails.send({ from: FROM, to: user.email, subject: "🎉 Bienvenue sur TRIXHUB — Découvre comment gagner dès aujourd'hui", html });
