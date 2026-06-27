@@ -6,3 +6,9 @@ id = "r38xBpsvhNF0fbBmBahOL"
 uri = "file://.local/formations/vente-whatsapp-business.md"
 type = "text"
 title = "Formation TRIXHUB — Prospecter & Vendre sur WhatsApp Business en Afrique"
+
+[[outputs]]
+id = "Yt-AicggKF_hR0aaRkrpl"
+uri = "file://scripts/trixhub-presentation.pdf"
+type = "pdf"
+title = "TRIXHUB — Dossier de Présentation 2026"

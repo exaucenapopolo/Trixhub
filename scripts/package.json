@@ -5,10 +5,16 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "generate-pdf": "tsx ./src/generate-trixhub-pdf.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@types/pdfkit": "^0.17.6",
+    "pdfkit": "^0.18.0",
+    "pdfmake": "^0.3.11"
   }
 }
