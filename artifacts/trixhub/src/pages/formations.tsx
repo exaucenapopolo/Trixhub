@@ -10,6 +10,7 @@ import {
   GraduationCap, CheckCircle2, Loader2, CalendarClock, Lock,
   DollarSign, Rocket, MessageSquare, Brain, Zap,
   Star, Download, ZoomIn, X, ExternalLink, MonitorDown, ChevronRight,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -407,6 +408,27 @@ export default function FormationsPage() {
             <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
           </div>
         </Link>
+
+        {/* Bannière téléchargement présentation TRIXHUB */}
+        <a
+          href={`${BASE}/trixhub-presentation.pdf`}
+          download="TRIXHUB-Présentation-2026.pdf"
+          className="block"
+        >
+          <div className="bg-gradient-to-r from-orange-500/10 via-orange-400/5 to-amber-500/10 border border-orange-500/30 rounded-2xl p-4 flex items-center gap-4 hover:border-orange-500/50 hover:shadow-sm transition-all cursor-pointer group">
+            <div className="w-11 h-11 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-500/30 transition-colors">
+              <FileText className="w-5 h-5 text-orange-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-sm font-bold text-foreground">Dossier de présentation TRIXHUB</p>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-500">PDF</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Le guide complet : comment ça marche, commissions, mode gratuit, FAQ, politique de retrait… À partager librement.</p>
+            </div>
+            <Download className="w-5 h-5 text-orange-500 flex-shrink-0 group-hover:translate-y-0.5 transition-transform" />
+          </div>
+        </a>
 
         {/* Catégories */}
         {loading ? (
