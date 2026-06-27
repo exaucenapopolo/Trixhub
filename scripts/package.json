@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "generate-pdf": "tsx ./src/generate-trixhub-pdf.ts",
+    "generate-formations": "tsx ./src/generate-all-formations.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

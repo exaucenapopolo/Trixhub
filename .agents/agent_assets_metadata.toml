@@ -12,3 +12,141 @@ id = "Yt-AicggKF_hR0aaRkrpl"
 uri = "file://scripts/trixhub-presentation.pdf"
 type = "pdf"
 title = "TRIXHUB — Dossier de Présentation 2026"
+
+[[outputs]]
+id = "jfDsQW1rHbNz4IvC8BQUa"
+uri = "file://scripts/formations-pdf/gratuite/vie-financiere.pdf"
+type = "pdf"
+title = "Gratuite — Organiser sa vie financière"
+
+[[outputs]]
+id = "kHllyhSkZsdZrwqNzYPMz"
+uri = "file://scripts/formations-pdf/gratuite/fin-mois-sans-argent.pdf"
+type = "pdf"
+title = "Gratuite — Ne plus finir le mois sans argent"
+
+[[outputs]]
+id = "B3afSLRmFz3OpNpbbHibb"
+uri = "file://scripts/formations-pdf/gratuite/deuxieme-source-revenu.pdf"
+type = "pdf"
+title = "Gratuite — Deuxième source de revenu"
+
+[[outputs]]
+id = "XdtknXMnfnXhGy5ZgnwVI"
+uri = "file://scripts/formations-pdf/gratuite/business-stable.pdf"
+type = "pdf"
+title = "Gratuite — Bâtir un business stable"
+
+[[outputs]]
+id = "8XN1frVbnayomFfqHfv6i"
+uri = "file://scripts/formations-pdf/gratuite/revenus-etudes.pdf"
+type = "pdf"
+title = "Gratuite — Gagner de l'argent pendant les études"
+
+[[outputs]]
+id = "r-PeV9LQXxxcA3uddwSP4"
+uri = "file://scripts/formations-pdf/gratuite/canal-plus.pdf"
+type = "pdf"
+title = "Gratuite — Avoir Canal+ gratuitement"
+
+[[outputs]]
+id = "9ThZwmCjW_ckVRjxX1exx"
+uri = "file://scripts/formations-pdf/gratuite/vendre-whatsapp.pdf"
+type = "pdf"
+title = "Gratuite — Vendre sur WhatsApp"
+
+[[outputs]]
+id = "ZRnpyKfCBHLC-d9-sKQwW"
+uri = "file://scripts/formations-pdf/gratuite/convertir-contacts.pdf"
+type = "pdf"
+title = "Gratuite — Convertir ses contacts en clients"
+
+[[outputs]]
+id = "691rrRbsEMaWqs_m4Agbz"
+uri = "file://scripts/formations-pdf/gratuite/viral-reseaux.pdf"
+type = "pdf"
+title = "Gratuite — Devenir viral sur les réseaux"
+
+[[outputs]]
+id = "atlovwOsv6TzgP6YRrlZX"
+uri = "file://scripts/formations-pdf/gratuite/confiance-en-soi.pdf"
+type = "pdf"
+title = "Gratuite — Confiance en soi"
+
+[[outputs]]
+id = "ZdB7r4mPA_EYWaiSea7XV"
+uri = "file://scripts/formations-pdf/gratuite/serieux-30-jours.pdf"
+type = "pdf"
+title = "Gratuite — Devenir sérieux en 30 jours"
+
+[[outputs]]
+id = "wHKSJlVC8TXil47TCBhnB"
+uri = "file://scripts/formations-pdf/gratuite/controle-90-jours.pdf"
+type = "pdf"
+title = "Gratuite — Reprendre le contrôle en 90 jours"
+
+[[outputs]]
+id = "DBiX2HeXy8NOJosC-g1KR"
+uri = "file://scripts/formations-pdf/gratuite/meilleure-version.pdf"
+type = "pdf"
+title = "Gratuite — Devenir une meilleure version de soi"
+
+[[outputs]]
+id = "GcBxTV73kzWWqOUE5FMuU"
+uri = "file://scripts/formations-pdf/gratuite/telephone.pdf"
+type = "pdf"
+title = "Gratuite — Utiliser son téléphone sans gâcher sa vie"
+
+[[outputs]]
+id = "200Fb8e-6zr4Wr-UGKQNc"
+uri = "file://scripts/formations-pdf/gratuite/intelligence-artificielle.pdf"
+type = "pdf"
+title = "Gratuite — Utiliser l'IA pour améliorer sa vie"
+
+[[outputs]]
+id = "56ap79OeX_aNA6V2hhU5J"
+uri = "file://scripts/formations-pdf/pro/tiktok-monetisable.pdf"
+type = "pdf"
+title = "Pro — TikTok monétisable depuis l'Afrique"
+
+[[outputs]]
+id = "z8tG-hCVIyK6dRsvZjZ7Z"
+uri = "file://scripts/formations-pdf/pro/tiktok-clients.pdf"
+type = "pdf"
+title = "Pro — TikTok source de clients"
+
+[[outputs]]
+id = "6MKiQJeqbkbvDnHiVfbTj"
+uri = "file://scripts/formations-pdf/pro/whatsapp-systeme.pdf"
+type = "pdf"
+title = "Pro — Système WhatsApp qui vend tout seul"
+
+[[outputs]]
+id = "cXUfeiitmz-r5PPsAXwJS"
+uri = "file://scripts/formations-pdf/pro/ia-vendre.pdf"
+type = "pdf"
+title = "Pro — L'IA pour produire et vendre plus vite"
+
+[[outputs]]
+id = "ph18HKpJwcH938AYM8u5A"
+uri = "file://scripts/formations-pdf/pro/whatsapp-business.pdf"
+type = "pdf"
+title = "Pro — Prospecter sur WhatsApp Business"
+
+[[outputs]]
+id = "WpH8jIei05EfJ3P0fPFT_"
+uri = "file://scripts/formations-pdf/pro/marketing-affiliation.pdf"
+type = "pdf"
+title = "Pro — Base du marketing d'affiliation"
+
+[[outputs]]
+id = "t7Bq4dGYSmJnWKNrlKgMG"
+uri = "file://scripts/formations-pdf/pro/business-telephone.pdf"
+type = "pdf"
+title = "Pro — Business en ligne avec son téléphone"
+
+[[outputs]]
+id = "8oR5SOyxzbO_OB8dqjsbY"
+uri = "file://scripts/formations-pdf/pro/recruter-trixhub.pdf"
+type = "pdf"
+title = "Pro — Recruter pour TRIXHUB sans mentir"
