@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { sendWelcomeEmail } from "../lib/email";
 import { eq, or, sql } from "drizzle-orm";
 import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
@@ -47,7 +47,7 @@ function deriveDisplayName(email: string): string {
   return username.charAt(0).toUpperCase() + username.slice(1);
 }
 
-router.get("/auth/referrer/:code", async (req, res): Promise<void> => {
+router.get("/auth/referrer/:code", async (req: Request, res: Response): Promise<void> => {
   const { code } = req.params;
   const [user] = await db.select().from(usersTable).where(eq(usersTable.referralCode, code));
   if (!user) {
@@ -58,7 +58,7 @@ router.get("/auth/referrer/:code", async (req, res): Promise<void> => {
   res.json({ displayName, referralCode: user.referralCode, country: user.country });
 });
 
-router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
+router.post("/auth/register", authLimiter, async (req: Request, res: Response): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Données invalides" });
@@ -129,20 +129,20 @@ router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
       // Si un code parent existe mais le user est introuvable (dérive de données),
       // on log warn explicite (observabilité) plutôt qu'un skip silencieux.
       if (referrer) {
-        await creditInactiveBalanceTx(tx, referrer, withCode, displayName, 1700, 1);
+        await creditInactiveBalanceTx(tx, referrer, withCode, displayName, 1700, 1, req);
 
         if (referrer.referredByCode) {
-          const [gr] = await tx.select().from(usersTable).where(eq(usersTable.referralCode, referrer.referredByCode));
+          const [gr] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referrer.referredByCode));
           if (!gr) {
             req.log.warn({ code: referrer.referredByCode, level: 2, newUserId: user.id }, "[auth/register] N2 referrer introuvable, commission ignorée (dérive de données)");
           } else {
-            await creditInactiveBalanceTx(tx, gr, withCode, displayName, 700, 2);
+            await creditInactiveBalanceTx(tx, gr, withCode, displayName, 700, 2, req);
             if (gr.referredByCode) {
-              const [gg] = await tx.select().from(usersTable).where(eq(usersTable.referralCode, gr.referredByCode));
+              const [gg] = await db.select().from(usersTable).where(eq(usersTable.referralCode, gr.referredByCode));
               if (!gg) {
                 req.log.warn({ code: gr.referredByCode, level: 3, newUserId: user.id }, "[auth/register] N3 referrer introuvable, commission ignorée (dérive de données)");
               } else {
-                await creditInactiveBalanceTx(tx, gg, withCode, displayName, 200, 3);
+                await creditInactiveBalanceTx(tx, gg, withCode, displayName, 200, 3, req);
               }
             }
           }
@@ -173,6 +173,7 @@ async function creditInactiveBalanceTx(
   newUserName: string,
   commission: number,
   level: number,
+  req: Request,
 ) {
   // Garantit l'invariant "tout user a une balance" via upsert sûr (no-op si présente)
   // grâce à la contrainte UNIQUE sur balances.user_id. Les colonnes ont default "0".
@@ -199,7 +200,7 @@ async function creditInactiveBalanceTx(
   });
 }
 
-router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
+router.post("/auth/login", authLimiter, async (req: Request, res: Response): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Données invalides" });
@@ -239,7 +240,7 @@ router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
 // L'utilisateur choisit l'option compte gratuit : accès parrainage uniquement,
 // les commissions s'accumulent dans activationCredit jusqu'à 3 400 FCFA.
 // ─────────────────────────────────────────────────────────────────
-router.post("/auth/choose-free-account", authenticate, async (req, res): Promise<void> => {
+router.post("/auth/choose-free-account", authenticate, async (req: Request, res: Response): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!user) { res.status(401).json({ error: "Utilisateur introuvable" }); return; }
   if (user.isActivated) { res.status(400).json({ error: "Ton compte est déjà activé" }); return; }
@@ -260,11 +261,11 @@ router.post("/auth/choose-free-account", authenticate, async (req, res): Promise
   res.json({ user: formatUser(updated) });
 });
 
-router.post("/auth/logout", authenticate, async (req, res): Promise<void> => {
+router.post("/auth/logout", authenticate, async (req: Request, res: Response): Promise<void> => {
   res.json({ success: true, message: "Déconnecté avec succès" });
 });
 
-router.get("/auth/me", authenticate, async (req, res): Promise<void> => {
+router.get("/auth/me", authenticate, async (req: Request, res: Response): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!user) {
     res.status(401).json({ error: "Utilisateur introuvable" });
