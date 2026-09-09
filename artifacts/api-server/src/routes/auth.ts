@@ -49,7 +49,8 @@ function deriveDisplayName(email: string): string {
 
 router.get("/auth/referrer/:code", async (req: Request, res: Response): Promise<void> => {
   const { code } = req.params;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.referralCode, code));
+  const codeStr = Array.isArray(code) ? code[0] : code;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.referralCode, codeStr));
   if (!user) {
     res.status(404).json({ error: "Code de parrainage invalide" });
     return;
@@ -83,15 +84,14 @@ router.post("/auth/register", authLimiter, async (req: Request, res: Response): 
 
   let referrer: typeof usersTable.$inferSelect | undefined;
   if (referralCode) {
-    const [ref] = await db.select().from(usersTable).where(eq(usersTable.referralCode, referralCode));
+    const codeStr = typeof referralCode === "string" ? referralCode : Array.isArray(referralCode) ? referralCode[0] : String(referralCode);
+    const [ref] = await db.select().from(usersTable).where(eq(usersTable.referralCode, codeStr));
     if (ref) referrer = ref;
   }
 
   const passwordHash = await hashPassword(password);
   const displayName = deriveDisplayName(emailLower);
 
-  // ─── Toute l'écriture se fait en UNE transaction : insert user, generate referralCode,
-  // insert balance, crédits N1/N2/N3 + logs. Si un quelconque step échoue → rollback total.
   let finalUser: typeof usersTable.$inferSelect;
   try {
     finalUser = await db.transaction(async (tx) => {
@@ -125,9 +125,6 @@ router.post("/auth/register", authLimiter, async (req: Request, res: Response): 
         spentAmount: "0",
       });
 
-      // Crédits parents N1/N2/N3 dans la même tx (atomique).
-      // Si un code parent existe mais le user est introuvable (dérive de données),
-      // on log warn explicite (observabilité) plutôt qu'un skip silencieux.
       if (referrer) {
         await creditInactiveBalanceTx(tx, referrer, withCode, displayName, 1700, 1, req);
 
@@ -163,7 +160,6 @@ router.post("/auth/register", authLimiter, async (req: Request, res: Response): 
   res.status(201).json({ user: formatUser(finalUser), token });
 });
 
-// Type local Tx (transaction Drizzle).
 type AuthTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 async function creditInactiveBalanceTx(
@@ -175,17 +171,13 @@ async function creditInactiveBalanceTx(
   level: number,
   req: Request,
 ) {
-  // Garantit l'invariant "tout user a une balance" via upsert sûr (no-op si présente)
-  // grâce à la contrainte UNIQUE sur balances.user_id. Les colonnes ont default "0".
   await tx.insert(balancesTable).values({ userId: beneficiary.id }).onConflictDoNothing();
 
-  // UPDATE arithmétique atomique.
   const updated = await tx.update(balancesTable)
     .set({ inactiveBalance: sql`${balancesTable.inactiveBalance} + ${commission}` })
     .where(eq(balancesTable.userId, beneficiary.id))
     .returning();
   if (updated.length === 0) {
-    // Ne devrait jamais arriver post-upsert : throw → rollback total de l'inscription.
     throw new Error(`MISSING_BALANCE_ROW_AFTER_UPSERT user=${beneficiary.id}`);
   }
 
@@ -235,11 +227,6 @@ router.post("/auth/login", authLimiter, async (req: Request, res: Response): Pro
   res.json({ user: formatUser(user), token });
 });
 
-// ─────────────────────────────────────────────────────────────────
-// POST /api/auth/choose-free-account
-// L'utilisateur choisit l'option compte gratuit : accès parrainage uniquement,
-// les commissions s'accumulent dans activationCredit jusqu'à 3 400 FCFA.
-// ─────────────────────────────────────────────────────────────────
 router.post("/auth/choose-free-account", authenticate, async (req: Request, res: Response): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.userId!));
   if (!user) { res.status(401).json({ error: "Utilisateur introuvable" }); return; }
@@ -271,7 +258,6 @@ router.get("/auth/me", authenticate, async (req: Request, res: Response): Promis
     res.status(401).json({ error: "Utilisateur introuvable" });
     return;
   }
-  // Mettre à jour lastLoginAt si pas encore défini ou si la dernière MAJ date de plus de 30 min
   const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
   if (!user.lastLoginAt || user.lastLoginAt < thirtyMinAgo) {
     db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id)).execute().catch(() => {});
