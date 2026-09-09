@@ -6,6 +6,11 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
+// Normalisation des imports pour la compatibilité CJS/ESM sous TypeScript
+const pinoHttpFn = (pinoHttp as any).default || pinoHttp;
+const helmetFn = (helmet as any).default || helmet;
+const rateLimitFn = (rateLimit as any).default || rateLimit;
+
 declare global {
   namespace Express {
     interface Request {
@@ -23,13 +28,13 @@ app.set("trust proxy", 1);
 
 // ─── LOGGING ──────────────────────────────────────────────────────────────────
 app.use(
-  pinoHttp({
+  pinoHttpFn({
     logger,
     serializers: {
-      req(req) {
+      req(req: any) {
         return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
       },
-      res(res) {
+      res(res: any) {
         return { statusCode: res.statusCode };
       },
     },
@@ -40,7 +45,7 @@ app.use(
 // Protège contre le clickjacking (X-Frame-Options), le sniffing MIME
 // (X-Content-Type-Options), active HSTS, etc.
 app.use(
-  helmet({
+  helmetFn({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: false,
   }),
@@ -73,7 +78,7 @@ app.use(
 // ─── RATE LIMITING GLOBAL ─────────────────────────────────────────────────────
 // 300 requêtes par 15 minutes par IP pour tous les endpoints.
 // Les webhooks (appelés par AccountPE, pas par les utilisateurs) sont exclus.
-const globalLimiter = rateLimit({
+const globalLimiter = rateLimitFn({
   windowMs: 15 * 60 * 1000,
   max: 300,
   standardHeaders: "draft-7",
@@ -82,7 +87,7 @@ const globalLimiter = rateLimit({
     success: false,
     error: "Trop de requêtes. Veuillez réessayer dans quelques minutes.",
   },
-  skip: (req) =>
+  skip: (req: Request) =>
     req.url?.startsWith("/api/accountpe/webhook") === true ||
     req.url?.startsWith("/api/webhook/") === true,
 });
