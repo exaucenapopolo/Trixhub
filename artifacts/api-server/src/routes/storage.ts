@@ -43,9 +43,11 @@ router.get("/storage/avatars/:filename", async (req: Request, res: Response): Pr
       res.status(404).json({ error: "Avatar introuvable" });
       return;
     }
-    const response = await objectStorageService.downloadObject(file, 86400);
-    res.status(response.status);
-    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    const response: any = await objectStorageService.downloadObject(file, 86400);
+    res.status(response.status || 200);
+    if (response.headers && typeof response.headers.forEach === "function") {
+      response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    }
     res.setHeader("Cache-Control", "public, max-age=86400");
 
     if (response.body) {
@@ -74,9 +76,11 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
       return;
     }
 
-    const response = await objectStorageService.downloadObject(file);
-    res.status(response.status);
-    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    const response: any = await objectStorageService.downloadObject(file);
+    res.status(response.status || 200);
+    if (response.headers && typeof response.headers.forEach === "function") {
+      response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    }
 
     if (response.body) {
       const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
@@ -125,9 +129,11 @@ router.get("/storage/proofs/:withdrawalId/:token", async (req: Request, res: Res
     }
 
     const objectFile = await objectStorageService.getObjectEntityFile(w.proofUrl);
-    const response = await objectStorageService.downloadObject(objectFile);
-    res.status(response.status);
-    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    const response: any = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status || 200);
+    if (response.headers && typeof response.headers.forEach === "function") {
+      response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    }
     res.setHeader("Cache-Control", "private, max-age=0, no-store");
 
     if (response.body) {
@@ -185,9 +191,11 @@ router.get("/storage/surprises/:token", async (req: Request, res: Response): Pro
     }
 
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
-    const response = await objectStorageService.downloadObject(objectFile);
-    res.status(response.status);
-    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    const response: any = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status || 200);
+    if (response.headers && typeof response.headers.forEach === "function") {
+      response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    }
     res.setHeader("Cache-Control", "private, max-age=3600");
 
     if (response.body) {
@@ -229,9 +237,11 @@ router.get("/storage/admin-proofs/:id/:token", async (req: Request, res: Respons
     }
 
     const objectFile = await objectStorageService.getObjectEntityFile(proof.imageUrl);
-    const response = await objectStorageService.downloadObject(objectFile);
-    res.status(response.status);
-    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    const response: any = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status || 200);
+    if (response.headers && typeof response.headers.forEach === "function") {
+      response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+    }
     res.setHeader("Cache-Control", "public, max-age=86400");
 
     if (response.body) {
