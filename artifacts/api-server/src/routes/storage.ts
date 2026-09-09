@@ -45,7 +45,7 @@ router.get("/storage/avatars/:filename", async (req: Request, res: Response): Pr
     }
     const response = await objectStorageService.downloadObject(file, 86400);
     res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
     res.setHeader("Cache-Control", "public, max-age=86400");
 
     if (response.body) {
@@ -64,7 +64,7 @@ router.get("/storage/avatars/:filename", async (req: Request, res: Response): Pr
  * GET /storage/public-objects/*
  * Sert les assets publics depuis PUBLIC_OBJECT_SEARCH_PATHS.
  */
-router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
+router.get("/storage/public-objects/*filePath", async (req: Request, res: Response): Promise<void> => {
   try {
     const raw = req.params.filePath;
     const filePath = Array.isArray(raw) ? raw.join("/") : raw;
@@ -76,7 +76,7 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 
     const response = await objectStorageService.downloadObject(file);
     res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
 
     if (response.body) {
       const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
@@ -105,7 +105,7 @@ function safeEqual(a: string, b: string): boolean {
  * Sert la preuve de paiement uniquement si le jeton correspond à celui stocké
  * en BD pour ce retrait. URL signée à durée illimitée (révocable en supprimant le token).
  */
-router.get("/storage/proofs/:withdrawalId/:token", async (req: Request, res: Response) => {
+router.get("/storage/proofs/:withdrawalId/:token", async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(String(req.params.withdrawalId), 10);
     const token = String(req.params.token ?? "");
@@ -127,7 +127,7 @@ router.get("/storage/proofs/:withdrawalId/:token", async (req: Request, res: Res
     const objectFile = await objectStorageService.getObjectEntityFile(w.proofUrl);
     const response = await objectStorageService.downloadObject(objectFile);
     res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
     res.setHeader("Cache-Control", "private, max-age=0, no-store");
 
     if (response.body) {
@@ -152,7 +152,7 @@ router.get("/storage/proofs/:withdrawalId/:token", async (req: Request, res: Res
  * Le token est stocké en BD dans activity_completions.payload_proof->>'token'.
  * Pas d'auth requise — le token 256 bits rend l'URL non devinable.
  */
-router.get("/storage/surprises/:token", async (req: Request, res: Response) => {
+router.get("/storage/surprises/:token", async (req: Request, res: Response): Promise<void> => {
   try {
     const token = String(req.params.token ?? "");
     if (!token || token.length < 32 || token.length > 128) {
@@ -187,7 +187,7 @@ router.get("/storage/surprises/:token", async (req: Request, res: Response) => {
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
     const response = await objectStorageService.downloadObject(objectFile);
     res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
     res.setHeader("Cache-Control", "private, max-age=3600");
 
     if (response.body) {
@@ -209,7 +209,7 @@ router.get("/storage/surprises/:token", async (req: Request, res: Response) => {
  * GET /storage/admin-proofs/:id/:token
  * Sert une preuve de retrait publiée par l'admin via un jeton opaque.
  */
-router.get("/storage/admin-proofs/:id/:token", async (req: Request, res: Response) => {
+router.get("/storage/admin-proofs/:id/:token", async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(String(req.params.id), 10);
     const token = String(req.params.token ?? "");
@@ -231,7 +231,7 @@ router.get("/storage/admin-proofs/:id/:token", async (req: Request, res: Respons
     const objectFile = await objectStorageService.getObjectEntityFile(proof.imageUrl);
     const response = await objectStorageService.downloadObject(objectFile);
     res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
     res.setHeader("Cache-Control", "public, max-age=86400");
 
     if (response.body) {
