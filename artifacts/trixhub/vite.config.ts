@@ -8,39 +8,29 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 // Vite remplace %VITE_APP_URL% dans index.html au moment du build.
 if (!process.env.VITE_APP_URL) {
   const domains = process.env.REPLIT_DOMAINS || "";
-  const preferred = domains
-    .split(",")
-    .map((d) => d.trim())
-    .filter(Boolean)
-    .find((d) => d.includes("trixhub") || !d.includes("replit.dev")) || domains.split(",")[0]?.trim();
+  const preferred =
+    domains
+      .split(",")
+      .map((d) => d.trim())
+      .filter(Boolean)
+      .find((d) => d.includes("trixhub") || !d.includes("replit.dev")) ||
+    domains.split(",")[0]?.trim();
   const fallback = process.env.REPLIT_DEV_DOMAIN?.trim();
   const resolved = preferred || fallback;
   if (resolved) {
-    process.env.VITE_APP_URL = resolved.startsWith("http") ? resolved : `https://${resolved}`;
+    process.env.VITE_APP_URL = resolved.startsWith("http")
+      ? resolved
+      : `https://${resolved}`;
   }
 }
 
+// Gestion sécurisée du PORT : utilise process.env.PORT si présent, sinon fallback sur 5000
 const rawPort = process.env.PORT;
+const parsedPort = rawPort ? Number(rawPort) : 5000;
+const port = !Number.isNaN(parsedPort) && parsedPort > 0 ? parsedPort : 5000;
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Gestion sécurisée du BASE_PATH : utilise process.env.BASE_PATH si présent, sinon "/"
+const basePath = process.env.BASE_PATH || "/";
 
 export default defineConfig({
   base: basePath,
@@ -65,7 +55,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@assets": path.resolve(
+        import.meta.dirname,
+        "..",
+        "..",
+        "attached_assets",
+      ),
     },
     dedupe: ["react", "react-dom"],
   },
