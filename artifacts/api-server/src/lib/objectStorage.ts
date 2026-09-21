@@ -103,7 +103,7 @@ export class ObjectStorageService {
       headers["Content-Length"] = String(metadata.size);
     }
 
-    return new Response(webStream, { headers });
+    return new globalThis.Response(webStream, { headers });
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
