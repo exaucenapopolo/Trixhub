@@ -16,7 +16,7 @@ async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
   timeoutMs = FETCH_TIMEOUT_MS,
-): Promise<Response> {
+): Promise<globalThis.Response> {
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -159,7 +159,7 @@ export async function createPaymentLink(params: {
 
   console.log("[AccountPE] createPaymentLink →", JSON.stringify({ ...body, email: "***" }));
 
-  async function call(tok: string): Promise<Response> {
+  async function call(tok: string): Promise<globalThis.Response> {
     return fetchWithTimeout(`${PAYIN_BASE}/create_payment_links`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
@@ -203,7 +203,7 @@ export async function checkPaymentStatus(transactionId: string): Promise<{
 }> {
   let token = await getAccountPeToken();
 
-  async function call(tok: string): Promise<Response> {
+  async function call(tok: string): Promise<globalThis.Response> {
     return fetchWithTimeout(`${PAYIN_BASE}/payment_link_status`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
@@ -270,7 +270,7 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
 
   let token = await getPayoutToken();
 
-  async function call(tok: string): Promise<Response> {
+  async function call(tok: string): Promise<globalThis.Response> {
     return fetchWithTimeout(`${PAYOUT_BASE}/payout_methods`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
@@ -433,7 +433,7 @@ export async function createPayout(params: {
 
   console.log("[AccountPE] createPayout →", JSON.stringify({ ...body, beneficiary_email: "***" }));
 
-  async function call(tok: string): Promise<Response> {
+  async function call(tok: string): Promise<globalThis.Response> {
     return fetchWithTimeout(`${PAYOUT_BASE}/create_transaction`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
@@ -496,7 +496,7 @@ export async function checkPayoutStatus(transactionId: string): Promise<{
 }> {
   let token = await getPayoutToken();
 
-  async function call(tok: string): Promise<Response> {
+  async function call(tok: string): Promise<globalThis.Response> {
     return fetchWithTimeout(`${PAYOUT_BASE}/payout_status`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
