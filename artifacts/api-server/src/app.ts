@@ -100,7 +100,7 @@ app.use(globalLimiter);
 app.use(
   express.json({
     limit: "1mb",
-    verify: (req: Request, _res: Response, buf: Buffer) => {
+    verify: (req: Request, _res, buf: Buffer) => {
       req.rawBody = buf;
     },
   }),
