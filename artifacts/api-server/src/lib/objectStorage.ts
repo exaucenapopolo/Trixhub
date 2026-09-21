@@ -258,7 +258,7 @@ async function signObjectURL({
     method,
     expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
   };
-  const response: globalThis.Response = await fetch(
+  const response = (await fetch(
     `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
     {
       method: "POST",
@@ -268,7 +268,11 @@ async function signObjectURL({
       body: JSON.stringify(request),
       signal: AbortSignal.timeout(30_000),
     }
-  );
+  )) as {
+    ok: boolean;
+    status: number;
+    json(): Promise<unknown>;
+  };
   if (!response.ok) {
     throw new Error(
       `Failed to sign object URL, errorcode: ${response.status}, ` +
