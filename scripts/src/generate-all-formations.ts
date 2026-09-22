@@ -55,7 +55,7 @@ for (const { id, type } of ALL) {
 
   try {
     const doc = generateFormationPDF(id, {
-      lokkeUrl: id === "canal-plus" ? "https://trixhub.site/api/formations/lokke/download" : undefined,
+      lokkeUrl: id === "canal-plus" ? "https://trixhub-api-server.vercel.app/api/formations/lokke/download" : undefined,
     });
 
     if (!doc) {

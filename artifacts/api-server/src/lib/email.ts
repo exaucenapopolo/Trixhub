@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "TRIXHUB <support@socialboosthorizon.com>";
-const SITE = "https://trixhub.site";
+const SITE = (process.env.PUBLIC_BASE_URL || "https://trixhub.vercel.app").replace(/\/$/, "");
 
 // ─── Helpers HTML ──────────────────────────────────────────────────────────
 function base(content: string): string {

@@ -547,10 +547,12 @@ export function verifyWebhookSignature(rawBody: Buffer, signature: string): bool
 }
 
 export function getWebhookUrl(): string {
-  const domains = (process.env.REPLIT_DOMAINS || "").split(",");
-  const prod = domains.find(d => d.includes("trixhub.site")) || domains[0] || "";
-  const domain = prod || process.env.REPLIT_DEV_DOMAIN || "";
-  return domain ? `https://${domain}/api/accountpe/webhook` : "";
+  const baseUrl = (
+    process.env.PUBLIC_API_BASE_URL ||
+    "https://trixhub-api-server.vercel.app"
+  ).trim().replace(/\/$/, "");
+
+  return `${baseUrl}/api/accountpe/webhook`;
 }
 
 // Mapping pays → code AccountPE
