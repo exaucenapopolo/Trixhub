@@ -4,14 +4,16 @@ import * as schema from "./schema/index.js";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+const databaseUrl = process.env.DATABASE_URL ?? process.env.trixhub_DATABASE_URL;
+
+if (!databaseUrl) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
   max: 20,                  // max connexions simultanées (défaut pg = 10)
   idleTimeoutMillis: 30000, // ferme les connexions inactives après 30s
   connectionTimeoutMillis: 5000, // timeout si pas de connexion dispo en 5s
