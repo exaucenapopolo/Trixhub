@@ -2,9 +2,9 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, balancesTable, premiumFormationPurchasesTable } from "@workspace/db/schema";
 import { eq, and, sql } from "drizzle-orm";
-import { authenticate } from "../middlewares/authenticate";
-import { CURRENCY_RATES } from "../lib/currency";
-import { generateFormationPDF } from "../lib/formationPdf";
+import { authenticate } from "../middlewares/authenticate.js";
+import { CURRENCY_RATES } from "../lib/currency.js";
+import { generateFormationPDF } from "../lib/formationPdf.js";
 
 export const FORMATIONS_CATALOG: Record<string, { priceFcfa: number; title: string }> = {
   "tiktok-monetisable": { priceFcfa: 250, title: "Comment créer un compte TikTok monétisable depuis l'Afrique ?" },

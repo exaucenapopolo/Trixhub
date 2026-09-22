@@ -3,8 +3,8 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
-import router from "./routes";
-import { logger } from "./lib/logger";
+import router from "./routes/index.js";
+import { logger } from "./lib/logger.js";
 
 // Normalisation des imports pour la compatibilité CJS/ESM sous TypeScript
 const pinoHttpFn = (pinoHttp as any).default || pinoHttp;

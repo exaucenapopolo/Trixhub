@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
-import { sendWithdrawalCreatedEmail, sendWithdrawalStatusEmail } from "../lib/email";
+import { sendWithdrawalCreatedEmail, sendWithdrawalStatusEmail } from "../lib/email.js";
 import multer from "multer";
 import { eq, desc, sql, and, gte, isNull, isNotNull } from "drizzle-orm";
 import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable, adminProofsTable } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
-import { requireAdmin } from "../middlewares/requireAdmin";
-import { withdrawalLimiter } from "../middlewares/rateLimiters";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivation } from "../middlewares/requireActivation.js";
+import { requireAdmin } from "../middlewares/requireAdmin.js";
+import { withdrawalLimiter } from "../middlewares/rateLimiters.js";
 import { RequestWithdrawalBody } from "@workspace/api-zod";
 import {
   reportWithdrawalCreated,
@@ -15,9 +15,9 @@ import {
   reportPayoutSuccess,
   reportPayoutFailed,
   reportPayoutTimeout,
-} from "../lib/withdrawalReports";
-import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof";
-import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
+} from "../lib/withdrawalReports.js";
+import { uploadProofImage, getPublicProofUrl } from "../lib/uploadProof.js";
+import { getPublicBaseUrl } from "../lib/getPublicBaseUrl.js";
 import {
   createPayout,
   getPayoutMethods,
@@ -27,8 +27,8 @@ import {
   COUNTRY_CURRENCIES,
   ACCOUNTPE_SUPPORTED_COUNTRY_CODES,
   PAYOUT_MIN,
-} from "../lib/swychr";
-import { CURRENCY_RATES } from "../lib/currency";
+} from "../lib/swychr.js";
+import { CURRENCY_RATES } from "../lib/currency.js";
 
 const MIN_REFERRAL = PAYOUT_MIN; // 3100 FCFA — aligne avec AccountPE
 const MIN_TASK = 3500;

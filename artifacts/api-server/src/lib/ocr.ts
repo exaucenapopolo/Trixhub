@@ -1,5 +1,5 @@
-import { getOpenAIClient } from "./openaiClient";
-import { logger } from "./logger";
+import { getOpenAIClient } from "./openaiClient.js";
+import { logger } from "./logger.js";
 
 /**
  * Analyse une capture d'écran de statut WhatsApp et extrait le nombre de vues.

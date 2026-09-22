@@ -2,16 +2,16 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import multer from "multer";
 import { eq } from "drizzle-orm";
 import { db, usersTable, balancesTable } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivationOrFreeAccount } from "../middlewares/requireActivation";
-import { getRates } from "../lib/currency";
-import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivationOrFreeAccount } from "../middlewares/requireActivation.js";
+import { getRates } from "../lib/currency.js";
+import { claimDailyBonusIfDue, DAILY_BONUS } from "../lib/dailyBonus.js";
 import {
   uploadAvatarImage,
   deleteAvatarObject,
   ALLOWED_AVATAR_TYPES,
   AVATAR_MAX_SIZE,
-} from "../lib/uploadAvatar";
+} from "../lib/uploadAvatar.js";
 
 const router: IRouter = Router();
 

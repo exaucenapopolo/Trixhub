@@ -1,4 +1,4 @@
-import { getOpenAIClient } from "./openaiClient";
+import { getOpenAIClient } from "./openaiClient.js";
 import type { Logger } from "pino";
 import { z } from "zod";
 

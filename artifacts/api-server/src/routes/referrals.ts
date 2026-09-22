@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { db, usersTable, transactionsTable, balancesTable, activityCompletionsTable } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivation, requireActivationOrFreeAccount } from "../middlewares/requireActivation";
-import { activateUserTx, ACTIVATION_AMOUNT, REFERRAL_PAYMENT_FEE } from "../lib/activation";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivation, requireActivationOrFreeAccount } from "../middlewares/requireActivation.js";
+import { activateUserTx, ACTIVATION_AMOUNT, REFERRAL_PAYMENT_FEE } from "../lib/activation.js";
 
 const router: IRouter = Router();
 

@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "crypto";
-import { objectStorageClient } from "./objectStorage";
+import { objectStorageClient } from "./objectStorage.js";
 
 function getPrivateObjectDir(): string {
   const dir = process.env.PRIVATE_OBJECT_DIR || "";

@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { sendActivityWithdrawalStatusEmail } from "../lib/email";
+import { sendActivityWithdrawalStatusEmail } from "../lib/email.js";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import {
   db,
@@ -8,15 +8,15 @@ import {
   balancesTable,
   usersTable,
 } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
-import { requireAdmin } from "../middlewares/requireAdmin";
-import { withdrawalLimiter } from "../middlewares/rateLimiters";
-import { ACTIVITY_WITHDRAWAL_MIN } from "../lib/weeklyPoints";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivation } from "../middlewares/requireActivation.js";
+import { requireAdmin } from "../middlewares/requireAdmin.js";
+import { withdrawalLimiter } from "../middlewares/rateLimiters.js";
+import { ACTIVITY_WITHDRAWAL_MIN } from "../lib/weeklyPoints.js";
 import {
   reportActivityWithdrawalCreated,
   reportActivityWithdrawalStatusChange,
-} from "../lib/activityWithdrawalReports";
+} from "../lib/activityWithdrawalReports.js";
 
 const router: IRouter = Router();
 

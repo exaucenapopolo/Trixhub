@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 if (!process.env.SESSION_SECRET) throw new Error("SESSION_SECRET env var is required");
 const JWT_SECRET: string = process.env.SESSION_SECRET;

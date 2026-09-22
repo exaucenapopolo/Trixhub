@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, balancesTable } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
-import { getRates } from "../lib/currency";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivation } from "../middlewares/requireActivation.js";
+import { getRates } from "../lib/currency.js";
 
 const router: IRouter = Router();
 

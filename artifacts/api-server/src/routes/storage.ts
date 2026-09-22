@@ -3,7 +3,7 @@ import { Readable } from "stream";
 import { timingSafeEqual } from "crypto";
 import { eq, and, sql } from "drizzle-orm";
 import { db, withdrawalsTable, activityCompletionsTable, adminProofsTable } from "@workspace/db";
-import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "../lib/objectStorage.js";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();

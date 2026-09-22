@@ -2,10 +2,10 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { freeFormationDownloadsTable } from "@workspace/db/schema";
 import { eq, and, sql, count } from "drizzle-orm";
-import { authenticate } from "../middlewares/authenticate";
-import { generateFormationPDF } from "../lib/formationPdf";
-import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
-import { ObjectStorageService } from "../lib/objectStorage";
+import { authenticate } from "../middlewares/authenticate.js";
+import { generateFormationPDF } from "../lib/formationPdf.js";
+import { getPublicBaseUrl } from "../lib/getPublicBaseUrl.js";
+import { ObjectStorageService } from "../lib/objectStorage.js";
 
 const objectStorageService = new ObjectStorageService();
 

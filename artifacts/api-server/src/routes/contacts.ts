@@ -2,8 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, balancesTable, contactPurchasesTable } from "@workspace/db/schema";
 import { eq, desc, asc, and, count, sql, inArray } from "drizzle-orm";
-import { authenticate } from "../middlewares/authenticate";
-import { CURRENCY_RATES } from "../lib/currency";
+import { authenticate } from "../middlewares/authenticate.js";
+import { CURRENCY_RATES } from "../lib/currency.js";
 
 const PRICE_PER_CONTACT_FCFA = 2;
 

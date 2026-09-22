@@ -1,7 +1,11 @@
-import app from "./app";
-import { logger } from "./lib/logger";
-import { warmupServices } from "./lib/swychr";
-import { checkAllPendingTransactions } from "./lib/paymentProcessor";
+import app from "./app.js";
+import { logger } from "./lib/logger.js";
+import { warmupServices } from "./lib/swychr.js";
+import { checkAllPendingTransactions } from "./lib/paymentProcessor.js";
+
+export default app;
+
+if (!process.env.VERCEL) {
 
 const rawPort = process.env["PORT"];
 
@@ -45,3 +49,4 @@ app.listen(port, (err) => {
     }, PENDING_CHECK_INTERVAL_MS);
   }, 30_000); // Première vérification 30s après démarrage
 });
+}

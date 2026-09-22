@@ -1,5 +1,5 @@
 import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
-import { usersTable } from "./users";
+import { usersTable } from "./users.js";
 
 export const freeFormationDownloadsTable = pgTable("free_formation_downloads", {
   id: serial("id").primaryKey(),

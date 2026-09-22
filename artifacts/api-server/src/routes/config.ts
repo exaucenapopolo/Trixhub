@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { getRates } from "../lib/currency";
-import { getPayoutMethods, getPayoutFee, COUNTRY_CODES, PAYOUT_FEE_BASE, PAYOUT_MIN } from "../lib/swychr";
-import { authenticate } from "../middlewares/authenticate";
+import { getRates } from "../lib/currency.js";
+import { getPayoutMethods, getPayoutFee, COUNTRY_CODES, PAYOUT_FEE_BASE, PAYOUT_MIN } from "../lib/swychr.js";
+import { authenticate } from "../middlewares/authenticate.js";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 

@@ -22,13 +22,13 @@ import {
   apkDownloadsTable,
   adminProofsTable,
 } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireAdmin } from "../middlewares/requireAdmin";
-import { hashPassword } from "../lib/auth";
-import { activateUserTx } from "../lib/activation";
-import { COUNTRY_CODES, COUNTRY_CURRENCIES, PAYOUT_MIN } from "../lib/swychr";
-import { CURRENCY_RATES } from "../lib/currency";
-import { objectStorageClient } from "../lib/objectStorage";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireAdmin } from "../middlewares/requireAdmin.js";
+import { hashPassword } from "../lib/auth.js";
+import { activateUserTx } from "../lib/activation.js";
+import { COUNTRY_CODES, COUNTRY_CURRENCIES, PAYOUT_MIN } from "../lib/swychr.js";
+import { CURRENCY_RATES } from "../lib/currency.js";
+import { objectStorageClient } from "../lib/objectStorage.js";
 
 function getPrivateObjectDir(): string {
   const dir = process.env.PRIVATE_OBJECT_DIR || "";

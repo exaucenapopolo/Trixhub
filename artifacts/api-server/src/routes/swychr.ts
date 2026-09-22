@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, usersTable, swychrTransactionsTable } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { paymentLimiter } from "../middlewares/rateLimiters";
+import { authenticate } from "../middlewares/authenticate.js";
+import { paymentLimiter } from "../middlewares/rateLimiters.js";
 import {
   createPaymentLink,
   checkPaymentStatus,
@@ -12,9 +12,9 @@ import {
   COUNTRY_CODES,
   COUNTRY_CURRENCIES,
   convertFcfaToPayin,
-} from "../lib/swychr";
-import { ACTIVATION_AMOUNT, FREE_ACTIVATION_THRESHOLD } from "../lib/activation";
-import { handlePaymentSuccess } from "../lib/paymentProcessor";
+} from "../lib/swychr.js";
+import { ACTIVATION_AMOUNT, FREE_ACTIVATION_THRESHOLD } from "../lib/activation.js";
+import { handlePaymentSuccess } from "../lib/paymentProcessor.js";
 
 const router: IRouter = Router();
 

@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq, and, isNull, gte, sql } from "drizzle-orm";
 import { db, usersTable, balancesTable, withdrawalsTable, transactionsTable } from "@workspace/db";
-import { getPayoutFee, PAYOUT_MIN } from "../lib/swychr";
-import { authenticate } from "../middlewares/authenticate";
-import { sendWhatsAppToAssistance } from "../lib/twilio";
+import { getPayoutFee, PAYOUT_MIN } from "../lib/swychr.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { sendWhatsAppToAssistance } from "../lib/twilio.js";
 
 const router: IRouter = Router();
 

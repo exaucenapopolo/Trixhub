@@ -1,13 +1,13 @@
 import { db, usersTable, swychrTransactionsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import type { Logger } from "pino";
-import { activateUserTx, creditDepositTx } from "./activation";
-import { checkPaymentStatus } from "./swychr";
+import { activateUserTx, creditDepositTx } from "./activation.js";
+import { checkPaymentStatus } from "./swychr.js";
 import {
   sendActivationConfirmEmail,
   sendCommissionEmail,
   sendDepositConfirmEmail,
-} from "./email";
+} from "./email.js";
 
 // ─────────────────────────────────────────────────────────────────
 // Traitement post-paiement (atomique + idempotent) — switch sur le purpose

@@ -1,4 +1,4 @@
-import { sendWhatsAppToAssistance } from "./twilio";
+import { sendWhatsAppToAssistance } from "./twilio.js";
 import type { ActivityWithdrawal, User } from "@workspace/db";
 
 const METHOD_LABELS: Record<string, string> = {

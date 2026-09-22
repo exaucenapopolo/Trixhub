@@ -6,12 +6,12 @@ import {
   activityCompletionsTable,
   usersTable,
 } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivation } from "../middlewares/requireActivation.js";
 import {
   getCurrentWeekStart,
   getDayOfWeek,
-} from "../lib/weeklyPoints";
+} from "../lib/weeklyPoints.js";
 
 const router: IRouter = Router();
 

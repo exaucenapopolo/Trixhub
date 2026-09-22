@@ -8,11 +8,11 @@ import {
   balancesTable,
   usersTable,
 } from "@workspace/db";
-import { authenticate } from "../middlewares/authenticate";
-import { requireActivation } from "../middlewares/requireActivation";
-import { uploadSurpriseShot } from "../lib/uploadSurpriseShot";
-import { sendWhatsAppWithMedia, sendWhatsAppToAssistance } from "../lib/twilio";
-import { getPublicBaseUrl } from "../lib/getPublicBaseUrl";
+import { authenticate } from "../middlewares/authenticate.js";
+import { requireActivation } from "../middlewares/requireActivation.js";
+import { uploadSurpriseShot } from "../lib/uploadSurpriseShot.js";
+import { sendWhatsAppWithMedia, sendWhatsAppToAssistance } from "../lib/twilio.js";
+import { getPublicBaseUrl } from "../lib/getPublicBaseUrl.js";
 import {
   awardActivityPoints,
   convertWeeklyPointsToBalance,
@@ -23,14 +23,14 @@ import {
   ACTIVITY_POINTS,
   DAILY_POINT_CAP,
   WEEKLY_POINT_CAP,
-} from "../lib/weeklyPoints";
+} from "../lib/weeklyPoints.js";
 import {
   generateQuizQuestions,
   questionsForClient,
   QUIZ_POINTS_PER_CORRECT,
   type QuizQuestion,
-} from "../lib/quizGenerator";
-import { isOpenAIConfigured } from "../lib/openaiClient";
+} from "../lib/quizGenerator.js";
+import { isOpenAIConfigured } from "../lib/openaiClient.js";
 
 const router: IRouter = Router();
 

@@ -1,10 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { sendWelcomeEmail } from "../lib/email";
+import { sendWelcomeEmail } from "../lib/email.js";
 import { eq, or, sql } from "drizzle-orm";
 import { db, usersTable, balancesTable, transactionsTable } from "@workspace/db";
-import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth";
-import { authenticate } from "../middlewares/authenticate";
-import { authLimiter } from "../middlewares/rateLimiters";
+import { hashPassword, comparePassword, generateToken, generateReferralCode } from "../lib/auth.js";
+import { authenticate } from "../middlewares/authenticate.js";
+import { authLimiter } from "../middlewares/rateLimiters.js";
 import {
   RegisterBody,
   LoginBody,
