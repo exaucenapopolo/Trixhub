@@ -5,6 +5,48 @@ const FETCH_TIMEOUT_MS = 10_000;            // 10 secondes max par appel HTTP (a
 const PAYOUT_TIMEOUT_MS = 45_000;           // 45 secondes pour create_transaction (AccountPE peut être lent)
 const METHODS_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes pour les méthodes
 
+export class AccountPeApiError extends Error {
+  status: number;
+  endpoint: string;
+  providerMessage: string;
+  providerBody: string;
+
+  constructor(
+    message: string,
+    options: {
+      status: number;
+      endpoint: string;
+      providerMessage?: string;
+      providerBody?: string;
+    },
+  ) {
+    super(message);
+    this.name = "AccountPeApiError";
+    this.status = options.status;
+    this.endpoint = options.endpoint;
+    this.providerMessage = options.providerMessage || message;
+    this.providerBody = options.providerBody || "";
+  }
+}
+
+function extractProviderMessage(rawText: string): string {
+  try {
+    const parsed = JSON.parse(rawText) as Record<string, unknown>;
+
+    if (typeof parsed.message === "string" && parsed.message.trim()) {
+      return parsed.message.trim();
+    }
+
+    if (typeof parsed.error === "string" && parsed.error.trim()) {
+      return parsed.error.trim();
+    }
+
+    return rawText.trim();
+  } catch {
+    return rawText.trim();
+  }
+}
+
 const ACCOUNTPE = {
   email: process.env.SWYCHR_USERNAME || "",
   password: process.env.SWYCHR_PASSWORD || "",
@@ -53,9 +95,27 @@ export async function getAccountPeToken(): Promise<string> {
       });
 
       const rawText = await res.text();
-      console.log("[AccountPE] Auth payin status:", res.status, "body:", rawText.slice(0, 200));
 
-      if (!res.ok) throw new Error(`AccountPE auth échoué: status ${res.status} — ${rawText.slice(0, 150)}`);
+      console.log(
+        "[AccountPE] Auth payin status:",
+        res.status,
+        "body:",
+        rawText.slice(0, 2000),
+      );
+
+      if (!res.ok) {
+        const providerMessage = extractProviderMessage(rawText);
+
+        throw new AccountPeApiError(
+          "Échec de l'authentification AccountPE",
+          {
+            status: res.status,
+            endpoint: `${PAYIN_BASE}/admin/auth`,
+            providerMessage,
+            providerBody: rawText,
+          },
+        );
+      }
 
       const data = JSON.parse(rawText) as Record<string, unknown>;
       const token = data.token as string | undefined;
@@ -145,24 +205,34 @@ export async function createPaymentLink(params: {
   let token = await getAccountPeToken();
 
   const body = {
-    country_code:        params.countryCode,
-    name:                params.name,
-    email:               params.email,
-    mobile:              params.mobile.replace(/\D/g, ""),
-    amount:              params.amount,
-    currency:            params.currency,
-    transaction_id:      params.transactionId,
-    description:         params.description,
+    country_code: params.countryCode,
+    name: params.name,
+    email: params.email,
+    mobile: params.mobile.replace(/\D/g, ""),
+    amount: params.amount,
+    currency: params.currency,
+    transaction_id: params.transactionId,
+    description: params.description,
     pass_digital_charge: true,
-    callback_url:        params.callbackUrl,
+    callback_url: params.callbackUrl,
   };
 
-  console.log("[AccountPE] createPaymentLink →", JSON.stringify({ ...body, email: "***" }));
+  console.log(
+    "[AccountPE] createPaymentLink →",
+    JSON.stringify({
+      ...body,
+      email: "***",
+    }),
+  );
 
   async function call(tok: string): Promise<any> {
     return fetchWithTimeout(`${PAYIN_BASE}/create_payment_links`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tok}`,
+        "Idempotency-Key": params.transactionId,
+      },
       body: JSON.stringify(body),
     });
   }
@@ -170,32 +240,87 @@ export async function createPaymentLink(params: {
   let res: any = await call(token);
 
   if (res.status === 401) {
+    console.log(
+      "[AccountPE] create_payment_links a répondu 401 — renouvellement du token",
+    );
+
     invalidateToken();
     token = await getAccountPeToken();
     res = await call(token);
   }
 
   const rawText = await res.text();
-  console.log("[AccountPE] createPaymentLink status:", res.status, "body:", rawText.slice(0, 300));
 
-  if (!res.ok) throw new Error(`AccountPE createPaymentLink échoué: status ${res.status} — ${rawText.slice(0, 200)}`);
+  console.log(
+    "[AccountPE] createPaymentLink status:",
+    res.status,
+    "body:",
+    rawText.slice(0, 2000),
+  );
 
-  const data = JSON.parse(rawText) as Record<string, unknown>;
-  const inner = (data.data as Record<string, unknown>) ?? data;
+  if (!res.ok) {
+    const providerMessage = extractProviderMessage(rawText);
 
-  const paymentLink = (
-    inner.payment_link || inner.paymentLink || inner.checkout_url || data.payment_link
-  ) as string | undefined;
-
-  const id = (inner.id || inner.paymentId || params.transactionId) as string;
-
-  if (!paymentLink) {
-    throw new Error(`AccountPE: pas de payment_link dans la réponse — ${rawText.slice(0, 200)}`);
+    throw new AccountPeApiError(
+      "Création du lien de paiement refusée par AccountPE",
+      {
+        status: res.status,
+        endpoint: `${PAYIN_BASE}/create_payment_links`,
+        providerMessage,
+        providerBody: rawText,
+      },
+    );
   }
 
-  return { paymentLink, id };
-}
+  let data: Record<string, unknown>;
 
+  try {
+    data = JSON.parse(rawText) as Record<string, unknown>;
+  } catch {
+    throw new AccountPeApiError(
+      "AccountPE a renvoyé une réponse JSON invalide lors de la création du paiement",
+      {
+        status: res.status,
+        endpoint: `${PAYIN_BASE}/create_payment_links`,
+        providerMessage: "Réponse JSON invalide",
+        providerBody: rawText,
+      },
+    );
+  }
+
+  const inner =
+    (data.data as Record<string, unknown> | undefined) ?? data;
+
+  const paymentLink = (
+    inner.payment_link ||
+    inner.paymentLink ||
+    inner.checkout_url ||
+    data.payment_link
+  ) as string | undefined;
+
+  const id = (
+    inner.id ||
+    inner.paymentId ||
+    params.transactionId
+  ) as string;
+
+  if (!paymentLink) {
+    throw new AccountPeApiError(
+      "AccountPE n'a pas renvoyé de lien de paiement",
+      {
+        status: res.status,
+        endpoint: `${PAYIN_BASE}/create_payment_links`,
+        providerMessage: "Champ payment_link absent de la réponse",
+        providerBody: rawText,
+      },
+    );
+  }
+
+  return {
+    paymentLink,
+    id,
+  };
+}
 // ── Pay-in : vérifier le statut d'un paiement ──────────────────────
 export async function checkPaymentStatus(transactionId: string): Promise<{
   status: "pending" | "success" | "failed" | "refunded";
@@ -206,7 +331,10 @@ export async function checkPaymentStatus(transactionId: string): Promise<{
   async function call(tok: string): Promise<any> {
     return fetchWithTimeout(`${PAYIN_BASE}/payment_link_status`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tok}`,
+},
       body: JSON.stringify({ transaction_id: transactionId }),
     });
   }
@@ -273,7 +401,10 @@ export async function getPayoutMethods(countryCode: string): Promise<PayoutMetho
   async function call(tok: string): Promise<any> {
     return fetchWithTimeout(`${PAYOUT_BASE}/payout_methods`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tok}`,
+},
       body: JSON.stringify({ country_code: countryCode }),
     });
   }
@@ -436,7 +567,10 @@ export async function createPayout(params: {
   async function call(tok: string): Promise<any> {
     return fetchWithTimeout(`${PAYOUT_BASE}/create_transaction`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tok}`,
+},
       body: JSON.stringify(body),
     }, PAYOUT_TIMEOUT_MS);
   }
@@ -499,7 +633,10 @@ export async function checkPayoutStatus(transactionId: string): Promise<{
   async function call(tok: string): Promise<any> {
     return fetchWithTimeout(`${PAYOUT_BASE}/payout_status`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tok}`,
+},
       body: JSON.stringify({ transaction_id: transactionId }),
     });
   }
