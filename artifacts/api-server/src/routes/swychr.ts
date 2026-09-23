@@ -9,6 +9,7 @@ import {
   verifyWebhookSignature,
   getWebhookUrl,
   ACCOUNTPE,
+  AccountPeApiError,
   COUNTRY_CODES,
   COUNTRY_CURRENCIES,
   convertFcfaToPayin,
@@ -163,10 +164,37 @@ router.post("/swychr/initiate", authenticate, paymentLimiter, async (req, res): 
 
     res.json({ success: true, transactionId, checkoutUrl: paymentLink });
   } catch (err) {
-    req.log.error({ err }, "[AccountPE] createPaymentLink error");
-    res.status(502).json({
+    req.log.error(
+      {
+        err,
+        transactionId,
+      },
+      "[AccountPE] payment initiation failed",
+    );
+
+    if (err instanceof AccountPeApiError) {
+      res.status(502).json({
+        success: false,
+        error: `[AccountPE ${err.status}] ${err.providerMessage}`,
+        provider: "AccountPE",
+        providerStatus: err.status,
+        providerMessage: err.providerMessage,
+        providerEndpoint: err.endpoint,
+        providerBody: err.providerBody,
+        transactionId,
+      });
+      return;
+    }
+
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Erreur interne lors du paiement";
+
+    res.status(500).json({
       success: false,
-      error: err instanceof Error ? err.message : "Erreur AccountPE",
+      error: message,
+      transactionId,
     });
   }
 });
