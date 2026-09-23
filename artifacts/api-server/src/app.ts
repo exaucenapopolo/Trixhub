@@ -56,7 +56,13 @@ app.use(
 // Cela bloque les requêtes cross-origin venant de sites tiers non autorisés.
 const ALLOWED_ORIGINS_PATTERNS = [
   /^https?:\/\/localhost(:\d+)?$/,
-  /^https:\/\/trixhub(?:-[a-z0-9-]+)*\.vercel\.app$/,
+  /\.replit\.app$/,
+  /\.repl\.co$/,
+  /\.replit\.dev$/,
+  /\.janeway\.replit\.dev$/,
+  /^https?:\/\/(www\.)?trixhub\.store$/,
+  /^https?:\/\/(www\.)?trixhub\.site$/,
+  /^https?:\/\/trixhub\.vercel\.app$/,
 ];
 
 app.use(
